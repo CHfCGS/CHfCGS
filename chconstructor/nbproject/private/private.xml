@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project-private xmlns="http://www.netbeans.org/ns/project-private/1">
+    <code-assistance-data xmlns="http://www.netbeans.org/ns/make-project-private/1">
+        <code-model-enabled>true</code-model-enabled>
+    </code-assistance-data>
+    <data xmlns="http://www.netbeans.org/ns/make-project-private/1">
+        <activeConfTypeElem>0</activeConfTypeElem>
+        <activeConfIndexElem>0</activeConfIndexElem>
+    </data>
+    <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
+    <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
+        <group>
+            <file>file:/home/tobias/Dokumente/Masterarbeit/Gesamt/aktuell/chconstructor/src/DouglasPeucker.h</file>
+            <file>file:/home/tobias/Dokumente/Masterarbeit/Gesamt/aktuell/chconstructor/src/chains.h</file>
+            <file>file:/home/tobias/Dokumente/Masterarbeit/Gesamt/aktuell/chconstructor/src/dpPrioritizer.h</file>
+            <file>file:/home/tobias/Dokumente/Masterarbeit/Gesamt/aktuell/chconstructor/src/prioritizers.h</file>
+            <file>file:/home/tobias/Dokumente/Masterarbeit/Gesamt/aktuell/chconstructor/src/4Dgrid.h</file>
+            <file>file:/home/tobias/Dokumente/Masterarbeit/Gesamt/aktuell/chconstructor/src/nodes_and_edges.h</file>
+            <file>file:/home/tobias/Dokumente/Masterarbeit/Gesamt/aktuell/chconstructor/src/chainPairDP.h</file>
+            <file>file:/home/tobias/Dokumente/Masterarbeit/Gesamt/aktuell/chconstructor/src/matchChainPairNodes.h</file>
+        </group>
+    </open-files>
+</project-private>

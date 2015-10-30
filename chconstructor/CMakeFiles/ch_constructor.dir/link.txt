@@ -1,0 +1,1 @@
+/usr/bin/clang++    -Wall -Wextra -Wno-unused-parameter -pedantic -std=c++11 -fopenmp -g3 -gdwarf-2    -Wl,--as-needed -fopenmp CMakeFiles/ch_constructor.dir/src/ch_constructor.cpp.o CMakeFiles/common.dir/src/nodes_and_edges.cpp.o CMakeFiles/common.dir/src/file_formats.cpp.o  -o ch_constructor -rdynamic 

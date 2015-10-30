@@ -1,0 +1,27 @@
+[
+{
+  "directory": "/home/tobias/netbeans-8.0.2/workspace/chconstructor",
+  "command": "/usr/bin/clang++   -DNVERBOSE  -Wall -Wextra -Wno-unused-parameter -pedantic -std=c++11 -fopenmp -g3 -gdwarf-2   -o CMakeFiles/ch_constructor.dir/src/ch_constructor.cpp.o -c /home/tobias/netbeans-8.0.2/workspace/chconstructor/src/ch_constructor.cpp",
+  "file": "/home/tobias/netbeans-8.0.2/workspace/chconstructor/src/ch_constructor.cpp"
+},
+{
+  "directory": "/home/tobias/netbeans-8.0.2/workspace/chconstructor",
+  "command": "/usr/bin/clang++   -DNVERBOSE  -Wall -Wextra -Wno-unused-parameter -pedantic -std=c++11 -fopenmp -g3 -gdwarf-2   -o CMakeFiles/common.dir/src/nodes_and_edges.cpp.o -c /home/tobias/netbeans-8.0.2/workspace/chconstructor/src/nodes_and_edges.cpp",
+  "file": "/home/tobias/netbeans-8.0.2/workspace/chconstructor/src/nodes_and_edges.cpp"
+},
+{
+  "directory": "/home/tobias/netbeans-8.0.2/workspace/chconstructor",
+  "command": "/usr/bin/clang++   -DNVERBOSE  -Wall -Wextra -Wno-unused-parameter -pedantic -std=c++11 -fopenmp -g3 -gdwarf-2   -o CMakeFiles/common.dir/src/file_formats.cpp.o -c /home/tobias/netbeans-8.0.2/workspace/chconstructor/src/file_formats.cpp",
+  "file": "/home/tobias/netbeans-8.0.2/workspace/chconstructor/src/file_formats.cpp"
+},
+{
+  "directory": "/home/tobias/netbeans-8.0.2/workspace/chconstructor",
+  "command": "/usr/bin/clang++   -DNVERBOSE  -Wall -Wextra -Wno-unused-parameter -pedantic -std=c++11 -fopenmp -g3 -gdwarf-2   -o CMakeFiles/run_tests.dir/src/run_tests.cpp.o -c /home/tobias/netbeans-8.0.2/workspace/chconstructor/src/run_tests.cpp",
+  "file": "/home/tobias/netbeans-8.0.2/workspace/chconstructor/src/run_tests.cpp"
+},
+{
+  "directory": "/home/tobias/netbeans-8.0.2/workspace/chconstructor",
+  "command": "/usr/bin/clang++   -DNVERBOSE  -Wall -Wextra -Wno-unused-parameter -pedantic -std=c++11 -fopenmp -g3 -gdwarf-2   -o CMakeFiles/run_tests.dir/src/unit_tests.cpp.o -c /home/tobias/netbeans-8.0.2/workspace/chconstructor/src/unit_tests.cpp",
+  "file": "/home/tobias/netbeans-8.0.2/workspace/chconstructor/src/unit_tests.cpp"
+}
+]
