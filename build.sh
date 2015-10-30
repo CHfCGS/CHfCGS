@@ -6,6 +6,7 @@ cmake ../
 make
 
 cd ..
+cd ..
 
 cd chconstructor
 sh create-build.sh
