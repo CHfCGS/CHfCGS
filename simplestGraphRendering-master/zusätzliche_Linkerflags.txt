@@ -1,0 +1,2 @@
+Zu ersetzen in CMakeCache.txt
+GLFW_LIBRARIES:INTERNAL=glfw3;Xxf86vm;Xcursor;pthread;Xrandr;Xi;Xinerama
