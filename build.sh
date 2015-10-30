@@ -1,5 +1,10 @@
 cd OsmGraphCreator
-sh build.sh
+
+mkdir build
+cd build
+cmake ../
+make
+
 cd ..
 
 cd chconstructor
