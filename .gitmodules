@@ -1,0 +1,3 @@
+[submodule "OsmGraphCreator"]
+	path = OsmGraphCreator
+	url = https://github.com/dbahrdt/OsmGraphCreator.git
