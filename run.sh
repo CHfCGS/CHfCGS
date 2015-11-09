@@ -1,4 +1,4 @@
-data=Intersection  #ChainPair2 # #bremen #ProDPExample #Intersection #baden-wuerttemberg #stuttgart-regbez
+data=bremen  #ChainPair2 # #bremen #ProDPExample #Intersection #baden-wuerttemberg #stuttgart-regbez
 echo "data: " "$data"
 
 in=$data"-latest.osm.pbf"
