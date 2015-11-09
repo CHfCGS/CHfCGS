@@ -1,2 +1,2 @@
 # CHfCGS
-Contraction Hierarchies for Contiuous Graph Simplification
+Contraction Hierarchies for Continuous Graph Simplification

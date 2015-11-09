@@ -568,6 +568,7 @@ struct PrioNode {
     
     //< means later processed in DP and sooner contracted
     bool operator <(const PrioNode &rhs) const {
+        
         if (this->nOfIntersections > rhs.nOfIntersections) {
             return true;
         } else if (this->nOfIntersections == rhs.nOfIntersections) {            
@@ -576,6 +577,8 @@ struct PrioNode {
         else {
             return false;
         }
+        
+        //return this->perpendicularLength < rhs.perpendicularLength; 
     }
 };
 

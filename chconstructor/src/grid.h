@@ -104,7 +104,7 @@ public:
         //wird nur für Konstruktion gebraucht
         twoDvector LastNodeGrid(size, vector<int>(size, -1));
 
-        //chains in Grid einordnen
+        //Knoten in Grid einordnen
         for (u_int32_t k = 0; k < base_graph.getNrOfNodes(); k++) {
             int x = (int) ((base_graph.getLon(k) - MINLONGITUDE) / cellsizex);
             int y = (int) ((base_graph.getLat(k) - MINLATITUDE) / cellsizey);
