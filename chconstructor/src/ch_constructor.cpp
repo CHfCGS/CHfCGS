@@ -55,7 +55,7 @@ struct BuildAndStoreCHGraph {
             chc.contract(all_nodes);
         } else {
             auto prioritizer(createPrioritizer(prioritizer_type, g, chc));
-            chc.contract(all_nodes, *prioritizer);
+            chc.contract(all_nodes, *prioritizer);            
         }
 
         tt.track("contracting graph");

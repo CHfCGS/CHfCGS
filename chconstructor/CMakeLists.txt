@@ -14,7 +14,7 @@
 cmake_minimum_required(VERSION 2.8.8 FATAL_ERROR)
 project(ch_constructor CXX)
 
-enable_testing()
+#enable_testing()
 
 include(CMakeDetermineCXXCompiler)
 
@@ -34,7 +34,7 @@ else()
 endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${EXTRA_CXX_FLAGS} -std=c++11 -fopenmp")
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${EXTRA_EXE_LINKER_FLAGS} -fopenmp")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${EXTRA_EXE_LINKER_FLAGS} -fopenmp")   
 set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} ${EXTRA_EXE_LINKER_FLAGS_RELEASE}")
 set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO} ${EXTRA_EXE_LINKER_FLAGS_RELWITHDEBINFO}")
 
@@ -56,11 +56,11 @@ add_executable(ch_constructor
 	$<TARGET_OBJECTS:common>
 )
 
-add_executable(run_tests
-	src/run_tests.cpp
-	src/unit_tests.cpp
-	$<TARGET_OBJECTS:common>
-)
+#add_executable(run_tests
+#	src/run_tests.cpp
+#	src/unit_tests.cpp
+#	$<TARGET_OBJECTS:common>
+#)
 
 add_test(NAME unit-test
 	WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/src"

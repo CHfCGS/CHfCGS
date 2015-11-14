@@ -354,12 +354,14 @@ bool Graph<NodeT, EdgeT>::isOneway(NodeID node_id) const
 template <typename NodeT, typename EdgeT>
 double Graph<NodeT, EdgeT>::getLat(NodeID node_id) const
 {
+    debug_assert(0 <= node_id && node_id < _nodes.size());
     return _nodes[node_id].lat;
 }
 
 template <typename NodeT, typename EdgeT>
 double Graph<NodeT, EdgeT>::getLon(NodeID node_id) const
 {
+    debug_assert(0 <= node_id && node_id < _nodes.size());
     return _nodes[node_id].lon;
 }
 

@@ -24,7 +24,8 @@ public:
     
     //ChainDetector();
     //ChainDetector(const ChainDetector& orig);
-    virtual ~ChainDetector(){};    
+    virtual ~ChainDetector(){        
+    };    
     
     Chains_and_Remainder detectChains(const std::vector<chc::NodeID> &nodes) {
         //reset marked
@@ -36,6 +37,7 @@ public:
 
         //collect all chains
         for (chc::NodeID node_id : nodes) {
+            debug_assert(0 <= node_id && node_id < marked.size());
             if (marked[node_id] == false) {
                 //if (base_graph.getNrOfEdges(node_id, chc::EdgeType::OUT) <= 2
                     //    && base_graph.getNrOfEdges(node_id, chc::EdgeType::IN) <= 2) {
@@ -50,6 +52,7 @@ public:
 
         //collect remainder
         for (chc::NodeID node_id : nodes) {
+            debug_assert(0 <= node_id && node_id < marked.size());
             if (marked[node_id] == false) {
                 CaR.remainder.push_back(node_id);
             }
@@ -60,7 +63,7 @@ public:
     void collectChain(const chc::NodeID node_id, Chains_and_Remainder &CaR) {
         Chain chain;
 
-        debug_assert(!marked[node_id]);
+        debug_assert(!marked.at(node_id));
         chain.emplace_back(node_id);
         marked[node_id] = true;
 
@@ -70,7 +73,7 @@ public:
         //backward direction
         chc::NodeID next = nextChainElement(node_id, type, chc::EdgeType::IN, isOneway);
         while (next != chc::c::NO_NID) {
-            debug_assert(!marked[next]);
+            debug_assert(!marked.at(next));
             chain.emplace_front(next);
             marked[next] = true;
             chc:: NodeID current = next;
@@ -80,7 +83,7 @@ public:
         //backward direction
         next = nextChainElement(node_id, type, chc::EdgeType::OUT, isOneway);
         while (next != chc::c::NO_NID) {
-            debug_assert(!marked[next]);
+            debug_assert(!marked.at(next));
             chain.emplace_back(next);
             marked[next] = true;
             chc:: NodeID current = next;
@@ -103,7 +106,7 @@ public:
                     std::list<chc::NodeID> neighboursOnStreetType = base_graph.nodeNeighbours(current, streetType, edgeDirection);
                     debug_assert(neighboursOnStreetType.size() <=2);                                              
                     for (auto it = neighboursOnStreetType.begin(); it != neighboursOnStreetType.end(); it++) {
-                        if (marked[*it] == false) {
+                        if (marked.at(*it) == false) {
                             next = *it;
                         }
                     }                

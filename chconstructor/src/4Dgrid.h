@@ -64,6 +64,7 @@ private:
     //ChainsOfType* chainsptr;
 
     fourDvector Grid;
+    std::vector<int> testvector;
     //vector<int> NextChainInSameCell;
     //vector<int> gridtest;
 
@@ -110,6 +111,7 @@ private:
     }
     
     void clearGrid() {
+        
         for (int x1 = 0; x1 < gridsidesize; x1++) {
             for (int x2 = 0; x2 < gridsidesize; x2++) {
                 for (int y1 = 0; y1 < gridsidesize; y1++) {
@@ -120,19 +122,23 @@ private:
                 }
             }
         }
+        
         /*
         Grid.resize(gridsidesize);
-        Grid.fill(Grid.begin(), Grid.end(), vector<vector<vector<ItList>>>(gridsidesize, vector<vector<ItList>>(gridsidesize, vector<ItList>(gridsidesize, ItList()))));        
-         * */
+        Grid.assign (Grid.begin(), Grid.end(), vector<vector<vector<ItList>>>(gridsidesize, vector<vector<ItList>>(gridsidesize, vector<ItList>(gridsidesize, ItList()))));        
+         * */        
     }
 
 public:
 
-    FourDGrid(const int size, const GraphT &base_graph) :
+    FourDGrid(const int size, const GraphT &base_graph) :    
         gridsidesize(size), base_graph(base_graph),
-        Grid(size, vector<vector<vector<GridCell>>>(size, vector<vector<GridCell>>(size, vector<GridCell>(size, GridCell()))))
+        Grid(size, vector<vector<vector<GridCell>>>(size, vector<vector<GridCell>>(size, vector<GridCell>(size, GridCell())))),
+                testvector(size, 0)
         //,NextChainInSameCell(base_graph.getNrOfNodes(), -1)
-    {
+    {          
+        testvector.resize(size *50);
+        testvector.clear();
         MINLONGITUDE = numeric_limits<double>::max();
         MAXLONGITUDE = 0;
         MINLATITUDE = numeric_limits<double>::max();
@@ -140,9 +146,25 @@ public:
         calculateBorders();
         gridwidth = MAXLONGITUDE - MINLONGITUDE;
         gridheight = MAXLATITUDE - MINLATITUDE;
+        assert(gridsidesize > 0);
         cellsizex = gridwidth / gridsidesize;
-        cellsizey = gridheight / gridsidesize;       
+        cellsizey = gridheight / gridsidesize;  
+        
+        /*
+        for (int x1 = 0; x1 < gridsidesize; x1++) {
+            for (int x2 = 0; x2 < gridsidesize; x2++) {
+                for (int y1 = 0; y1 < gridsidesize; y1++) {
+                    for (int y2 = 0; y2 < gridsidesize; y2++) {
+                        Print("cellsize: " << Grid.at(x1).at(x2).at(y1).at(y2).size());
+                    }
+
+                }
+            }
+        }*/
+        assert(cellsizex != 0);
+        assert(cellsizey != 0);
     }
+        
     
     void identifyPairs(Chains_and_Remainder &CaR) {        
         for (int i = 1; i < 11; ++i) { //range of streettypes where two laning can occur
@@ -244,7 +266,7 @@ public:
         Gridpoint* closestChain = nullptr;
         //double waylength = geoDistComparison(nodeIdFront, nodeIdBack);                
         //double closestDistance = numeric_limits<double>::max();
-        double closestDistance = 200; //min(waylength / 10, 1.0);
+        double closestDistance = 20000;//200; //min(waylength / 10, 1.0);
 
         for (int dx1 = -1; dx1 <= 1; dx1++) {
             if (indexInRange(x1, dx1)) {

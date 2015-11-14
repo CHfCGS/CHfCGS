@@ -152,7 +152,7 @@ namespace chc {
         ThreadData & td(_myThreadData());
         auto shortcuts(_contract(node, td));
 
-        _edge_diffs[node] = shortcuts.size() - (int) _base_graph.getNrOfEdges(node);
+        _edge_diffs[node] = (int) shortcuts.size() - (int) _base_graph.getNrOfEdges(node);
 
         std::unique_lock<std::mutex> lock(_new_shortcuts_mutex);
         _new_shortcuts.insert(_new_shortcuts.end(), shortcuts.begin(), shortcuts.end());
@@ -527,7 +527,7 @@ namespace chc {
     template <typename NodeT, typename EdgeT>
     int CHConstructor<NodeT, EdgeT>::calcEdgeDiff(NodeID node) const {
         auto shortcuts(getShortcutsOfContracting(node));
-        return shortcuts.size() - (int) _base_graph.getNrOfEdges(node);
+        return (int) shortcuts.size() - (int) _base_graph.getNrOfEdges(node);
     }
 
     template <typename NodeT, typename EdgeT>
@@ -538,7 +538,7 @@ namespace chc {
         uint size(nodes.size());
 #pragma omp parallel for num_threads(_num_threads) schedule(dynamic)
         for (uint i = 0; i < size; i++) {
-            edge_diffs[i] = shortcuts[i].size() - (int) _base_graph.getNrOfEdges(nodes[i]);
+            edge_diffs[i] = (int) shortcuts[i].size() - (int) _base_graph.getNrOfEdges(nodes[i]);
         }
 
         return edge_diffs;

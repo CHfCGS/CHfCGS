@@ -434,7 +434,7 @@ std::string to_string(PrioritizerType type)
 		return "NONE";
 	case PrioritizerType::ONE_BY_ONE:
 		return "ONE_BY_ONE";
-                case PrioritizerType::DP:
+        case PrioritizerType::DP:
 		return "DP";
 	case PrioritizerType::EDGE_DIFF:
 		return "EDGE_DIFF";

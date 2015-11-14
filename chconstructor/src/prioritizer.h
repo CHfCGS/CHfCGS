@@ -31,6 +31,9 @@ class Prioritizer
 		 * True iff there are still nodes left to prioritize/contract.
 		 */
 		virtual bool hasNodesLeft() = 0;
+                
+                //virtual destructor                
+                virtual ~Prioritizer(){Print("Prioritizer is destructed");}
 };
 
 }

@@ -89,6 +89,8 @@ public:
     //FirstNodeGrid(size, vector<int>(size, -1)),
     //NextNodeInSameCell(base_graph.getNrOfNodes(), -1) {
         //vector<int> assignVector(size, -1);
+        
+        //FirstNodeGrid.reserve(size);
         FirstNodeGrid.assign(size, vector<int>(size, -1));
         NextNodeInSameCell.assign(base_graph.getNrOfNodes(), -1);
         MINLONGITUDE = numeric_limits<double>::max();
@@ -103,7 +105,7 @@ public:
 
         //wird nur für Konstruktion gebraucht
         twoDvector LastNodeGrid(size, vector<int>(size, -1));
-
+        
         //Knoten in Grid einordnen
         for (u_int32_t k = 0; k < base_graph.getNrOfNodes(); k++) {
             int x = (int) ((base_graph.getLon(k) - MINLONGITUDE) / cellsizex);
@@ -119,8 +121,9 @@ public:
             LastNodeGrid[x][y] = k;
 
         }
+        
     }
-
+       
     std::vector<chc::NodeID> nodeGeoNeighbours(chc::NodeID node_id) {
         //std::vector<chc::NodeID> neighbours;
         //int x = (int) ((base_graph.getLon(node_id) - MINLONGITUDE) / cellsizex);
@@ -148,6 +151,7 @@ public:
     
     std::vector<chc::NodeID> nodesInNeigbourhood(double lat, double lon) const {
         std::vector<chc::NodeID> neighbours;
+        
         int x = (int) ((lon - MINLONGITUDE) / cellsizex);
         int y = (int) ((lat - MINLATITUDE) / cellsizey);
         
@@ -164,6 +168,7 @@ public:
                 }
             }
         }
+        
         return neighbours;
     }
 

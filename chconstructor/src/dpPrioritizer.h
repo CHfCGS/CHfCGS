@@ -56,7 +56,7 @@ namespace chc {
 	GraphT const& _base_graph;
         CHConstructorT const& _chc;
         std::vector<NodeID> _prio_vec;
-        
+                        
         State state;
         Grid<GraphT> grid;
         FourDGrid<GraphT> fourDGrid;
@@ -81,15 +81,18 @@ namespace chc {
         void _remove(std::vector<NodeID> const& nodes) {
             std::vector<bool> to_remove(_base_graph.getNrOfNodes(), false);
             for (auto node : nodes) {
+                debug_assert(0 <= node && node < to_remove.size());
                 to_remove[node] = true;
             }
 
             size_t remaining_nodes(_prio_vec.size());
             size_t i(0);
             while (i < remaining_nodes) {
+                debug_assert(0 <= i && i < _prio_vec.size());
                 NodeID node(_prio_vec[i]);
                 if (to_remove[node]) {
                     remaining_nodes--;
+                    debug_assert(0 <= remaining_nodes && remaining_nodes < _prio_vec.size());
                     _prio_vec[i] = _prio_vec[remaining_nodes];
                     _prio_vec[remaining_nodes] = node;
                 } else {
@@ -102,16 +105,19 @@ namespace chc {
         
         void _removeFromRemainder(std::vector<NodeID> const& nodes) {
             std::vector<bool> to_remove(this->_base_graph.getNrOfNodes(), false);
-            for (auto node : nodes) {
-                to_remove[node] = true;
+            for (auto node : nodes) {     
+                debug_assert(0 <= node && node < to_remove.size());
+                to_remove[node] = true;                
             }
 
             size_t remaining_nodes(CaR.remainder.size());
             size_t i(0);
-            while (i < remaining_nodes) {
-                NodeID node(CaR.remainder[i]);
+            while (i < remaining_nodes) {                
+                debug_assert(0 <= i && i < CaR.remainder.size());
+                NodeID node(CaR.remainder[i]);                
                 if (to_remove[node]) {
                     remaining_nodes--;
+                    debug_assert(0 <= remaining_nodes && remaining_nodes < CaR.remainder.size());
                     CaR.remainder[i] = CaR.remainder[remaining_nodes];
                     CaR.remainder[remaining_nodes] = node;
                 } else {
@@ -125,27 +131,35 @@ namespace chc {
         //TODO slowdown
         std::vector<NodeID> _chooseIndependentSetFromRemainder() {
             //CompInOutProduct ciop(this->_base_graph);            
-            std::sort(CaR.remainder.begin(), CaR.remainder.end(), CompInOutProduct(_base_graph));
-            //auto independent_set(EdgeDiffPrioritizer<GraphT, CHConstructorT>::_chc.calcIndependentSet(CaR.remainder));
-            //auto edge_diffs(EdgeDiffPrioritizer<GraphT, CHConstructorT>::_chc.calcEdgeDiffs(independent_set));
-            auto independent_set(_chc.calcIndependentSet(CaR.remainder));
-            Print("Calc EdgeDiffs");
-            auto edge_diffs(_chc.calcEdgeDiffs(independent_set));
-            double edge_diff_mean(0);
-            for (size_t i(0); i < edge_diffs.size(); i++) {
-                edge_diff_mean += edge_diffs[i];
-            }
-            edge_diff_mean /= independent_set.size();
-            
-            std::vector<NodeID> low_edge_diff_nodes;
-            for (size_t i(0); i < independent_set.size(); i++) {
-                if (edge_diffs[i] <= edge_diff_mean) {
-                    NodeID node(independent_set[i]);
-                    low_edge_diff_nodes.push_back(node);
-                }
-            }
+            if (CaR.remainder.empty()) {
+                std::vector<NodeID> empytList;
+                return empytList;
+            } else {
+                std::sort(CaR.remainder.begin(), CaR.remainder.end(), CompInOutProduct(_base_graph));
+                //auto independent_set(EdgeDiffPrioritizer<GraphT, CHConstructorT>::_chc.calcIndependentSet(CaR.remainder));
+                //auto edge_diffs(EdgeDiffPrioritizer<GraphT, CHConstructorT>::_chc.calcEdgeDiffs(independent_set));
 
-            return low_edge_diff_nodes;
+                auto independent_set(_chc.calcIndependentSet(CaR.remainder));
+                Print("Calc EdgeDiffs");
+                auto edge_diffs(_chc.calcEdgeDiffs(independent_set));
+                double edge_diff_mean(0);
+                for (size_t i(0); i < edge_diffs.size(); i++) {                    
+                    edge_diff_mean += edge_diffs[i];
+                }
+               debug_assert(independent_set.size() != 0);
+                edge_diff_mean /= independent_set.size();
+
+                std::vector<NodeID> low_edge_diff_nodes;
+                for (size_t i(0); i < independent_set.size(); i++) {
+                    debug_assert(0 <= i && i < edge_diffs.size());
+                    if (edge_diffs[i] <= edge_diff_mean) {
+                        NodeID node(independent_set[i]);
+                        low_edge_diff_nodes.push_back(node);
+                    }
+                }
+
+                return low_edge_diff_nodes;
+            }
         }        
         
         void FillChainsInPriolists(std::vector<ChainsOfType> &chainsaccordingToType) {
@@ -175,11 +189,8 @@ namespace chc {
                         
             for (ChainPair &chainPair: CaR.chainPairs) {    
                     if (chainPair.chainTo.size() + chainPair.chainFrom.size() >= 7
-                            && chainPair.chainTo.size() >=3 && chainPair.chainFrom.size() >= 3) {                                      
-                        //DP::DouglasPeucker<GraphT> dp(chain, this->_base_graph);
-                        //priolists.push_back(dp.process());
-                        priolists.push_back(cpdp.process(chainPair));
-                        //priolists.push_back(dp.process(*it));
+                            && chainPair.chainTo.size() >=3 && chainPair.chainFrom.size() >= 3) {                                                              
+                        priolists.push_back(cpdp.process(chainPair));                        
                         //Print("Length of Priolist: " << pl.size());                                        
                     //small chains are assigned to the remainder
                     } else {
@@ -203,11 +214,13 @@ namespace chc {
         
         DPPrioritizer(GraphT const& base_graph, CHConstructorT const& chc)
         : _base_graph(base_graph), _chc(chc), state(State::start),
-        grid(1000, base_graph), fourDGrid(20, base_graph), chaindetector(base_graph), dp(this->_base_graph, grid),
-        cpdp(this->_base_graph, grid), CaR(), priolists(), epsilon(10000), roundcounter(1) {
-        }
+        grid(1000, base_graph), fourDGrid(1, base_graph), chaindetector(base_graph), dp(this->_base_graph, grid),
+        cpdp(this->_base_graph, grid), CaR(), priolists(), epsilon(10000), roundcounter(1) {            
+        }        
         //epsilon(0.0001)
-        
+        ~DPPrioritizer() {
+            Print("DPPrioritizer is destructed");
+        }
         
         
         std::vector<NodeID> extractNextNodes() {
@@ -247,6 +260,7 @@ namespace chc {
             
             FillPriolists();      
         }
+        
              
                       
         
@@ -260,6 +274,9 @@ namespace chc {
         Print("Getting Independent set from Chains");
         //calc independent set of nodes from priolists
         std::vector<bool> marked(this->_base_graph.getNrOfNodes(), false);
+        
+        //if (marked.at(marked.size()+1)) {Print("Getting Independent set from Chains");}
+         
         //extraction from chains
         for (std::list<DP::simplePrioNode> &priolist: priolists) {          
             for (auto it = priolist.begin(); it != priolist.end();) {                                  
@@ -289,6 +306,11 @@ namespace chc {
 	//EdgeDiffPrioritizer<GraphT, CHConstructorT>::_remove(next_nodes); //remove from priovector
         _remove(next_nodes); //remove from priovector               
         roundcounter++;  
+        for (NodeID node_id: next_nodes) {
+            Print(node_id);
+        }
+
+        
 	return next_nodes;
         }
         
