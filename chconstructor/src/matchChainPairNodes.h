@@ -201,8 +201,11 @@ class matchChainPairNodes {
             auto minIt = zs.zipNodes.begin();
             
             for (auto it = zs.zipNodes.begin(); it != zs.zipNodes.end(); it++) {
+                #ifdef matchChainPairNodesNDEBUG
                 NodeID node_id1 = (*it->nodeIt)->node_id;                
                 NodeID node_id2 = (*zs.prevOnOtherSide.nodeIt)->node_id;
+                #endif
+                
                 double distPrevious = geoDist((*it->nodeIt)->node_id, (*zs.prevOnOtherSide.nodeIt)->node_id);
                 if (distPrevious < minDist) {
                     minDist = distPrevious;
@@ -225,7 +228,10 @@ class matchChainPairNodes {
                 processSegment(zs);
                 
             } else {  //cut away back part
+                #ifdef matchChainPairNodesNDEBUG
                 NodeID node_id_next = (*zs.nextOnOtherSide.nodeIt)->node_id;
+                #endif
+                
                 followerDeterminedZipNodes.splice (followerDeterminedZipNodes.begin(),
                     zs.zipNodes, minIt, zs.zipNodes.end());
                 setFollowers(followerDeterminedZipNodes, zs.nextOnOtherSide.nodeIt);                
@@ -237,8 +243,8 @@ class matchChainPairNodes {
     
     void setFollowers (vector<ZipNode> &zipOrder, bool careOrdering) {
         
-        if (careOrdering) {
-            assert(zipOrder.size() >= 4);
+        if (careOrdering && toList.size()>=1 && fromList.size()>=1) {
+            
                         
             ZipNode last_zn = ZipNode();
             bool active_Direction;
@@ -276,12 +282,13 @@ class matchChainPairNodes {
             last_zn = zipOrder.at(k);
             middleSegment.prevOnOtherSide = last_zn;
             k++;            
-            middleSegment.zipNodes.push_back(zipOrder.at(k));
+            //middleSegment.zipNodes.push_back(zipOrder.at(k));
             active_Direction = zipOrder.at(k).listDirection;
-            k++;
+            //k++;
             while ( k <= firstOfLast) {  
                 ZipNode active_zn = zipOrder.at(k);
                 if(active_zn.listDirection == active_Direction) {
+                    //push back another node to current segment
                     middleSegment.zipNodes.push_back(active_zn);
                     last_zn = active_zn;
                 } else {

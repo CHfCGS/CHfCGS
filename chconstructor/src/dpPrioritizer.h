@@ -250,7 +250,7 @@ namespace chc {
             Print("Detecting chains");
             
             //CaR = chaindetector.detectChains(EdgeDiffPrioritizer<GraphT, CHConstructorT>::_prio_vec);            
-            CaR = chaindetector.detectChains(_prio_vec);
+            CaR = chaindetector.detectChains(g);
             Print("Number of chains: " << CaR.getNrOfChains());                                      
             debug_assert(CaR.getNrOfNodesInChains() + CaR.remainder.size() == this->_prio_vec.size());            
                  
@@ -306,9 +306,11 @@ namespace chc {
 	//EdgeDiffPrioritizer<GraphT, CHConstructorT>::_remove(next_nodes); //remove from priovector
         _remove(next_nodes); //remove from priovector               
         roundcounter++;  
+        /*
         for (NodeID node_id: next_nodes) {
             Print(node_id);
         }
+         * */
 
         
 	return next_nodes;

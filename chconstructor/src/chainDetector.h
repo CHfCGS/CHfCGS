@@ -80,7 +80,7 @@ public:
             next = nextChainElement(current, type, chc::EdgeType::IN, isOneway);
         }
         
-        //backward direction
+        //forward direction
         next = nextChainElement(node_id, type, chc::EdgeType::OUT, isOneway);
         while (next != chc::c::NO_NID) {
             debug_assert(!marked.at(next));
