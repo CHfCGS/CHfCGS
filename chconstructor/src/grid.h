@@ -108,8 +108,8 @@ public:
         
         //Knoten in Grid einordnen
         for (u_int32_t k = 0; k < base_graph.getNrOfNodes(); k++) {
-            int x = (int) ((base_graph.getLon(k) - MINLONGITUDE) / cellsizex);
-            int y = (int) ((base_graph.getLat(k) - MINLATITUDE) / cellsizey);
+            int x = (int) ((base_graph.getLon(k) - MINLONGITUDE - epsilon) / cellsizex);
+            int y = (int) ((base_graph.getLat(k) - MINLATITUDE - epsilon) / cellsizey);
 
             //Zelle bisher leer? Aufbau einer Liste
             if (FirstNodeGrid[x][y] == -1) {
@@ -152,8 +152,8 @@ public:
     std::vector<chc::NodeID> nodesInNeigbourhood(double lat, double lon) const {
         std::vector<chc::NodeID> neighbours;
         
-        int x = (int) ((lon - MINLONGITUDE) / cellsizex);
-        int y = (int) ((lat - MINLATITUDE) / cellsizey);
+        int x = (int) ((lon - MINLONGITUDE - epsilon) / cellsizex);
+        int y = (int) ((lat - MINLATITUDE - epsilon) / cellsizey);
         
         for (int dx = -1; dx <= 1; dx++) {
             if (indexInRange(x, dx)) {

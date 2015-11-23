@@ -62,7 +62,7 @@ add_executable(ch_constructor
 #	$<TARGET_OBJECTS:common>
 #)
 
-add_test(NAME unit-test
-	WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/src"
-	COMMAND $<TARGET_FILE:run_tests>
-)
+#add_test(NAME unit-test
+#	WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/src"
+#	COMMAND $<TARGET_FILE:run_tests>
+#)

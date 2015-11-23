@@ -16,6 +16,7 @@ struct Chain {
 typedef std::list<NodeID> Chain;
 
 typedef std::list<Chain> ChainsOfType;
+
 /*
 struct PairChainNode;
 
@@ -29,6 +30,24 @@ struct PairChainNode {
     
 };
  * */
+
+
+bool chainsAreEqual(const Chain &chain1, const Chain &chain2) {
+    if (chain1.size() == chain2.size()) {
+        auto it2 = chain2.begin();
+        for (auto it1 = chain1.begin(); it1 != chain1.end(); it1++) {
+            if (*it1 == *it2) {
+                it2++;
+            } else {
+                return false;
+            }
+        }
+        return true;
+    } else {
+        return false;
+    }
+}
+
 
 struct ChainPair {
     Chain chainTo;
@@ -64,8 +83,8 @@ struct ChainsAccordingToType {
  */
 
 struct EdgeChain {
-    EdgeChain(Chain &chain): chain(chain) {}
-    Chain &chain;
+    //EdgeChain(Chain &chain): chain(chain) {}
+    Chain chain;
     //edges between the nodes of chain
     std::list<EdgeID> edges;
 };

@@ -15,6 +15,7 @@
 #include "DouglasPeucker.h"
 #include "indexed_container.h"
 #include "dpPrioritizer.h"
+#include "dead_end_detector.h"
 
 #include "4Dgrid.h"
 #include "chainPairDP.h"
@@ -31,7 +32,7 @@ namespace chc {
     class DPPrioritizer : public Prioritizer  {// : public EdgeDiffPrioritizer<GraphT, CHConstructorT> {
 
         enum class State {
-            start, removingDeadEnds, removingChains, removingRemaining, done
+            start, removingDeadEnds, removingChains//, removingRemaining, done
         };
 
     private:
@@ -60,6 +61,8 @@ namespace chc {
         State state;
         Grid<GraphT> grid;
         FourDGrid<GraphT> fourDGrid;
+        
+        DeadEndDetector<GraphT> deadEndDetector;
         ChainDetector<GraphT> chaindetector;
         DP::DouglasPeucker<GraphT> dp;
         DP::chainPairDP<GraphT> cpdp;
@@ -67,7 +70,8 @@ namespace chc {
         //std::vector<NodeID> _chooseIndependentSet();		
         //std::vector<chc::Chain> chains;
 
-        //_prio_vec = chains + remainder
+        std::list<Chain> deadEnds;
+        //_prio_vec = chains + remainder        
         Chains_and_Remainder CaR;
         std::vector<std::list<DP::simplePrioNode>> priolists;
 
@@ -146,7 +150,7 @@ namespace chc {
                 for (size_t i(0); i < edge_diffs.size(); i++) {                    
                     edge_diff_mean += edge_diffs[i];
                 }
-               debug_assert(independent_set.size() != 0);
+                debug_assert(independent_set.size() != 0);
                 edge_diff_mean /= independent_set.size();
 
                 std::vector<NodeID> low_edge_diff_nodes;
@@ -204,6 +208,35 @@ namespace chc {
             }
         }
         
+        std::vector<NodeID> removeDeadEnds(std::list<Chain> &deadEnds) {
+            std::vector<NodeID> next_nodes;
+            for (auto it = deadEnds.begin(); it != deadEnds.end();) {
+                if (it->empty()) {
+                    it = deadEnds.erase(it);
+                }else {                    
+                    next_nodes.push_back(it->front());
+                    it->pop_front();
+                    it++;
+                }
+            }
+            return next_nodes;
+        }
+        
+        /*
+        std::vector<NodeID> removeRemainder() {
+            std::vector<NodeID> next_nodes;
+            Print("Getting Independent set from Remainder");
+            //independent set from remainder
+            
+           
+            next_nodes = _chooseIndependentSetFromRemainder();            
+            //remove from remainder
+            _removeFromRemainder(next_nodes);
+            return next_nodes;
+        }
+         * */
+        
+        
     public:
         /*
         DPPrioritizer(GraphT const& base_graph, CHConstructorT const& chc)
@@ -214,107 +247,120 @@ namespace chc {
         
         DPPrioritizer(GraphT const& base_graph, CHConstructorT const& chc)
         : _base_graph(base_graph), _chc(chc), state(State::start),
-        grid(1000, base_graph), fourDGrid(1, base_graph), chaindetector(base_graph), dp(this->_base_graph, grid),
+        grid(1000, base_graph), fourDGrid(1, base_graph), deadEndDetector(base_graph), chaindetector(base_graph), dp(this->_base_graph, grid),
         cpdp(this->_base_graph, grid), CaR(), priolists(), epsilon(10000), roundcounter(1) {            
         }        
         //epsilon(0.0001)
         ~DPPrioritizer() {
             Print("DPPrioritizer is destructed");
         }
-        
-        
-        std::vector<NodeID> extractNextNodes() {
-            //bool empty = EdgeDiffPrioritizer<GraphT, CHConstructorT>::_prio_vec.empty();
-        bool empty = _prio_vec.empty();
-	debug_assert(!empty);
- 
-        /*
-        switch (state) {
-            case State::start
-                capa++;
-                break;
-            case 'a':
-                lettera++;
-                break;
-            default:
-                nota++;
-        }
-         * */
 
-        
-        if ((roundcounter-1) % 5 == 0) {
-            if (epsilon < 100000) { //prevents epsilon overflow
-                epsilon *= 2.0;
-            }
-                        
-            Print("Detecting chains");
-            
-            //CaR = chaindetector.detectChains(EdgeDiffPrioritizer<GraphT, CHConstructorT>::_prio_vec);            
-            CaR = chaindetector.detectChains(g);
-            Print("Number of chains: " << CaR.getNrOfChains());                                      
-            debug_assert(CaR.getNrOfNodesInChains() + CaR.remainder.size() == this->_prio_vec.size());            
-                 
-            Print("IdentifyingChainPairs ");                                      
-            fourDGrid.identifyPairs(CaR);
-            Print("Number of chain pairs: " << CaR.chainPairs.size());
-            
-            FillPriolists();      
-        }
-        
-             
-                      
-        
-        Print("Getting Independent set from Remainder");
-        //independent set from remainder
-        std::vector<NodeID> next_nodes(_chooseIndependentSetFromRemainder());        
-        //remove from remainder
-        _removeFromRemainder(next_nodes);
-        //std::vector<NodeID> next_nodes;
-        
-        Print("Getting Independent set from Chains");
-        //calc independent set of nodes from priolists
-        std::vector<bool> marked(this->_base_graph.getNrOfNodes(), false);
-        
-        //if (marked.at(marked.size()+1)) {Print("Getting Independent set from Chains");}
-         
-        //extraction from chains
-        for (std::list<DP::simplePrioNode> &priolist: priolists) {          
-            for (auto it = priolist.begin(); it != priolist.end();) {                                  
-                if (epsilon > it->perpendicularLength) {
-                    NodeID node_id = it->node_id;
-                    if (!marked[node_id]) {                    
-                      
-                        //EdgeDiffPrioritizer<GraphT, CHConstructorT>::_chc._markNeighbours(node_id, marked); 
-                        _chc._markNeighbours(node_id, marked);
-                        next_nodes.push_back(node_id);              
-                        it = priolist.erase(it);                    
-                    }
-                    else {                        
-                        break;
-                    }       
-                } else {
+        std::vector<NodeID> extractNextNodes() {
+            bool empty = _prio_vec.empty();
+            debug_assert(!empty);
+            std::vector<NodeID> next_nodes;
+
+
+            switch (state) {
+                case State::start: {
+                    deadEnds = deadEndDetector.detectDeadEnds(_prio_vec);
+                    state = State::removingDeadEnds;
                     break;
                 }
+                case State::removingDeadEnds: {
+                    next_nodes = removeDeadEnds(deadEnds);
+                    if (!next_nodes.empty()) {
+                        break;
+                    } else {
+                        state = State::removingChains;
+                        break;
+                    }
+                }
+                case State::removingChains: {
+                    if ((roundcounter - 1) % 5 == 0) {
+                        if (epsilon < 100000) { //prevents epsilon overflow
+                            epsilon *= 2.0;
+                        }
 
-                         
+                        Print("Detecting chains");
+
+                        //CaR = chaindetector.detectChains(EdgeDiffPrioritizer<GraphT, CHConstructorT>::_prio_vec);            
+                        CaR = chaindetector.detectChains(_prio_vec);
+                        Print("Number of chains: " << CaR.getNrOfChains());
+                        debug_assert(CaR.getNrOfNodesInChains() + CaR.remainder.size() == this->_prio_vec.size());
+
+                        Print("IdentifyingChainPairs ");
+                        fourDGrid.identifyPairs(CaR);
+                        Print("Number of chain pairs: " << CaR.chainPairs.size());
+
+                        FillPriolists();
+                    }
+
+                    Print("Getting Independent set from Remainder");
+                    //independent set from remainder
+
+                    if (roundcounter > 20) {
+                        next_nodes = _chooseIndependentSetFromRemainder();
+                    }
+                    //remove from remainder
+                    _removeFromRemainder(next_nodes);
+                    //std::vector<NodeID> next_nodes;
+
+                    Print("Getting Independent set from Chains");
+                    //calc independent set of nodes from priolists
+                    std::vector<bool> marked(this->_base_graph.getNrOfNodes(), false);
+
+                    //if (marked.at(marked.size()+1)) {Print("Getting Independent set from Chains");}
+
+                    //extraction from chains
+                    for (std::list<DP::simplePrioNode> &priolist : priolists) {
+                        for (auto it = priolist.begin(); it != priolist.end();) {
+                            if (epsilon > it->perpendicularLength) {
+                                NodeID node_id = it->node_id;
+                                if (!marked[node_id]) {
+
+                                    //EdgeDiffPrioritizer<GraphT, CHConstructorT>::_chc._markNeighbours(node_id, marked); 
+                                    _chc._markNeighbours(node_id, marked);
+                                    next_nodes.push_back(node_id);
+                                    it = priolist.erase(it);
+                                } else {
+                                    break;
+                                }
+                            } else {
+                                break;
+                            }
+
+
+                        }
+                    }
+                    roundcounter++;
+                    break;
+                }
+                default: {
+                    Print("DefaultCase");
+                    break;
+                }
             }
-        }
+
         
 
-	//auto next_nodes(EdgeDiffPrioritizer<GraphT, CHConstructorT>::_chooseIndependentSet());
-        
-	//EdgeDiffPrioritizer<GraphT, CHConstructorT>::_remove(next_nodes); //remove from priovector
+
+
+
+        //auto next_nodes(EdgeDiffPrioritizer<GraphT, CHConstructorT>::_chooseIndependentSet());
+
+        //EdgeDiffPrioritizer<GraphT, CHConstructorT>::_remove(next_nodes); //remove from priovector
         _remove(next_nodes); //remove from priovector               
-        roundcounter++;  
+
         /*
         for (NodeID node_id: next_nodes) {
             Print(node_id);
         }
          * */
 
-        
-	return next_nodes;
-        }
+
+        return next_nodes;
+    }
         
         bool hasNodesLeft() {
             return !_prio_vec.empty();

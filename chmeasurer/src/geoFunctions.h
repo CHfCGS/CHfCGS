@@ -61,12 +61,12 @@ namespace geo {
 
     bool testIntersection(CHLine line1, CHLine line2) {
         //4 Orientation tests
-        double line2StartArea = calcArea(line1.start, line1.end, line2.start);
-        double line2EndArea = calcArea(line1.start, line1.end, line2.end);
+        double line2StartArea = calcArea(line1.src, line1.tgt, line2.src);
+        double line2EndArea = calcArea(line1.src, line1.tgt, line2.tgt);
         bool line1BetweenLine2 = differentSign(line2StartArea, line2EndArea);
 
-        double line1StartArea = calcArea(line2.start, line2.end, line1.start);
-        double line1EndArea = calcArea(line2.start, line2.end, line1.end);
+        double line1StartArea = calcArea(line2.src, line2.tgt, line1.src);
+        double line1EndArea = calcArea(line2.src, line2.tgt, line1.tgt);
         bool line2BetweenLine1 = differentSign(line1StartArea, line1EndArea);
 
         return line1BetweenLine2 && line2BetweenLine1;

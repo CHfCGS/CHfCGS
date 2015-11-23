@@ -41,10 +41,14 @@ class CHGraph
 
 		void update();
                 
+                void setCenterNodesLists();
+                
                 //zoom helper functions
                 bool isRemaining(EdgeID edge_id) const;
                 void invalidateShortcut(const EdgeID edge_id);
-                void expandEdge(const EdgeID edgeID, double expandSize);
+                void expandEdge(const EdgeID edgeID, double expandSize);  
+                void markValidNodes(double percent_of_valid_nodes);
+                ValidLevelInfo calcValidLevel(size_t numberOfValidNodes);
                 //void removeShortcut(const EdgeID edgeID);
                 //void expandEdge(const EdgeID edgeID, double expandSize);
                 
@@ -60,12 +64,14 @@ class CHGraph
 		 * the edges according to OutEdgeSort and InEdgeSort. */
 		void init(GraphInData<NodeT,EdgeT>&& data);
                 
-                void zoom(Level zoomlvl, bool expand, double expandsize);
+                void zoom(double percent_of_valid_nodes, bool expand, double expandsize);
 
 		void printInfo() const;
 		template<typename Range>
 		void printInfo(Range&& nodes) const;
-                                                                
+                              
+                bool isUp(EdgeT const& edge, EdgeType direction) const;
+                
 		uint getNrOfNodes() const { return _nodes.size(); }
 		uint getNrOfEdges() const { return _out_edges.size(); }
 		//EdgeT const& getEdge(EdgeID edge_id) const { return _out_edges[_id_to_index[edge_id]]; }
@@ -113,6 +119,7 @@ void CHGraph<NodeT, EdgeT>::init(GraphInData<NodeT, EdgeT>&& data)
 	edge_count = _out_edges.size();
 
 	update();
+        setCenterNodesLists();
         zoom(0, false, 0);
 	Print("Graph info:");
 	Print("===========");
@@ -219,7 +226,7 @@ void CHGraph<NodeT, EdgeT>::initOffsets()
 
 	uint out_sum(0);
 	uint in_sum(0);
-	for (NodeID i(0); i<nr_of_nodes; i++) {
+	for (NodeID i(0); i<(int) nr_of_nodes; i++) {
 		auto old_out_sum = out_sum, old_in_sum = in_sum;
 		out_sum += _out_offsets[i];
 		in_sum += _in_offsets[i];
@@ -254,38 +261,110 @@ void CHGraph<NodeT, EdgeT>::update()
 	//initIdToIndex();        
 }
 
+template <typename NodeT, typename EdgeT>
+void CHGraph<NodeT, EdgeT>::setCenterNodesLists() {
+    for (EdgeID edge_id = 0; edge_id < edge_count; edge_id++) {
+        if(isShortcut(edge_id)) {
+            EdgeT child_edge1 = getEdge(getEdge(edge_id).child_edge1);
+            EdgeT child_edge2 = getEdge(getEdge(edge_id).child_edge2);
+            assert(child_edge1.tgt == child_edge2.src);
+            _nodes[child_edge1.tgt].shortcuts.push_back(edge_id);
+        }      
+    }
+}
+
 
 template <typename NodeT, typename EdgeT>
-void CHGraph<NodeT, EdgeT>::zoom(Level zoomlvl, bool expand, double expandSize)
-{
-    //mark valid nodes
+ValidLevelInfo CHGraph<NodeT, EdgeT>::calcValidLevel(size_t numberOfValidNodes) {
+        ValidLevelInfo vli;
+        Level maxLevel = 0;
+        for (NodeT node : _nodes) {
+            if (node.lvl > maxLevel) {
+                maxLevel = node.lvl;
+            }
+        }
+
+        std::vector<uint> nofNodesPerLevel(maxLevel + 1, 0); //one field for level 0 is also needed
+        for (NodeT node : _nodes) {
+            nofNodesPerLevel[node.lvl]++;
+        }
+
+        assert(numberOfValidNodes >= 0 && numberOfValidNodes <= _nodes.size());        
+        uint nofCollectedNodes = 0;
+        uint oldNofCollectedNodes = 0;
+        Level l = maxLevel;
+        while (nofCollectedNodes < numberOfValidNodes) {
+            oldNofCollectedNodes = nofCollectedNodes;
+            nofCollectedNodes += nofNodesPerLevel[l];
+            l--;
+        }
+        vli.allValidUntilLevel = l + 1;
+        vli.validNofNodesOnThatLevel = numberOfValidNodes - oldNofCollectedNodes;
+        return vli;
+}
+
+template <typename NodeT, typename EdgeT>
+void CHGraph<NodeT, EdgeT>::markValidNodes(double percent_of_valid_nodes) { 
+    assert(percent_of_valid_nodes >= 0 && percent_of_valid_nodes <= 100);
+    size_t numberOfValidNodes = (uint) trunc((percent_of_valid_nodes/100.0) * _nodes.size());
+    ValidLevelInfo vli = calcValidLevel(numberOfValidNodes);
     _validNodes.resize(_nodes.size());
-    for (uint nodeID = 0; nodeID < _validNodes.size(); nodeID++) {
-        _validNodes[nodeID] = (_nodes[nodeID].lvl >= zoomlvl);
+    size_t nofValidatedNodesOnCriticalLevel = 0;
+    for (NodeID nodeID = 0; nodeID < (int) _validNodes.size(); nodeID++) {
+        NodeT &node = _nodes[nodeID];
+        if (node.lvl > vli.allValidUntilLevel) {
+            _validNodes[nodeID] = true;
+        }else if(node.lvl == vli.allValidUntilLevel) {
+            if(nofValidatedNodesOnCriticalLevel < vli.validNofNodesOnThatLevel) {
+                nofValidatedNodesOnCriticalLevel++;
+                _validNodes[nodeID] = true;
+            }else {
+                _validNodes[nodeID] = false;
+            }        
+        }else {
+            _validNodes[nodeID] = false;
+        }
     }
+    assert(nofValidatedNodesOnCriticalLevel == vli.validNofNodesOnThatLevel);    
+}
+
+template <typename NodeT, typename EdgeT>
+void CHGraph<NodeT, EdgeT>::zoom(double percent_of_valid_nodes, bool expand, double expandSize)
+{
+    markValidNodes(percent_of_valid_nodes);
 
     //mark valid edges
     _validEdges.resize(edge_count);
-    for (uint edgeID = 0; edgeID < _validEdges.size(); edgeID++) {
+    for (EdgeID edgeID = 0; edgeID < (int) _validEdges.size(); edgeID++) {
         _validEdges[edgeID] = isHigh(edgeID);
     }
     
     //remove too high-level shortcuts    
-    for (uint edgeID = 0; edgeID < edge_count; edgeID++) {
+    for (EdgeID edgeID = 0; edgeID < (int) edge_count; edgeID++) {
         invalidateShortcut(edgeID);
     }
     
     
     if (expand) {
-        //DEBUG("Processing expandSize");
+        Debug("Processing expandSize");
         //process expandSize
         for (uint edgeID = 0; edgeID < _validEdges.size(); edgeID++) {
             if (_validEdges[edgeID]) {
                 expandEdge(edgeID, expandSize);
             }
         }
-    }   
-    
+    }
+
+    #ifndef NDEBUG
+    if (percent_of_valid_nodes==100) {
+        for (int i = 0; i < _validNodes.size(); i++) {
+            assert(_validNodes[i] == true);
+        }
+        for (int i = 0; i < edge_count; i++) {            
+            assert(isValidEdge(i) != isShortcut(i));            
+        }
+    }        
+    #endif
 }
 
     template <typename NodeT, typename EdgeT>
@@ -456,15 +535,33 @@ bool CHGraph<NodeT, EdgeT>::isOneway(NodeID node_id) const
 template <typename NodeT, typename EdgeT>
 bool CHGraph<NodeT, EdgeT>::isValidNode(NodeID node_id) const
 {
-    debug_assert(0 <= node_id && node_id < _validNodes.size());
+    debug_assert(0 <= node_id && node_id < (int) _validNodes.size());
     return _validNodes[node_id];
 }
 
 template <typename NodeT, typename EdgeT>
 bool CHGraph<NodeT, EdgeT>::isValidEdge(EdgeID edge_id) const
 {
-    debug_assert(0 <= edge_id && edge_id < _validEdges.size());
+    debug_assert(0 <= edge_id && edge_id < (int) _validEdges.size());
     return _validEdges[edge_id];
+}
+
+template <typename NodeT, typename EdgeT>
+bool CHGraph<NodeT, EdgeT>::isUp(EdgeT const& edge, EdgeType direction) const
+{
+	uint src_lvl = _nodes[edge.src].lvl;
+	uint tgt_lvl = _nodes[edge.tgt].lvl;
+
+	if (src_lvl > tgt_lvl) {
+		return direction == EdgeType::IN ? true : false;
+	}
+	else if (src_lvl < tgt_lvl) {
+		return direction == EdgeType::OUT ? true : false;
+	}
+
+	/* should never reach this: */
+	assert(src_lvl != tgt_lvl);
+	return false;
 }
 
 template <typename NodeT, typename EdgeT>
@@ -488,14 +585,14 @@ bool CHGraph<NodeT, EdgeT>::isRemaining(EdgeID edge_id) const
 template <typename NodeT, typename EdgeT>
 double CHGraph<NodeT, EdgeT>::getLat(NodeID node_id) const
 {
-    debug_assert(0 <= node_id && node_id < _nodes.size());
+    debug_assert(0 <= node_id && node_id < (int) _nodes.size());
     return _nodes[node_id].lat;
 }
 
 template <typename NodeT, typename EdgeT>
 double CHGraph<NodeT, EdgeT>::getLon(NodeID node_id) const
 {
-    debug_assert(0 <= node_id && node_id < _nodes.size());
+    debug_assert(0 <= node_id && node_id < (int) _nodes.size());
     return _nodes[node_id].lon;
 }
 

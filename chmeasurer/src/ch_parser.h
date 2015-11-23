@@ -39,7 +39,7 @@ class CH_Parser {
         r_edge.tgt = atoi(buffer.c_str());
 
         ss >> buffer;
-        //r_edge.dist = atoi(buffer.c_str());
+        r_edge.dist = atoi(buffer.c_str());
 
         ss >> buffer;
         r_edge.type = atoi(buffer.c_str());
@@ -92,10 +92,20 @@ public:
         if (file.is_open()) {
             file.seekg(0, std::ios::beg);
 
-            //junk
+            
+            //read junk
+            getline(file, buffer, '\n');            
+            while (buffer != "") {
+                getline(file, buffer, '\n');
+            }
+                    
+                    
+            /*
             for (int i = 0; i < 10; i++) {
                 getline(file, buffer, '\n');
             }
+             * */
+            
 
             getline(file, buffer, '\n');
             uint node_count = (uint) atoi(buffer.c_str());

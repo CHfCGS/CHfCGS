@@ -9,4 +9,4 @@ mkdir -p build
 cd build
 cmake ..
 make -j
-#ctest -V
+ctest -V

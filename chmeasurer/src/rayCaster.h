@@ -6,12 +6,17 @@
 #include "chgraph.h"
 
 namespace chm {
+    
+    namespace unit_tests {
+        void testIsBetween();
+    }
+    
 
 class RayCaster {
     
     CHGraph<CHNode, CHEdge> &graph;
     Grid<CHGraph<CHNode, CHEdge> > &grid;
-    const CHNode outerRayPoint = {1000.0, 1000.0, 0, false};   
+    const CHNode outerRayPoint = {1000.0, 1000.0, 0, false, std::list<EdgeID>() };   
     /*
     double calcArea(CHNode aSource, CHNode bTarget, CHNode cOutlier) {
         double ax = aSource.lon;
@@ -46,6 +51,30 @@ class RayCaster {
         return line1BetweenLine2 && line2BetweenLine1;
     }
     */
+    
+    struct twoDvec {
+        double x;
+        double y;
+        twoDvec getOrthogonal() {
+            twoDvec orthogonal;
+            orthogonal.x = -y;
+            orthogonal.y = x;
+            return orthogonal;
+        }
+    };
+    
+    twoDvec calculateDirectionVec(CHLine line) {
+        twoDvec tdv;
+        tdv.x = line.tgt.lon - line.src.lon;
+        tdv.y = line.tgt.lat - line.src.lat;
+        return tdv;
+    }    
+    
+        
+      
+    
+    
+    
     void subtractLists(std::list<NodeID> &minuend, std::list<NodeID> subtrahend) {
         minuend.sort();
         minuend.unique();
@@ -96,13 +125,35 @@ class RayCaster {
     }
     
 public:
-    RayCaster(CHGraph<CHNode, CHEdge> &graph, Grid<CHGraph<CHNode, CHEdge> > &grid) : graph(graph), grid(grid) {}
+    uint nofBehinds;
+    uint nofIns;
+    
+    RayCaster(CHGraph<CHNode, CHEdge> &graph, Grid<CHGraph<CHNode, CHEdge> > &grid) : graph(graph), grid(grid) {
+        nofBehinds = 0;
+        nofIns = 0;
+    }
     
     uint getNofCrossings(Chain &chain) {
         assert(chain.size() >=3);
         uint nofCrossings = 0;
-        std::list<NodeID> outliers = getOutliers(chain);         
+        std::list<NodeID> outliers = getOutliers(chain); 
+        CHLine shortcutLine(graph.getNode(chain.front()), graph.getNode(chain.back()));        
+        
+        for (auto it = ++chain.begin(); it != --chain.end(); it++) {
+                if (!isBetween(shortcutLine, graph.getNode(*it))) {
+                    nofBehinds++;                    
+                }
+                else {
+                    nofIns++;
+                }
+                //Print("nofBehinds" << nofBehinds);
+                //Print("nofIns" << nofIns);
+            }
+
+        
         for (NodeID outlier: outliers) {
+            
+            isBetween(shortcutLine, graph.getNode(outlier));
             uint nofIntersections = 0;            
             //shortcut
             if (rayIntersects(chain.front(), chain.back(), outlier)) {
@@ -121,6 +172,32 @@ public:
             }
         }
         return nofCrossings;        
+    }
+    
+    bool isBetween(const CHLine line, CHNode outlier) {
+        //calculate direction vector
+        twoDvec directionVector = calculateDirectionVec(line);
+                
+        //get orthogonal vector
+        twoDvec orthogonal = directionVector.getOrthogonal();
+        //create imaginary point for src
+        CHNode iSrc;
+        iSrc.lon = line.src.lon + orthogonal.x;
+        iSrc.lat = line.src.lat + orthogonal.y;
+        //create line through src and its imaginary point
+        CHLine line1(line.src, iSrc);
+        
+        //create imaginary point for tgt
+        CHNode iTgt;
+        iTgt.lon = line.tgt.lon + orthogonal.x;
+        iTgt.lat = line.tgt.lat + orthogonal.y;
+        //create line through tgt and its imaginary point
+        CHLine line2(line.tgt, iTgt);
+        //test if outlier lies between these lines
+        double line1area = geo::calcArea(line1.src, line1.tgt, outlier);
+        double line2area = geo::calcArea(line2.src, line2.tgt, outlier);
+        //cant happen: (line1area > 0 && line2area < 0)                     
+        return (line1area < 0 && line2area > 0);
     }
 };
 

@@ -10,29 +10,32 @@
 
 class lineSimplificationILP {
     
+    
+    
     CHGraph<CHNode, CHEdge> &graph;
     glp_prob *lp;
     
     const static size_t size = 40000;
+    size_t nofNonZeros = 0;
     
     
     //numbers of needed sizes beforehand 
     int preNofRows;
     int preNofCols;
-    int needed_size;
+    int preNofNonZeros = 0;
+    
     
     //whole ILP is invalid if size is not big enough
     bool enoughSpace;
     
-    int ia[1+size], ja[1+size];
-    //std::vector<double> ar;
+    int ia[1+size], ja[1+size];    
     double ar[1+size];        
     
-    size_t nofNonZeros = 0;
+   
     
     
     double objective_value = 0;
-    
+    /*
     void fillArrays() {
         
         for (int i = 0; i < 1 + needed_size; i++) {
@@ -42,106 +45,94 @@ class lineSimplificationILP {
         }
         return;
     }
+     * */
     
     bool isInRange(size_t index) {
         return (1 <= index && index <= size); //0 is not valid for ILP
     }
     
-    void setInOutDegreeCoefficients(std::vector<Line> &lines, NodeID node_id) {   
-                
+    void setInOutCoefficient(uint i, uint j, double r) {
+        nofNonZeros++;
+        size_t index = nofNonZeros;
+        assert(isInRange(index));
+        ia[index] = i;
+        ja[index] = j;
+        ar[index] = r;
+    }
+                    
+    void setInOutDegreeCoefficients(std::vector<Line> &lines, NodeID node_id) {                   
         for (Line &line : lines) { 
-            nofNonZeros++;
-            size_t arrayIndex = nofNonZeros;
-            assert(isInRange(arrayIndex));
-            ia[arrayIndex] = glp_get_num_rows(lp);
-            ja[arrayIndex] = line.id + 1;
             assert(line.start.ch_node_id != line.end.ch_node_id);                                 
-            
-            if (line.start.ch_node_id == node_id) {
-                ar[arrayIndex] = -1.0;                
-            } else if(line.end.ch_node_id == node_id) {
-                ar[arrayIndex] = 1.0;                
-            } else {
-                //ar[arrayIndex] = 0;
-            }
+            //src
+            setInOutCoefficient(line.start.posInChain + 1, line.id + 1 , -1.0);           
+            //tgt
+            setInOutCoefficient(line.end.posInChain + 1, line.id + 1 , 1.0);                              
         }
     }
     
-    void addDegreeRows(ILP_Chain ilp_chain, std::vector<Line> &lines) {        
-        //nodes 0 and n-1 should have degree 1
-                
+    void setRowName(NodeID node_id) {        
+        std::stringstream ss("");
+        ss << "node: " << node_id;
+        std::string s = ss.str();
+        char const *row_name = s.c_str();     
+        glp_set_row_name(lp, glp_get_num_rows(lp), row_name);
+    }
+    
+    void addDegreeRows(ILP_Chain ilp_chain, std::vector<Line> &lines) {                
+        assert(ilp_chain.size() >1);        
         
-        assert(ilp_chain.size() >1);
-        //nodes 0 and n-1 should have degree 1        
-        glp_add_rows(lp, 1);            
-        glp_set_row_name(lp, glp_get_num_rows(lp), "node: 0");
+        //nodes 0 and n-1 should have degree 1                
+        glp_add_rows(lp, 1);
+        setRowName(ilp_chain.front().ch_node_id);
         glp_set_row_bnds(lp, glp_get_num_rows(lp), GLP_FX, -1.0, 0);
-        setInOutDegreeCoefficients(lines, ilp_chain.front().ch_node_id);         
+        //setInOutDegreeCoefficients(lines, ilp_chain.front().ch_node_id);         
         
         //all other nodes should have indegree = outdegree
         //for (uint node_id = 1; node_id < graph.nodes.size()-1; node_id++) {                    
         for (auto it = ++ilp_chain.begin(); it != --ilp_chain.end(); it++) {              
             glp_add_rows(lp, 1);
-            
-            NodeID node_id = it->ch_node_id;
-            std::stringstream ss("");            
-            ss << "node: " << node_id;            
-            std::string s = ss.str();
-            char const *row_name = s.c_str();
-                        
-            glp_set_row_name(lp, glp_get_num_rows(lp), row_name);            
+            /*
+            NodeID node_id2 = it->ch_node_id;
+            std::stringstream ss2("");            
+            ss2 << "node: " << node_id2;            
+            std::string s2 = ss2.str();
+            char const *row_name2 = s2.c_str();
+             * */
+            setRowName(it->ch_node_id);       
+            //glp_set_row_name(lp, glp_get_num_rows(lp), it->ch_node_id);            
             glp_set_row_bnds(lp, glp_get_num_rows(lp), GLP_FX, 0.0, 0.0);                                                 
-            setInOutDegreeCoefficients(lines, node_id);            
-        }
+            //setInOutDegreeCoefficients(lines, it->ch_node_id);            
+        }                          
+        glp_add_rows(lp, 1);        
+        setRowName(ilp_chain.back().ch_node_id);
+        glp_set_row_bnds(lp, glp_get_num_rows(lp), GLP_FX, 1.0, 0); 
         
-        
-        glp_add_rows(lp, 1);
-        glp_set_row_name(lp, glp_get_num_rows(lp), "node: n-1");
-        glp_set_row_bnds(lp, glp_get_num_rows(lp), GLP_FX, 1.0, 0);        
+        assert(glp_get_num_rows(lp) == (int) ilp_chain.size());
         setInOutDegreeCoefficients(lines, ilp_chain.back().ch_node_id); 
-        
-        
     }
     
-    void addIntersectionRows(std::vector<Line> &lines, std::vector<Intersection> &intersections) {
-        for (Intersection &intersection : intersections ) {            
+    void setIntersectionEntry(LineID line_id) {
+            nofNonZeros++;
+            size_t index = nofNonZeros;
+            assert(isInRange(index));
+            ia[index] = glp_get_num_rows(lp);
+            ja[index] = line_id + 1;
+            ar[index] = 1.0;
+    }   
+    
+    void addIntersectionRows(const std::vector<Line> &lines, const std::vector<Intersection> &intersections) {
+        for (const Intersection &intersection : intersections ) {            
             //glp_set_row_name(lp, nofRows + i, "("<< intersection.line.start << ", " << intersection.line.end << ")");
             glp_add_rows(lp, 1);                              
-            glp_set_row_bnds(lp, glp_get_num_rows(lp), GLP_DB, 0.0, 1.0);
-            /*
-            //first zeroing out the whole row
-            for (Line &line : lines) {        
-                size_t arrayIndex = glp_get_num_cols(lp)*(glp_get_num_rows(lp)-1) + line.id + 1 ;
-                if(!isInRange(arrayIndex)) {
-                    int i = glp_get_num_cols(lp);
-                    auto j = glp_get_num_rows(lp)-1;
-                    assert(isInRange(arrayIndex));
-                }
-                assert(isInRange(arrayIndex));
-                
-                ia[arrayIndex] = glp_get_num_rows(lp);
-                ja[arrayIndex] = line.id + 1;
-                assert(line.start.ch_node_id != line.end.ch_node_id);
-                ar[arrayIndex] = 0;
-            }
-            */
+            glp_set_row_bnds(lp, glp_get_num_rows(lp), GLP_DB, 0.0, 1.0);            
             
             //then the two entries corresponding to the intersecting lines are set
-            Line &line1 = intersection.line1;
-            nofNonZeros++;
-            size_t Line1Index = nofNonZeros;
-            assert(isInRange(Line1Index));
-            ia[Line1Index] = glp_get_num_rows(lp);
-            ja[Line1Index] = line1.id + 1;
-            ar[Line1Index] = 1.0;                       
             
-            Line &line2 = intersection.line2;
-            nofNonZeros++;
-            size_t Line2Index = nofNonZeros;
-            assert(isInRange(Line2Index));
-            ia[Line2Index] = glp_get_num_rows(lp);
-            ja[Line2Index] = line2.id + 1;
-            ar[Line2Index] = 1.0;              
+            const Line &line1 = intersection.line1;
+            setIntersectionEntry(line1.id);           
+            
+            const Line &line2 = intersection.line2;
+            setIntersectionEntry(line2.id);              
             
             std::stringstream ss("");            
             ss << "I: (" << line1.start.ch_node_id << "," << line1.end.ch_node_id << "),(" << line2.start.ch_node_id << "," << line2.end.ch_node_id << ")";
@@ -154,20 +145,18 @@ class lineSimplificationILP {
     }
     
     //number of Columns is equal to the number of edges
-    void setColumns(std::vector<Line> &lines) {
+    void setColumns(const std::vector<Line> &lines) {
         debug_assert(lines.size() > 0);        
 
         glp_add_cols(lp, lines.size());        
         for (uint i = 0; i < lines.size(); i++) {
-            Line &line = lines.at(i);
+            const Line &line = lines.at(i);
             std::stringstream ss("");            
             ss << "Line: (" << line.start.ch_node_id << "," << line.end.ch_node_id << ")";
             std::string s = ss.str();
             char const *col_name = s.c_str();
-            glp_set_col_name(lp, i+1, col_name);
-            //glp_set_col_name(lp, i, (line.id << " "<< line.start << ", " << line.end << ")");
-            glp_set_col_kind(lp, i+1, GLP_BV);
-            //glp_set_obj_coef(lp, i+1, line.maxError);
+            glp_set_col_name(lp, i+1, col_name);            
+            glp_set_col_kind(lp, i+1, GLP_BV);            
             glp_set_obj_coef(lp, i+1, 1); //objective is number of used edges
         }
     }
@@ -188,25 +177,20 @@ class lineSimplificationILP {
 
     }
      * */
-    void prepareArray(ILP_data &ilp_data) {
+    void prepareArray(const ILP_data &ilp_data) {
         assert(ilp_data.ilp_chain1.size() > 1);
         
         preNofCols = ilp_data.potEdges1.size();        
         preNofRows = (ilp_data.ilp_chain1.size() + ilp_data.ilp_chain2.size()) //in out degree equation for each node                
                 + ilp_data.edgeIntersections.size();               
-        //needed_size = preNofCols *preNofRows;
+        preNofNonZeros = 2*ilp_data.potEdges1.size() + 2*ilp_data.edgeIntersections.size();
         nofNonZeros = 0;
-        enoughSpace = true;// needed_size < (int) size;        
-        /*
-        if (enoughSpace) {
-            fillArrays();            
-        }
-         * */
+        enoughSpace =  preNofNonZeros < (int) size;                     
     }
-    Chain::iterator calculateHalfListIt(Chain &chain) {
+    static ILP_Chain::iterator calculateHalfListIt(ILP_Chain &chain) {
         int i = 0;
         int size = chain.size();
-        Chain::iterator halfListIt = chain.begin();        
+        ILP_Chain::iterator halfListIt = chain.begin();        
         while (size > 2 * i) {
             halfListIt++;
             i++;
@@ -224,11 +208,11 @@ public:
         
     }
     
-    void solve(Chain chain, double epsilon) {
+    double solve(const Chain &chain, double epsilon) {
         
-        
-        ILP_data ilp_data = ILP_data(graph, chain, Chain(), epsilon, 0, false); 
-        prepareArray(ilp_data); //==nofRows calculated beforehand       
+        Chain emptyChain;
+        ILP_data ilp_data = ILP_data(graph, chain, emptyChain, epsilon, 0, false); 
+        prepareArray(ilp_data);     
         
         
         lp = glp_create_prob();
@@ -244,10 +228,9 @@ public:
         addIntersectionRows(ilp_data.potEdges1, ilp_data.edgeIntersections);
 
         assert(preNofRows == glp_get_num_rows(lp));
-
-        //auto numCols = glp_get_num_cols(lp)
-        //nofNonZeros scheint doch wenig mit ne zu tun zu haben, glp rechnet sich das selber aus, sieht aber doch so aus
-        //glp_load_matrix(lp, glp_get_num_cols(lp) * glp_get_num_rows(lp), ia, ja, ar);
+        assert(preNofNonZeros == (int) nofNonZeros);
+        
+                
         glp_load_matrix(lp, nofNonZeros, ia, ja, ar);
         //glp_write_lp(lp, NULL, "lp.txt");
 
@@ -263,16 +246,13 @@ public:
 
 
         //glp_print_mip(lp, "solution.txt");
-        //glp_intopt(lp, NULL);
-        //
+        
         // recover and display results 
-        objective_value = glp_get_obj_val(lp);
-        //std::cout << "Needed number of Edges: " << objective_value;
-        //x1 = glp_get_col_prim(lp, 1);
-        //x2 = glp_get_col_prim(lp, 2);
+        objective_value = glp_mip_obj_val(lp);        
 
+        
+        //printf("objective_value = %g\n", objective_value);
         /*
-        printf("objective_value = %g\n", objective_value);
         for (int i = 1; i < glp_get_num_cols(lp)+1; i++) {
             printf("line %d: %g \n", i, glp_get_col_prim(lp, i));
         }
@@ -290,7 +270,7 @@ public:
  
         Print("too big");
          */       
-        
+        return objective_value;
     }
     
 };

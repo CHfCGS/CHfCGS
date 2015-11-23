@@ -43,7 +43,7 @@ public:
                     //    && base_graph.getNrOfEdges(node_id, chc::EdgeType::IN) <= 2) {
                     //std::list<chc::NodeID> neighbours = base_graph.nodeNeighbours(node_id);
                     //if (neighbours.size() <= 2) {                        
-                    if (base_graph.degree_leq_two(node_id)) {                        
+                    if (base_graph.degree_leq(node_id, 2)) {                        
                         collectChain(node_id, CaR);
                     }
                 //}
@@ -101,7 +101,7 @@ public:
             //only neighbours which are reachable by a street of streettype
             //std::list<chc::NodeID> neighbours = base_graph.nodeNeighbours(current);
             //if (neighbours.size() <= 2) {
-            if (base_graph.degree_leq_two(current)) {
+            if (base_graph.degree_leq(current, 2)) {
                 if (base_graph.isOneway(current) == isOneway) { //current node has to be oneway (twoway) if the chain is oneway (twoway)
                     std::list<chc::NodeID> neighboursOnStreetType = base_graph.nodeNeighbours(current, streetType, edgeDirection);
                     debug_assert(neighboursOnStreetType.size() <=2);                                              

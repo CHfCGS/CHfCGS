@@ -69,8 +69,8 @@ class Graph
                 std::list<NodeID> nodeNeighbours(NodeID node_id) const;                
                 std::list<NodeID> nodeNeighbours(NodeID node_id, StreetType type) const;
                 std::list<NodeID> nodeNeighbours(NodeID node_id, StreetType streetType, EdgeType edgeDirection) const;
-                StreetType getMaxStreetType(NodeID node_id) const;
-                bool degree_leq_two(NodeID node_id) const;
+                StreetType getMaxStreetType(NodeID node_id) const;                
+                bool degree_leq(NodeID node_id , uint degree) const;
                 bool isOneway(NodeID node_id) const;
 
 		typedef range<typename std::vector<EdgeT>::const_iterator> node_edges_range;
@@ -321,11 +321,11 @@ StreetType Graph<NodeT, EdgeT>::getMaxStreetType(NodeID node_id) const
 }
 
 template <typename NodeT, typename EdgeT>
-bool Graph<NodeT, EdgeT>::degree_leq_two(NodeID node_id) const
+bool Graph<NodeT, EdgeT>::degree_leq(NodeID node_id , uint degree) const
 {
-    if (getNrOfEdges(node_id, EdgeType::OUT)<=2 
-            && getNrOfEdges(node_id, EdgeType::IN)<=2) { //condition optional but should increase performance       
-        if (nodeNeighbours(node_id).size()<=2) {
+    if (getNrOfEdges(node_id, EdgeType::OUT)<=degree 
+            && getNrOfEdges(node_id, EdgeType::IN)<=degree) { //condition optional but should increase performance       
+        if (nodeNeighbours(node_id).size()<=degree) {
             return true;
         }
     }

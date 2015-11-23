@@ -7,8 +7,8 @@
 struct ILP_data {
     
     CHGraph<CHNode, CHEdge> &graph;
-    Chain &chain1;
-    Chain &chain2;
+    const Chain &chain1;
+    const Chain &chain2;
         
     ILP_Chain ilp_chain1;
     ILP_Chain ilp_chain2;
@@ -25,7 +25,7 @@ struct ILP_data {
     bool followerIsPartial = true; //if this is false, the structure is invalid
 
     
-    static bool testIntersection(Line line1, Line line2) {
+    static bool testIntersection(const Line line1, const Line line2) {
         
         //4 Orientation tests
         double line2StartArea = geo::calcArea(line1.start.ch_node, line1.end.ch_node, line2.start.ch_node);
@@ -39,7 +39,7 @@ struct ILP_data {
         return line1BetweenLine2 && line2BetweenLine1;
     }
 
-    static std::vector<Intersection> calculateIntersections(std::vector<Line> &lines) {
+    static std::vector<Intersection> calculateIntersections(const std::vector<Line> &lines) {
         //possible upgrade: Bentley-Ottmann
         //possible upgrade: could be adapted for 2 input vectors
         std::vector<Intersection> intersections;  
@@ -57,7 +57,7 @@ struct ILP_data {
     }
     
 
-    static bool testUnordering(Line &line1, Line &line2) {
+    static bool testUnordering(const Line &line1, const Line &line2) {
         uint line1Chain1Pos, line1Chain2Pos, line2Chain1Pos, line2Chain2Pos;
         assert(line1.start.side != line1.end.side);
         if (line1.start.side) {            
@@ -85,14 +85,14 @@ struct ILP_data {
         return false;
     }
     
-    static std::vector<Intersection> calculate_p_followerUnorderings(std::vector<Line> &allFollowerLines) {
+    static std::vector<Intersection> calculate_p_followerUnorderings(const std::vector<Line> &allFollowerLines) {
         std::vector<Intersection> followerLinesUnorderings;       
         assert(allFollowerLines.size() > 0);
         for (uint i = 0; i < allFollowerLines.size() - 1; i++) {
             for (uint j = i + 1; j < allFollowerLines.size(); j++) {
-                Line &line1 = allFollowerLines.at(i);
-                Line &line2 = allFollowerLines.at(j);
-                if (testUnordering(line1, line2)) {
+                const Line line1 = allFollowerLines.at(i);
+                const Line line2 = allFollowerLines.at(j);                
+                if (testUnordering(line1, line2)) {                    
                     Intersection unordering = Intersection(line1, line2);
                     followerLinesUnorderings.push_back(unordering);
                 }                
@@ -103,7 +103,7 @@ struct ILP_data {
 
     
 
-    static double computeLineError(Line &line, ILP_Chain &ilp_chain, ILP_Chain::iterator srcIt, ILP_Chain::iterator tgtIt) {
+    static double computeLineError(const Line &line, const ILP_Chain &ilp_chain, ILP_Chain::iterator srcIt, ILP_Chain::iterator tgtIt) {
         assert(srcIt != tgtIt);
         assert(line.start.posInChain < line.end.posInChain);
         assert(ilp_chain.size() > 2);
@@ -126,7 +126,7 @@ struct ILP_data {
 
         //for (uint i = 0; i < nodes.size()-1; i++) {        
         //for (uint j = i+1; j < nodes.size(); j++) {   
-        assert(ilp_chain.size() > 2);
+        assert(ilp_chain.size() >= 2);
         for (auto srcIt = ilp_chain.begin(); srcIt != --ilp_chain.end(); srcIt++) {
             auto incrSrcIt = srcIt;
             for (auto tgtIt = ++incrSrcIt; tgtIt != ilp_chain.end(); tgtIt++) {
@@ -158,18 +158,18 @@ struct ILP_data {
         return followerLines;
     }    
     
-    ILP_Chain ChainToILP_Chain(Chain &chain, bool sameDirection) {
+    ILP_Chain ChainToILP_Chain(const Chain &chain, bool sameDirection) const {
         ILP_Chain ilp_chain;
         uint posInChain = 0;
         if (sameDirection) {            
-            for (Chain::iterator it = chain.begin(); it != chain1.end(); it++) {
+            for (Chain::const_iterator it = chain.begin(); it != chain.end(); it++) {
                 NodeID ch_node_id = *it;
                 ILP_Node ilp_node = ILP_Node(graph.getNode(ch_node_id), ch_node_id, posInChain, true);
                 ilp_chain.push_back(ilp_node);
                 posInChain++;
             }
         } else {            
-            for (Chain::reverse_iterator it = chain.rbegin(); it != chain2.rend(); it++) {
+            for (Chain::const_reverse_iterator it = chain.rbegin(); it != chain.rend(); it++) {
                 NodeID ch_node_id = *it;
                 ILP_Node ilp_node = ILP_Node(graph.getNode(ch_node_id), ch_node_id, posInChain, false);
                 ilp_chain.push_back(ilp_node);
@@ -180,8 +180,8 @@ struct ILP_data {
 
     }
     
-    std::vector<Line> concatLines(std::vector<Line> &line1, std::vector<Line> &line2) {
-        std::vector<Line> concatenatedLines;
+    static std::vector<Line> concatLines(const std::vector<Line> &line1, const std::vector<Line> &line2)  {
+        std::vector<Line> concatenatedLines;        
         for (Line line: line1) {
             concatenatedLines.push_back(line);
         }
@@ -191,7 +191,7 @@ struct ILP_data {
         return concatenatedLines;
     }
     
-    ILP_data(CHGraph<CHNode, CHEdge> &graph, Chain chain1, Chain chain2, double epsilon, double eta, bool parallel):
+    ILP_data(CHGraph<CHNode, CHEdge> &graph, const Chain &chain1, const Chain &chain2, double epsilon, double eta, bool parallel):
         graph(graph), chain1(chain1), chain2(chain2) {
         
         ilp_chain1 = ChainToILP_Chain(chain1, true);                
@@ -203,7 +203,7 @@ struct ILP_data {
             followerLines1 = createFollowerLines(ilp_chain1, ilp_chain2, eta);
             followerLines2 = createFollowerLines(ilp_chain2, ilp_chain1, eta);            
             allFollowerLines = concatLines(followerLines1, followerLines2); 
-            followerLinesUnorderings = calculate_p_followerUnorderings(allFollowerLines);
+            followerLinesUnorderings = calculate_p_followerUnorderings(allFollowerLines);            
         }
         allPotEdges = concatLines(potEdges1, potEdges2);
         edgeIntersections = calculateIntersections(allPotEdges);        
