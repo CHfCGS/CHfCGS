@@ -174,6 +174,65 @@ public:
         }
     }
     
+    EdgeChain redetect(const Chain &old_chain) {
+        
+        Chain remaining_chain_nodes;
+        
+        for (NodeID node_id : old_chain) {
+            if (base_graph.isValidNode(node_id)) {
+                remaining_chain_nodes.push_back(node_id);
+            }
+        }
+        
+        
+        bool valid = true;
+        //first and last node have to remain
+        if (old_chain.front() != remaining_chain_nodes.front()
+                || old_chain.back() != remaining_chain_nodes.back()) {
+            valid = false;
+        }
+        
+        
+        EdgeChain remaining_chain;
+        remaining_chain.chain = remaining_chain_nodes;
+        
+        if (valid) {
+            //test connectivity
+            for (auto it = remaining_chain_nodes.begin(); it != --remaining_chain_nodes.end(); it++) {
+                
+                auto next = it;
+                next++;
+                
+                //check if there is an edge connecting the two nodes and add the first
+                bool found = false;
+                //auto nodeEdges = base_graph.nodeEdges(*it, streettype);
+                                                               
+                
+                auto nodeEdges = base_graph.nodeEdges(*it);
+                for (auto edge: nodeEdges) {
+                    if (edge.src == *next || edge.tgt == *next) {
+                        remaining_chain.edges.push_back(edge.id);
+                        found = true;
+                        break;
+                    }
+                }
+                if (found == false) {
+                    valid = false;
+                }                
+            }                    
+        }
+        
+        if (valid) {
+            assert(remaining_chain.chain.size()>=2 &&remaining_chain.edges.size()>=1);
+            assert(remaining_chain.chain.size() == remaining_chain.edges.size()+1);
+            return remaining_chain;
+        } else {
+            //Chain emptyChain;
+            return EdgeChain();
+        }
+    }
+    
+    /*
     struct nextRemainingNodes {
         Chain nextRemainingNodes;
         bool hasOneShortcut;
@@ -252,7 +311,7 @@ public:
             return EdgeChain();
         }
     }
-    
+    */
 private:
     const GraphT &base_graph;
     std::vector<bool> marked;    

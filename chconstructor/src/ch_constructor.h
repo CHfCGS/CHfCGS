@@ -5,6 +5,7 @@
 #include "graph.h"
 #include "chgraph.h"
 #include "prioritizer.h"
+#include "geoFunctions.h"
 
 #include <chrono>
 #include <queue>
@@ -16,7 +17,7 @@
 namespace chc {
 
     namespace unit_tests {
-        void testCHConstructor();
+        void testCHConstructor();        
     }
 
     namespace {
@@ -60,10 +61,18 @@ namespace chc {
         void _quickContract(NodeID node);
         std::vector<Shortcut> _calcShortcuts(Shortcut const& start_edge, NodeID center_node,
                 EdgeType direction, ThreadData& td) const;
+        void _taggingLastRoundShortcuts(uint round);
+        bool _otherPathExist(ThreadData& td, NodeID start_node, NodeID end_node, uint radius) const;
         void _calcShortestDists(ThreadData& td, NodeID start_node, EdgeType direction,
                 uint radius) const;
+
+        
+        
+        
+        
         Shortcut _createShortcut(Shortcut const& edge1, Shortcut const& edge2,
                 EdgeType direction = EdgeType::OUT) const;
+        
 
         
         void _chooseRemoveNodes(std::vector<NodeID> const& independent_set);
@@ -228,7 +237,82 @@ namespace chc {
 
                 return shortcuts;
             }
+    
+    template <typename NodeT, typename EdgeT>
+    void CHConstructor<NodeT, EdgeT>::_taggingLastRoundShortcuts(uint round) {
+        if(round <= 1) return; //nothing to do for round 1        
+        uint lastRound = round -1;        
+        uint lastRoundLvl = lastRound-1;
+        
+        //std::list<NodeID> lastRoundShortcuts;
+        ThreadData td;
+        uint nr_of_nodes = _base_graph.getNrOfNodes();
+        td.dists.assign(nr_of_nodes, c::NO_DIST);
+        td.reset_dists.reserve(nr_of_nodes);
+        //initialize all last shortcuts with unpleasing
+        for (int edge_id = 0; edge_id < _base_graph.getNrOfEdges(); edge_id++) {
+            if(_base_graph.isShortcutOfRound(edge_id, lastRoundLvl)) {
+                _base_graph.setEdgeFlag(edge_id, false);
+            }
+        }
+        
+        for (int edge_id = 0; edge_id < _base_graph.getNrOfEdges(); edge_id++) {
+            if(_base_graph.isShortcutOfRound(edge_id, lastRoundLvl)) {
+                auto shortcut = _base_graph.getEdge(edge_id);
+                //get a factor for radius
+                OSMNode src = _base_graph.getNode(shortcut.src);
+                OSMNode tgt = _base_graph.getNode(shortcut.tgt);
+                OSMNode outlier = _base_graph.getNode(shortcut.center_node);
+                double perpendicularLength = geo::calcPerpendicularLength(src, tgt, outlier);
+                double factor = perpendicularLength * pow(10,5);
+                
+                if (!_otherPathExist(td, shortcut.src, shortcut.tgt, (1+factor)*shortcut.dist)) {
+                    _base_graph.setEdgeFlag(edge_id, true);
+                }                
+            }            
+        }
+    }
+    
+    template <typename NodeT, typename EdgeT>
+    bool CHConstructor<NodeT, EdgeT>::_otherPathExist(ThreadData& td, NodeID start_node, NodeID end_node,
+            /*EdgeType direction,*/ uint radius) const {        
+        
+        /* clear thread data first */
+        td.pq = PQ();        
+        for (auto node_id : td.reset_dists) {
+            td.dists[node_id] = c::NO_DIST;
+        }
+        td.reset_dists.clear();
+         
 
+        /* now initialize with start node */
+        td.pq.push(PQElement(start_node, 0));
+        td.dists[start_node] = 0;
+        td.reset_dists.push_back(start_node);
+
+        while (!td.pq.empty() && td.pq.top().distance() <= radius && td.dists[end_node]== c::NO_DIST) {
+            auto top = td.pq.top();
+            td.pq.pop();
+            if (td.dists[top.node] != top.distance()) continue;
+
+            for (auto const& edge : _base_graph.nodeEdges(top.node, EdgeType::OUT)) {
+                if (edge.speed == -1000) break; //visually unpleasing edges are not taken
+
+                NodeID tgt_node(otherNode(edge, EdgeType::OUT));
+                uint new_dist(top.distance() + edge.distance());
+
+                if (new_dist < td.dists[tgt_node]) {
+                    if (td.dists[tgt_node] == c::NO_DIST) {
+                        td.reset_dists.push_back(tgt_node);
+                    }
+                    td.dists[tgt_node] = new_dist;
+                    td.pq.push(PQElement(tgt_node, new_dist));
+                }
+            }
+        }
+        return td.dists[end_node]!= c::NO_DIST;
+    }
+    
     template <typename NodeT, typename EdgeT>
     void CHConstructor<NodeT, EdgeT>::_calcShortestDists(ThreadData& td, NodeID start_node,
             EdgeType direction, uint radius) const {
@@ -417,7 +501,7 @@ namespace chc {
 
         for (uint round(1); !nodes.empty(); ++round) {
             steady_clock::time_point t1 = steady_clock::now();
-            Print("Starting round " << round);
+            Print("Starting round " << round);            
             Debug("Initializing the vectors for a new round.");
             _initVectors();
 
@@ -466,6 +550,10 @@ namespace chc {
         while (prioritizer.hasNodesLeft()) {
             steady_clock::time_point t1 = steady_clock::now();
             Print("Starting round " << round);
+            
+            Print("Tagging visually unpleasant for shortcuts of last round");
+            _taggingLastRoundShortcuts(round);
+            
             Debug("Initializing the vectors for a new round.");
             _initVectors();
             

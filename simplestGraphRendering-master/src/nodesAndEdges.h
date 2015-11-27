@@ -53,7 +53,7 @@ struct CHEdge {
     NodeID tgt;
     //uint dist;
     uint type;
-    //int speed;
+    int speed;
     EdgeID child_edge1;
     EdgeID child_edge2;
     bool remaining;

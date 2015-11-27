@@ -4,6 +4,8 @@
 #include "grid.h"
 #include "geoFunctions.h"
 #include "chgraph.h"
+#include "range_tree.h"
+#include "limits"
 
 namespace chm {
     
@@ -16,7 +18,9 @@ class RayCaster {
     
     CHGraph<CHNode, CHEdge> &graph;
     Grid<CHGraph<CHNode, CHEdge> > &grid;
-    const CHNode outerRayPoint = {1000.0, 1000.0, 0, false, std::list<EdgeID>() };   
+    RangeTree rangeTree;
+    
+    const CHNode outerRayPoint;   
     /*
     double calcArea(CHNode aSource, CHNode bTarget, CHNode cOutlier) {
         double ax = aSource.lon;
@@ -95,21 +99,74 @@ class RayCaster {
         }        
     }
     
+    struct Window {
+        double MINLONGITUDE = numeric_limits<double>::max();
+        double MAXLONGITUDE = 0;
+        double MINLATITUDE = numeric_limits<double>::max();
+        double MAXLATITUDE = 0;
+        
+        
+    };
+    
+    bool isInWindow(Window window, NodeID node_id) {
+        CHNode node = graph.getNode(node_id);
+        
+        if(node.lat > window.MINLATITUDE
+                && node.lat < window.MAXLATITUDE
+                && node.lat > window.MINLONGITUDE
+                && node.lat < window.MAXLONGITUDE) {
+            return true;
+        } else {
+            return false;
+        }
+        
+    }
+    
+    Window calculateWindow(const Chain &chain) {
+        Window window;
+        for (NodeID node_id: chain) {
+            if (graph.getLon(node_id) > window.MAXLONGITUDE) {
+                window.MAXLONGITUDE = graph.getLon(node_id);
+            }
+            if (graph.getLon(node_id) < window.MINLONGITUDE) {
+                window.MINLONGITUDE = graph.getLon(node_id);
+            }
+            if (graph.getLat(node_id) > window.MAXLATITUDE) {
+                window.MAXLATITUDE = graph.getLat(node_id);
+            }
+            if (graph.getLat(node_id) < window.MINLATITUDE) {
+                window.MINLATITUDE = graph.getLat(node_id);
+            }
+        }
+        return window;
+    }
+    
     std::list<NodeID> getOutliers(Chain &chain) {
         
+        Window window = calculateWindow(chain);
+        std::list<NodeID> outliers = rangeTree.rectangleQuery(window.MINLATITUDE, window.MINLONGITUDE, window.MAXLATITUDE, window.MAXLONGITUDE);
+        //assert(outliers.empty());
+        /*
         std::list<NodeID> outliers;
-        
         for (NodeID node_id : chain) {
             outliers.splice(outliers.end(), grid.nodeGeoNeighbours(node_id));
         }
+        for (auto it = outliers.begin(); it != outliers.end();) {
+            if(isInWindow(window, *it)){
+                it = outliers.erase(it);
+            }else {
+                it++;
+            }               
+        }
+        */
         /*
         assert(!chain.empty());
         outliers.splice(outliers.end(), grid.nodeGeoNeighbours(chain.front()));
         outliers.splice(outliers.end(), grid.nodeGeoNeighbours(chain.back()));
          * */
         
-        outliers.sort();
-        outliers.unique();
+        //outliers.sort();
+        //outliers.unique();
         subtractLists(outliers, chain);
         
         return outliers;
@@ -128,9 +185,11 @@ public:
     uint nofBehinds;
     uint nofIns;
     
-    RayCaster(CHGraph<CHNode, CHEdge> &graph, Grid<CHGraph<CHNode, CHEdge> > &grid) : graph(graph), grid(grid) {
+    RayCaster(CHGraph<CHNode, CHEdge> &graph, Grid<CHGraph<CHNode, CHEdge> > &grid):
+        graph(graph), grid(grid), rangeTree(RangeTree(graph)), outerRayPoint(1000, 1000) {
         nofBehinds = 0;
         nofIns = 0;
+        
     }
     
     uint getNofCrossings(Chain &chain) {
@@ -139,6 +198,7 @@ public:
         std::list<NodeID> outliers = getOutliers(chain); 
         CHLine shortcutLine(graph.getNode(chain.front()), graph.getNode(chain.back()));        
         
+        /*
         for (auto it = ++chain.begin(); it != --chain.end(); it++) {
                 if (!isBetween(shortcutLine, graph.getNode(*it))) {
                     nofBehinds++;                    
@@ -150,10 +210,10 @@ public:
                 //Print("nofIns" << nofIns);
             }
 
-        
+        */
         for (NodeID outlier: outliers) {
             
-            isBetween(shortcutLine, graph.getNode(outlier));
+            //isBetween(shortcutLine, graph.getNode(outlier));
             uint nofIntersections = 0;            
             //shortcut
             if (rayIntersects(chain.front(), chain.back(), outlier)) {

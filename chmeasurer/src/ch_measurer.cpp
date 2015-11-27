@@ -6,12 +6,19 @@
 #include "chgraph.h"
 #include "ch_measurer.h"
 
+
+
 using namespace chm;
 //using namespace std::chrono;
 
 
+
+
+
 int main(int argc, char** argv) {
 
+    
+    
     /////////////////////////////////////
     // overly simple command line parsing
     /////////////////////////////////////

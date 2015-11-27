@@ -52,6 +52,8 @@ struct Edge {
 };
 
 struct CHNode {
+    CHNode(): lat(0), lon(0), lvl(0), remaining(false) {}
+    CHNode(double lon, double lat): lat(lat), lon(lon), lvl(0), remaining(false), shortcuts(std::list<EdgeID>()) {} //care: lat and lon parameter is switched
     //NodeID ID;
     //OSMID osmID;
     double lat;

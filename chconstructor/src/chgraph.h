@@ -36,7 +36,7 @@ class CHGraph : public Graph<NodeT, CHEdge<EdgeT> >
 			_node_levels.resize(data.nodes.size(), c::NO_LVL);
 			BaseGraph::init(std::forward<Data>(data));
 		}
-
+                
 
 		void restructure(std::vector<NodeID> const& removed,
 				std::vector<bool> const& to_remove,
@@ -44,6 +44,7 @@ class CHGraph : public Graph<NodeT, CHEdge<EdgeT> >
 		void rebuildCompleteGraph();
 
 		bool isUp(Shortcut const& edge, EdgeType direction) const;
+                bool isShortcutOfRound(EdgeID edge_id, uint round) const;
 
 		/* destroys internal data structures */
 		GraphCHOutData<NodeT, Shortcut> exportData();
@@ -161,6 +162,20 @@ void CHGraph<NodeT, EdgeT>::rebuildCompleteGraph()
 	_edges_dump.clear();
 
 	BaseGraph::update();
+}
+
+template <typename NodeT, typename EdgeT>
+bool CHGraph<NodeT, EdgeT>::isShortcutOfRound(EdgeID edge_id, uint round) const
+{
+    assert(0 <= edge_id && edge_id < _out_edges.size());
+    NodeID center_node_id = _out_edges[edge_id].center_node;
+    if (center_node_id != c::NO_NID) { 
+        return (_node_levels[center_node_id] == round);
+    } else {
+        return false;
+    }
+
+    
 }
 
 template <typename NodeT, typename EdgeT>

@@ -27,8 +27,9 @@ void unit_tests::testAll()
 	unit_tests::testGraph();
 	unit_tests::testCHConstructor();
 	unit_tests::testCHDijkstra();
-	unit_tests::testDijkstra();
-	unit_tests::testPrioritizers();
+	//unit_tests::testDijkstra();
+	//unit_tests::testPrioritizers();
+        testCDTMatching();
 }
 
 void unit_tests::testNodesAndEdges()
@@ -285,6 +286,109 @@ void unit_tests::testPrioritizers()
 	Print("\n==================================");
 	Print("TEST: Prioritizer test successful.");
 	Print("==================================\n");
+}
+
+void unit_tests::testCDTMatching()
+{
+	Print("\n============================");
+	Print("TEST: Start CDTMatching test.");
+	Print("============================\n");
+
+	typedef CHEdge<OSMEdge> Shortcut;
+	typedef CHGraph<OSMNode, OSMEdge> CHGraphOSM;
+	
+	/* Init CH graph */
+	CHGraphOSM chg;
+	chg.init(FormatSTD::Reader::readGraph<OSMNode, Shortcut>("../test_data/cdt_matchingTest2.txt"));
+
+        std::vector<NodeInBox> nodesInBox;
+        std::list<PIntervall>::iterator intervallIt;
+        
+        //ChainTo
+        std::list<PPrioNode> pchainTo;        
+        for (int i = 0; i < 9; i++) {
+            PPrioNode p(i, intervallIt, nodesInBox, nodesInBox);
+            pchainTo.push_back(p);
+        }
+        std::list<std::list<PPrioNode>::iterator> chainTo;
+        for (auto it = pchainTo.begin(); it != pchainTo.end(); it++) {
+            chainTo.push_back(it);
+        }        
+        
+        //ChainFrom
+        std::list<PPrioNode> pchainFrom;        
+        for (int i = 9; i < 14; i++) {
+            PPrioNode p(i, intervallIt, nodesInBox, nodesInBox);
+            pchainFrom.push_front(p);
+        }
+        std::list<std::list<PPrioNode>::iterator> chainFrom;
+        for (auto it = pchainFrom.begin(); it != pchainFrom.end(); it++) {
+            chainFrom.push_back(it);
+        }
+        
+        CDTMatching<CHGraphOSM> cdtm(chg);
+        
+        cdtm.match(chainTo, chainFrom);                  
+        
+        for (auto it = chainTo.begin(); it!= chainTo.end(); it++) {                        
+            switch ((*it)->node_id) {
+                case 0: {                    
+                    Test((*it)->follower->node_id == 9);
+                    break;
+                }
+                case 1: {
+                    Test((*it)->follower->node_id == 9);
+                    break;
+                }
+                case 3: {
+                    Test((*it)->follower->node_id == 10);
+                    break;
+                }                
+                case 5: {
+                    Test((*it)->follower->node_id == 11);
+                    break;
+                }
+                case 6: {
+                    Test((*it)->follower->node_id == 11);
+                    break;
+                }
+                case 7: {
+                    Test((*it)->follower->node_id == 12);
+                    break;
+                }
+                case 8: {
+                    Test((*it)->follower->node_id == 13);
+                    break;
+                }
+                default: {             
+                    break;
+                }                    
+            }            
+        }
+        
+        for (auto it = chainFrom.begin(); it!= chainFrom.end(); it++) {                        
+            switch ((*it)->node_id) {
+                case 10: {                    
+                    Test((*it)->follower->node_id == 3);
+                    break;
+                }
+                case 12: {
+                    Test((*it)->follower->node_id == 7);
+                    break;
+                }
+                case 13: {
+                    Test((*it)->follower->node_id == 8);
+                    break;
+                }      
+                default: {             
+                    break;
+                }  
+            }            
+        }
+        
+	Print("\n=================================");
+	Print("TEST: CDTMatching test successful.");
+	Print("=================================\n");
 }
 
 }

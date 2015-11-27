@@ -5,6 +5,7 @@
 
 #include "unit_tests.h"
 
+#include "defs.h"
 #include "nodes_and_edges.h"
 #include "chains.h"
 #include "ch_parser.h"
@@ -13,6 +14,7 @@
 #include "lineSimplificationILP.h"
 #include "parallelLineSimplficationILP.h"
 #include "dijkstra.h"
+#include "discreteFrechet.h"
 //#include "prioritizers.h"
 
 #include <map>
@@ -25,11 +27,15 @@ namespace chm
 
 void unit_tests::testAll()
 {
+    
     unit_tests::testLineSimplfication();
     unit_tests::testParallelLineSimplfication();
+    
     unit_tests::testDijkstra();
     unit_tests::testCHDijkstra();
     unit_tests::testIsBetween();
+     
+    unit_tests::testdiscreteFrechet();
 }
 
 void unit_tests::testLineSimplfication()
@@ -235,37 +241,71 @@ void unit_tests::testIsBetween()
         CHGraph<CHNode, CHEdge> graph;
         Grid<CHGraph<CHNode, CHEdge> > grid(1, graph);
         RayCaster raycaster(graph, grid);
-        CHNode chlinenodeSrc;
-        chlinenodeSrc.lon = 3;
-        chlinenodeSrc.lat = 2;
-        CHNode chlinenodeTgt;
-        chlinenodeTgt.lon = 6;
-        chlinenodeTgt.lat = 7;
+        CHNode chlinenodeSrc(3, 2);        
+        CHNode chlinenodeTgt(6, 7);        
         CHLine chline(chlinenodeSrc, chlinenodeTgt);
                 
-        CHNode in1;
-        in1.lon = 1;
-        in1.lat = 9;
-        Test(raycaster.isBetween(chline, in1));
+        CHNode in1(1, 9);        
+        Test(raycaster.isBetween(chline, in1));        
         
-        
-        CHNode in2;
-        in2.lon = 8;
-        in2.lat = 0;
+        CHNode in2(8, 0);        
         Test(raycaster.isBetween(chline, in2));
         
-        CHNode out1;
-        out1.lon = 4;
-        out1.lat = 1;
+        CHNode out1(4, 1);        
         Test(!raycaster.isBetween(chline, out1));
         
-        CHNode out2;
-        out2.lon = 10;
-        out2.lat = 5;
+        CHNode out2(10, 5);        
         Test(!raycaster.isBetween(chline, out2));                                
 
 	Print("\n=================================");
 	Print("TEST: IsBetween test successful.");
+	Print("=================================\n");
+}
+
+void unit_tests::testdiscreteFrechet()
+{
+	Print("\n============================");
+	Print("TEST: Start discreteFrechet test.");
+	Print("============================\n");
+        
+        
+        CHGraph<CHNode, CHEdge> graph;
+        GraphInData<CHNode, CHEdge> graphInData;
+        
+        
+        graphInData.nodes.push_back(CHNode(0, 0));
+        graphInData.nodes.push_back(CHNode(1, 0));
+        graphInData.nodes.push_back(CHNode(2, 0));
+        graphInData.nodes.push_back(CHNode(3, 0));
+        graphInData.nodes.push_back(CHNode(4, 0));
+        graphInData.nodes.push_back(CHNode(5, 0));
+        graphInData.nodes.push_back(CHNode(8, 0));
+        
+        Chain chainTo;
+        for (int i = 0; i < 7; i++) {
+            chainTo.push_back(i);
+        }
+
+        graphInData.nodes.push_back(CHNode(0, 2));
+        graphInData.nodes.push_back(CHNode(2, 1));
+        graphInData.nodes.push_back(CHNode(5, 3));
+        graphInData.nodes.push_back(CHNode(8, 2)); 
+        Chain chainFrom;
+        for (int i = 7; i < 11; i++) {
+            chainFrom.push_front(i);
+        }
+        graph.init(std::move(graphInData));
+        
+
+                
+                
+        DiscreteFrechet df(graph);                                       
+        Test(df.calc_dF(chainTo, chainFrom)==3);      
+                
+        
+
+	Print("\n=================================");
+	Print("TEST: discreteFrechet test successful.");
 	Print("=================================\n");
 }
 

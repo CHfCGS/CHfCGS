@@ -28,7 +28,7 @@ class Graph
 		std::vector<uint> _in_offsets;
 		std::vector<EdgeT> _out_edges;
 		std::vector<EdgeT> _in_edges;
-
+                
 		/* Maps edge id to index in the _out_edge vector. */
 		std::vector<uint> _id_to_index;
 
@@ -56,6 +56,7 @@ class Graph
 		template<typename Range>
 		void printInfo(Range&& nodes) const;
 
+                void setEdgeFlag(EdgeID edge_id, bool tag);
 		uint getNrOfNodes() const { return _nodes.size(); }
 		uint getNrOfEdges() const { return _out_edges.size(); }
 		EdgeT const& getEdge(EdgeID edge_id) const { return _out_edges[_id_to_index[edge_id]]; }
@@ -160,6 +161,18 @@ void Graph<NodeT, EdgeT>::printInfo(Range&& nodes) const
 	}
 #endif
 }
+
+//misuse speed as flag
+template <typename NodeT, typename EdgeT>
+void Graph<NodeT, EdgeT>::setEdgeFlag(EdgeID edge_id, bool tag) { 
+        if (tag) {
+            _out_edges[_id_to_index[edge_id]].speed = 1000; 
+        }else {
+            _out_edges[_id_to_index[edge_id]].speed = -1000; 
+        }
+
+}
+    
 
 template <typename NodeT, typename EdgeT>
 void Graph<NodeT, EdgeT>::sortInEdges()

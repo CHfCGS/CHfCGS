@@ -122,20 +122,18 @@ struct ILP_data {
     std::vector<Line> createPotentialEdges(ILP_Chain &ilp_chain, double epsilon) {
 
         std::vector<Line> lines;
-        //LineID line_id = 0;
 
-        //for (uint i = 0; i < nodes.size()-1; i++) {        
-        //for (uint j = i+1; j < nodes.size(); j++) {   
         assert(ilp_chain.size() >= 2);
-        for (auto srcIt = ilp_chain.begin(); srcIt != --ilp_chain.end(); srcIt++) {
+        for (auto srcIt = ilp_chain.begin(); srcIt != --ilp_chain.end(); srcIt++) {            
             auto incrSrcIt = srcIt;
             for (auto tgtIt = ++incrSrcIt; tgtIt != ilp_chain.end(); tgtIt++) {
                 Line line(*srcIt, *tgtIt, nextLineID);
                 if (computeLineError(line, ilp_chain, srcIt, tgtIt) < epsilon) {
                     lines.push_back(line);
-                    nextLineID++;
+                    nextLineID++;                    
                 }
             }
+            
         }
         return lines;
     }
@@ -144,16 +142,16 @@ struct ILP_data {
         std::vector<Line> followerLines;
         for (ILP_Node src : ilp_chainSrc) {
             bool isFollowing = false; //every node must have at least one other node which it could follow
-            for (ILP_Node tgt : ilp_chainTgt) {
+            for (ILP_Node tgt : ilp_chainTgt) {                                
                 if (geo::geoDist(src.ch_node, tgt.ch_node) < eta) {
                     Line line(src, tgt, nextLineID);
                     followerLines.push_back(line);
                     nextLineID++;
                     isFollowing = true;
                 }
-            }
+            }            
             assert(isFollowing);
-            followerIsPartial = !isFollowing;            
+            //followerIsPartial = !isFollowing;            
         }
         return followerLines;
     }    
@@ -207,6 +205,5 @@ struct ILP_data {
         }
         allPotEdges = concatLines(potEdges1, potEdges2);
         edgeIntersections = calculateIntersections(allPotEdges);        
-
     }
 };

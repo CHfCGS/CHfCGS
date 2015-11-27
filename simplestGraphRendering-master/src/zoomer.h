@@ -75,7 +75,8 @@ namespace Zoomer {
 		static void zoom(std::vector<CHNode> &ch_nodes, std::vector<CHEdge> &ch_edges, std::vector<Node> &nodes, std::vector<Edge> &edges,
 			double percent_of_showed_nodes = 2, //normal: 2
 			double expandSize = 0.002, //normal: 0.002
-			bool expand = false
+			bool expand = false,
+                        bool spareShortcuts = false
 			) {						
 				
 			DEBUG("Calculating zoomlvl");
@@ -99,6 +100,15 @@ namespace Zoomer {
 			for (uint edgeID = 0; edgeID < ch_edges.size(); edgeID++){        
 				removeShortcut(ch_nodes, ch_edges, edgeID);             
 			}
+                        if (spareShortcuts) {
+                            //do not draw visually unpleasing shortcuts
+                            for (uint edgeID = 0; edgeID < ch_edges.size(); edgeID++){
+                                if (ch_edges[edgeID].speed == -1000) {
+                                    ch_edges[edgeID].remaining = false;       
+                                }				
+                            }
+                        }
+                        
 			
 			if (expand) {
 				DEBUG("Processing expandSize");

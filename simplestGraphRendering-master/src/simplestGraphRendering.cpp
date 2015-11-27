@@ -830,7 +830,8 @@ struct State {
 	GfxGraph *gfxGraph;
 	GtkRange *hscalePercent;	
 	GtkRange *hscaleExpandSize;
-	GtkWidget *checkButton;
+	GtkWidget *checkButtonExpand;
+        GtkWidget *checkButtonSpareShortcuts;
 };
 
 void on_button_clicked (GtkWidget *widget, gpointer data)
@@ -839,10 +840,11 @@ void on_button_clicked (GtkWidget *widget, gpointer data)
 	double percent = gtk_range_get_value (state.hscalePercent);
 	double expandSize = gtk_range_get_value (state.hscaleExpandSize);
 	//bool expand = GTK_TOGGLE_BUTTON(state.checkButton)->active;
-	bool expand = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON(state.checkButton));
+	bool expand = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON(state.checkButtonExpand));
+        bool spareShortcuts = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON(state.checkButtonSpareShortcuts));
 	//GTK_TOGGLE_BUTTON (widget)->active)
 		
-	Zoomer::zoom(state.ch_nodes, state.ch_edges, state.nodes, state.edges, percent , expandSize, expand);
+	Zoomer::zoom(state.ch_nodes, state.ch_edges, state.nodes, state.edges, percent , expandSize, expand , spareShortcuts);
 	state.gfxGraph->convertGraphData(state.nodes, state.edges);
 	state.gfxGraph->bufferGraphData();		
 }
@@ -1013,9 +1015,9 @@ int main(int argc, char*argv[])
 	state.hscalePercent = GTK_RANGE(hscalePercent);
 	
 	//check Button to enable/disable edge expand
-	GtkWidget *checkButton = gtk_check_button_new_with_label("enable edge expand");
-	gtk_grid_attach (GTK_GRID(grid), checkButton, 0, 2, 1, 1);  	
-	state.checkButton = checkButton;  
+	GtkWidget *checkButtonExpand = gtk_check_button_new_with_label("enable edge expand");
+	gtk_grid_attach (GTK_GRID(grid), checkButtonExpand, 0, 2, 1, 1);  	
+	state.checkButtonExpand = checkButtonExpand;  
 	
 	//Expand
 	GtkWidget *labelExpandSize = gtk_label_new ("expand all edges with size > :");
@@ -1028,10 +1030,15 @@ int main(int argc, char*argv[])
 	gtk_grid_attach (GTK_GRID(grid), hscaleExpandSize, 0, 4, 1, 1);                 
 	state.hscaleExpandSize = GTK_RANGE(hscaleExpandSize);	
 	
+        //check Button to enable/disable spareShortcuts
+	GtkWidget *checkButtonSpareShortcuts = gtk_check_button_new_with_label("enable spareShortcuts");
+	gtk_grid_attach (GTK_GRID(grid), checkButtonSpareShortcuts, 0, 5, 1, 1);  	
+	state.checkButtonSpareShortcuts = checkButtonSpareShortcuts; 
+        
 	// Refresh Button
 	button = gtk_button_new_with_label ("Refresh");		
 	g_signal_connect (button, "clicked", G_CALLBACK (on_button_clicked),  &state);		
-	gtk_grid_attach (GTK_GRID(grid), button, 0, 5, 1, 1);                                     
+	gtk_grid_attach (GTK_GRID(grid), button, 0, 6, 1, 1);                                     
 	gtk_container_add (GTK_CONTAINER (GTKwindow), grid);
 	gtk_widget_show_all (GTKwindow);
 

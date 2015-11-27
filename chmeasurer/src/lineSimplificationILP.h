@@ -201,7 +201,7 @@ class lineSimplificationILP {
 public:
 
     lineSimplificationILP(CHGraph<CHNode, CHEdge> &graph): graph(graph) {    
-        
+        objective_value = std::numeric_limits<double>::max();
     }
     
     ~lineSimplificationILP() {
@@ -242,13 +242,34 @@ public:
         glp_init_iocp(&parm);
         parm.presolve = GLP_ON;
         glp_intopt(lp, &parm);
-
-
-
         //glp_print_mip(lp, "solution.txt");
         
-        // recover and display results 
-        objective_value = glp_mip_obj_val(lp);        
+        // recover and display results
+        switch (glp_mip_status(lp)) {
+            case GLP_UNDEF:
+            {
+                objective_value = std::numeric_limits<double>::max();
+                break;
+            }
+            case GLP_OPT:
+            {
+                objective_value = glp_mip_obj_val(lp);
+                break;
+            }
+            case GLP_FEAS:
+            {
+                objective_value = std::numeric_limits<double>::max();
+                break;
+            }
+            case GLP_NOFEAS:
+            {
+                objective_value = std::numeric_limits<double>::max();
+                break;
+            }
+            default:
+                break;
+        }
+               
 
         
         //printf("objective_value = %g\n", objective_value);

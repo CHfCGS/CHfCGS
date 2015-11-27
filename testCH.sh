@@ -14,7 +14,7 @@ out=$data"_ch_out.graph"
 chconstructor/build/ch_constructor -i data/Graph/$in -o data/CH/$out -p DP -f FMI_DIST -g FMI_CH
 # 
 
-#visualizer
+#measurer
 in=$out
 cd chmeasurer/build
 ./ch_measurer -gf ../../data/CH/$in

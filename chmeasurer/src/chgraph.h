@@ -99,6 +99,7 @@ class CHGraph
 
 		typedef range<typename std::vector<EdgeT>::const_iterator> node_edges_range;
 		node_edges_range _nodeEdges(NodeID node_id, EdgeType type) const;
+                std::vector<EdgeT> nodeEdges(NodeID node_id) const;
                 std::vector<EdgeT> nodeEdges(NodeID node_id, EdgeType type) const;
                 std::vector<EdgeT> nodeEdges(NodeID node_id, StreetType streetType) const;
                 
@@ -606,6 +607,18 @@ auto CHGraph<NodeT, EdgeT>::_nodeEdges(NodeID node_id, EdgeType type) const -> n
 }
 
 template <typename NodeT, typename EdgeT>
+std::vector<EdgeT> CHGraph<NodeT, EdgeT>::nodeEdges(NodeID node_id) const  {       
+        std::vector<EdgeT> edges;
+        for (auto const edge : nodeEdges(node_id, EdgeType::IN)) {            
+            edges.push_back(edge);                            
+        }        
+        for (auto const edge : nodeEdges(node_id, EdgeType::OUT)) {
+            edges.push_back(edge);           
+        }                
+        return edges;        
+}
+
+template <typename NodeT, typename EdgeT>
 std::vector<EdgeT> CHGraph<NodeT, EdgeT>::nodeEdges(NodeID node_id, EdgeType type) const  {
         std::vector<EdgeT> nodeEdges;
         for (auto const edge : _nodeEdges(node_id, type)) {
@@ -615,6 +628,9 @@ std::vector<EdgeT> CHGraph<NodeT, EdgeT>::nodeEdges(NodeID node_id, EdgeType typ
         }
         return nodeEdges;
 }
+
+
+
 
 template <typename NodeT, typename EdgeT>
 std::vector<EdgeT> CHGraph<NodeT, EdgeT>::nodeEdges(NodeID node_id, StreetType streetType) const  {       

@@ -463,6 +463,15 @@ struct EdgeSortSrcTgtDist
 
 }
 
+//similar to an Edge, but can be handled easier for geometric calculations
+struct OSMLine {
+    OSMLine(chc::OSMNode src, chc::OSMNode tgt):
+        src(src), tgt(tgt) {}
+    chc::OSMNode src;
+    chc::OSMNode tgt;
+};
+
+
 namespace DP {
 
 using namespace chc;
@@ -599,7 +608,7 @@ struct PIntervall {
 };
 
 struct PPrioNode {
-    std::list<PPrioNode>::iterator follower; //if a PPrioNode is chosen to subdivide one way the follower is subdivides the other in the DP algorithm
+    std::list<PPrioNode>::iterator follower; //if a PPrioNode is chosen to subdivide one way the follower is chosen to subdivide the other in the DP algorithm
     bool followerValid = false;
     std::list<std::list<PPrioNode>::iterator> guides; // this object would follow all PPrioNodes in the list
     
@@ -623,7 +632,7 @@ struct PPrioNode {
     
     //< means later processed in DP and sooner contracted
     bool operator <(const PPrioNode &rhs) const {
-                
+        //TODO also take follower values into account                
         if (this->nOfIntersections > rhs.nOfIntersections) {
             return true;
         } else if (this->nOfIntersections == rhs.nOfIntersections) {            

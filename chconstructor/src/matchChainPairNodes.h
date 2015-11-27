@@ -3,6 +3,8 @@
 #include <limits>
 #include <algorithm>
 
+#include "self_intersection_checker.h"
+#include "cdt_matching.h"
 #include "nodes_and_edges.h"
 
 #undef matchChainPairNodesNDEBUG
@@ -345,35 +347,56 @@ class matchChainPairNodes {
                  * */
             }   
         }                 
-    }    
+    }
+
+    void zipOrder() {
+        vector<ZipNode> zipOrder;
+        size_t size = toList.size() + fromList.size();
+        zipOrder.reserve(size);
+        //construct an ordering to get follow-function
+
+        bool activeDirection = true; //TODO: make it less arbitrary
+
+        zipOrder.push_back(ZipNode(toList.begin(), activeDirection));
+
+        auto toIt = toList.begin();
+        auto fromIt = fromList.rbegin();
+
+        for (uint i = 0; i < size - 1; i++) {
+            ZipNode zipNode = getNext(toIt, fromIt, activeDirection);
+            zipOrder.push_back(zipNode);
+        }
+
+        setFollowers(zipOrder, true);
+    }
     
 public:
     matchChainPairNodes(const GraphT &base_graph, PIntervall &intervallTo, PIntervall &intervallFrom)
         : base_graph(base_graph), toList(intervallTo.prioNodesIts), fromList(intervallFrom.prioNodesIts) {}
     
     void match() {
-        //vector<list<PPrioNodeRef>::iterator> ordering;
-        debug_assert(toList.size()>=1 && fromList.size()>=1);        
-        
-        vector<ZipNode> zipOrder;
-        size_t size = toList.size() + fromList.size();
-        zipOrder.reserve(size);
-        //construct an ordering to get follow-function
-                
-        bool activeDirection = true; //TODO: make it less arbitrary
-        
-        zipOrder.push_back(ZipNode(toList.begin(), activeDirection));
-                
-        auto toIt = toList.begin();        
-        auto fromIt = fromList.rbegin();
-        
-        for (uint i = 0; i < size-1; i++) {
-            ZipNode zipNode = getNext(toIt, fromIt, activeDirection);            
-            zipOrder.push_back(zipNode);            
+        debug_assert(toList.size()>=1 && fromList.size()>=1); 
+        SelfIntersectionChecker<GraphT> selfIC(base_graph);
+        Chain chainTo;
+        for (auto it: toList) {
+            chainTo.push_back(it->node_id);
         }
+        Chain chainFrom;
+        for (auto it: fromList) {
+            chainFrom.push_back(it->node_id);
+        }
+        //additionally to make sure cdt_matching constraints do not not intersect 
+        chainTo.push_back(chainFrom.front());
+        chainFrom.push_back(chainTo.front());
+        bool isSelfIntersecting = selfIC.isSelfIntersecting(chainTo, chainFrom);
         
-        setFollowers(zipOrder, true);
-        
+        bool useZipOrder = isSelfIntersecting;
+        if (useZipOrder) {
+            zipOrder();            
+        } else {            
+            CDTMatching<GraphT> ctd_matcher(base_graph);
+            ctd_matcher.match(toList, fromList);
+        }
         return;
     }            
 };

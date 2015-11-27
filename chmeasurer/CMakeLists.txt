@@ -13,6 +13,7 @@
 # OBJECT library requires 2.8.8
 cmake_minimum_required(VERSION 2.8.8 FATAL_ERROR)
 project(ch_measurer CXX)
+#project(run_tests CXX)
 
 enable_testing()
 
@@ -47,7 +48,10 @@ include_directories(${GMP_INCLUDE_DIR})
 link_directories(${GMP_LIBRARIES})
 
 
+find_package(Boost REQUIRED thread)
+
 find_package(CGAL REQUIRED)
+
 find_package(PkgConfig REQUIRED)
 
 enable_testing()
@@ -91,14 +95,14 @@ add_executable(ch_measurer
 	src/ch_measurer.cpp	
 	$<TARGET_OBJECTS:common>
 )
-target_link_libraries(ch_measurer ${GLPK_LIBRARIES} ${CGAL_LIBRARY} ${GMP_LIBRARIES}  ) 
+target_link_libraries(ch_measurer ${GLPK_LIBRARIES} ${CGAL_LIBRARY} ${GMP_LIBRARIES} ${Boost_LIBRARIES} ) 
 
 add_executable(run_tests
 	src/run_tests.cpp
 	src/unit_tests.cpp
 	$<TARGET_OBJECTS:common>
 )
-target_link_libraries(run_tests ${GLPK_LIBRARIES} ${CGAL_LIBRARY} ${GMP_LIBRARIES})
+target_link_libraries(run_tests ${GLPK_LIBRARIES} ${CGAL_LIBRARY} ${GMP_LIBRARIES} ${Boost_LIBRARIES})
 
 add_test(NAME unit-test
 	WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/src"

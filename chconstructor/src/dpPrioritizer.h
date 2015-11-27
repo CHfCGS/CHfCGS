@@ -246,7 +246,7 @@ namespace chc {
         }*/
         
         DPPrioritizer(GraphT const& base_graph, CHConstructorT const& chc)
-        : _base_graph(base_graph), _chc(chc), state(State::start),
+        : _base_graph(base_graph), _chc(chc), state(State::removingChains),
         grid(1000, base_graph), fourDGrid(1, base_graph), deadEndDetector(base_graph), chaindetector(base_graph), dp(this->_base_graph, grid),
         cpdp(this->_base_graph, grid), CaR(), priolists(), epsilon(10000), roundcounter(1) {            
         }        
@@ -259,8 +259,8 @@ namespace chc {
             bool empty = _prio_vec.empty();
             debug_assert(!empty);
             std::vector<NodeID> next_nodes;
-
-
+            
+                        
             switch (state) {
                 case State::start: {
                     deadEnds = deadEndDetector.detectDeadEnds(_prio_vec);
@@ -283,8 +283,7 @@ namespace chc {
                         }
 
                         Print("Detecting chains");
-
-                        //CaR = chaindetector.detectChains(EdgeDiffPrioritizer<GraphT, CHConstructorT>::_prio_vec);            
+                        
                         CaR = chaindetector.detectChains(_prio_vec);
                         Print("Number of chains: " << CaR.getNrOfChains());
                         debug_assert(CaR.getNrOfNodesInChains() + CaR.remainder.size() == this->_prio_vec.size());
