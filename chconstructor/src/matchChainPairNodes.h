@@ -3,14 +3,14 @@
 #include <limits>
 #include <algorithm>
 
-#include "self_intersection_checker.h"
-#include "cdt_matching.h"
+//#include "self_intersection_checker.h"
+//#include "cdt_matching.h"
 #include "nodes_and_edges.h"
 
 #undef matchChainPairNodesNDEBUG
 
 
-using namespace DP;
+using namespace ls;
         
 //namespace MCPN {
 //static class
@@ -181,16 +181,16 @@ class matchChainPairNodes {
     }
     
     
-    void setFollower (std::list<std::list<PPrioNode>::iterator>::iterator nodeIt,
+    void _setFollower (std::list<std::list<PPrioNode>::iterator>::iterator nodeIt,
                       std::list<std::list<PPrioNode>::iterator>::iterator followerIt) {
         (*nodeIt)->followerValid = true;
         (*nodeIt)->follower = *followerIt;            
         (*followerIt)->guides.push_back(*nodeIt);
     }
     
-    void setFollowers (list<ZipNode> &zipNodes, std::list<std::list<PPrioNode>::iterator>::iterator followerIt) {
+    void _setFollowers (list<ZipNode> &zipNodes, std::list<std::list<PPrioNode>::iterator>::iterator followerIt) {
         for (ZipNode &zn : zipNodes) {
-            setFollower(zn.nodeIt, followerIt); 
+           _setFollower (zn.nodeIt, followerIt); 
         }
     }
     
@@ -226,7 +226,7 @@ class matchChainPairNodes {
             if (minSide == true) { //cut away front part                
                 followerDeterminedZipNodes.splice (followerDeterminedZipNodes.begin(),
                     zs.zipNodes, zs.zipNodes.begin(), ++minIt);
-                setFollowers(followerDeterminedZipNodes, zs.prevOnOtherSide.nodeIt);                
+                _setFollowers(followerDeterminedZipNodes, zs.prevOnOtherSide.nodeIt);                
                 processSegment(zs);
                 
             } else {  //cut away back part
@@ -236,7 +236,7 @@ class matchChainPairNodes {
                 
                 followerDeterminedZipNodes.splice (followerDeterminedZipNodes.begin(),
                     zs.zipNodes, minIt, zs.zipNodes.end());
-                setFollowers(followerDeterminedZipNodes, zs.nextOnOtherSide.nodeIt);                
+                _setFollowers(followerDeterminedZipNodes, zs.nextOnOtherSide.nodeIt);                
                 processSegment(zs);                
             }
             
@@ -261,7 +261,7 @@ class matchChainPairNodes {
                 i++;
             }
             firstSegment.nextOnOtherSide = zipOrder.at(i);
-            setFollowers(firstSegment.zipNodes, firstSegment.nextOnOtherSide.nodeIt);            
+            _setFollowers(firstSegment.zipNodes, firstSegment.nextOnOtherSide.nodeIt);            
             uint lastOfFirst = i-1;            
             
             //last Segment
@@ -275,7 +275,7 @@ class matchChainPairNodes {
                 j--;
             }
             lastSegment.prevOnOtherSide = zipOrder.at(j);
-            setFollowers(lastSegment.zipNodes, lastSegment.prevOnOtherSide.nodeIt); 
+            _setFollowers(lastSegment.zipNodes, lastSegment.prevOnOtherSide.nodeIt); 
             uint firstOfLast = j+1;
                  
             //middle Segments
@@ -339,7 +339,7 @@ class matchChainPairNodes {
                 
                 std::list<std::list<PPrioNode>::iterator>::iterator nodeIt = zipOrder[i].nodeIt;
                 std::list<std::list<PPrioNode>::iterator>::iterator followerIt = zipOrder[follower].nodeIt;
-                setFollower(nodeIt, followerIt);
+                _setFollower(nodeIt, followerIt);
                 /*
                 (*zipOrder[i].nodeIt)->followerValid = true;
                 (*zipOrder[i].nodeIt)->follower = *zipOrder[follower].nodeIt;            
@@ -376,7 +376,7 @@ public:
     
     void match() {
         debug_assert(toList.size()>=1 && fromList.size()>=1); 
-        SelfIntersectionChecker<GraphT> selfIC(base_graph);
+        //SelfIntersectionChecker<GraphT> selfIC(base_graph);
         Chain chainTo;
         for (auto it: toList) {
             chainTo.push_back(it->node_id);
@@ -388,14 +388,15 @@ public:
         //additionally to make sure cdt_matching constraints do not not intersect 
         chainTo.push_back(chainFrom.front());
         chainFrom.push_back(chainTo.front());
-        bool isSelfIntersecting = selfIC.isSelfIntersecting(chainTo, chainFrom);
+        bool isSelfIntersecting = true;//= selfIC.isSelfIntersecting(chainTo, chainFrom);
         
         bool useZipOrder = isSelfIntersecting;
         if (useZipOrder) {
             zipOrder();            
         } else {            
-            CDTMatching<GraphT> ctd_matcher(base_graph);
-            ctd_matcher.match(toList, fromList);
+            zipOrder();  
+            //CDTMatching<GraphT> ctd_matcher(base_graph);
+            //ctd_matcher.match(toList, fromList);
         }
         return;
     }            

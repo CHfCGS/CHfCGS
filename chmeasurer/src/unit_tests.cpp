@@ -16,6 +16,7 @@
 #include "dijkstra.h"
 #include "discreteFrechet.h"
 //#include "prioritizers.h"
+#include "cdthp_cross.h"
 
 #include <map>
 #include <iostream>
@@ -36,6 +37,7 @@ void unit_tests::testAll()
     unit_tests::testIsBetween();
      
     unit_tests::testdiscreteFrechet();
+    unit_tests::testCDTHCross();
 }
 
 void unit_tests::testLineSimplfication()
@@ -306,6 +308,50 @@ void unit_tests::testdiscreteFrechet()
 
 	Print("\n=================================");
 	Print("TEST: discreteFrechet test successful.");
+	Print("=================================\n");
+}
+
+void unit_tests::testCDTHCross()
+{
+	Print("\n============================");
+	Print("TEST: Start CDTHCross test.");
+	Print("============================\n");
+        
+        
+        CHGraph<CHNode, CHEdge> graph;
+        GraphInData<CHNode, CHEdge> graphInData;
+        
+        
+        graphInData.nodes.push_back(CHNode(0, 0));
+        graphInData.nodes.push_back(CHNode(1, 1));
+        graphInData.nodes.push_back(CHNode(0, -2));
+        graphInData.nodes.push_back(CHNode(-2, 0));
+        graphInData.nodes.push_back(CHNode(1, 3));
+        graphInData.nodes.push_back(CHNode(6, -2));
+        graphInData.nodes.push_back(CHNode(8, 0));
+        
+        Chain chain;
+        for (int i = 0; i < 7; i++) {
+            chain.push_back(i);
+        }
+
+        //outliers
+        graphInData.nodes.push_back(CHNode(1, 0.5));
+        graphInData.nodes.push_back(CHNode(0, -1));
+        graphInData.nodes.push_back(CHNode(-3, -1));
+        graphInData.nodes.push_back(CHNode(1.5, 1.5)); 
+        graphInData.nodes.push_back(CHNode(3, -1)); 
+        graphInData.nodes.push_back(CHNode(4, 0.5)); 
+        graphInData.nodes.push_back(CHNode(7, -0.5)); 
+        
+        graph.init(std::move(graphInData));
+        Grid<CHGraph<CHNode, CHEdge> > grid(1, graph);
+        
+        CDTHPCross cdthpC(graph, grid);
+        Test(cdthpC.getNofCrossings(chain) == 4);
+                   
+	Print("\n=================================");
+	Print("TEST: CDTHCross test successful.");
 	Print("=================================\n");
 }
 

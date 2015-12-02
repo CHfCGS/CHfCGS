@@ -3,13 +3,14 @@
 #include "matchChainPairNodes.h"
 
 #include "nodes_and_edges.h"
+#include "simplification/prio_nodes.h"
 #include "grid.h"
 #include "chains.h"
 
 #include <limits>
 #include <math.h>
 
-namespace DP {
+namespace ls {
 
 
 template <class GraphT>
@@ -338,8 +339,7 @@ class chainPairDP{
             
             matchChainPairNodes<GraphT> matcher(base_graph, intervalls.front(), intervalls.back());
             matcher.match();
-            
-            
+                        
             return simplify();
         }                     
 };

@@ -250,15 +250,16 @@ namespace chc {
         td.dists.assign(nr_of_nodes, c::NO_DIST);
         td.reset_dists.reserve(nr_of_nodes);
         //initialize all last shortcuts with unpleasing
-        for (int edge_id = 0; edge_id < _base_graph.getNrOfEdges(); edge_id++) {
-            if(_base_graph.isShortcutOfRound(edge_id, lastRoundLvl)) {
-                _base_graph.setEdgeFlag(edge_id, false);
+        
+        for (const EdgeT &edge: _base_graph.getAllEdges()) {            
+            if(_base_graph.isShortcutOfRound(edge.id, lastRoundLvl)) {
+                _base_graph.setEdgeFlag(edge.id, false);
             }
         }
         
-        for (int edge_id = 0; edge_id < _base_graph.getNrOfEdges(); edge_id++) {
-            if(_base_graph.isShortcutOfRound(edge_id, lastRoundLvl)) {
-                auto shortcut = _base_graph.getEdge(edge_id);
+        for (const EdgeT &edge: _base_graph.getAllEdges()) {   
+            if(_base_graph.isShortcutOfRound(edge.id, lastRoundLvl)) {
+                auto shortcut = _base_graph.getEdge(edge.id);
                 //get a factor for radius
                 OSMNode src = _base_graph.getNode(shortcut.src);
                 OSMNode tgt = _base_graph.getNode(shortcut.tgt);
@@ -267,7 +268,7 @@ namespace chc {
                 double factor = perpendicularLength * pow(10,5);
                 
                 if (!_otherPathExist(td, shortcut.src, shortcut.tgt, (1+factor)*shortcut.dist)) {
-                    _base_graph.setEdgeFlag(edge_id, true);
+                    _base_graph.setEdgeFlag(edge.id, true);
                 }                
             }            
         }

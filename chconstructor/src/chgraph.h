@@ -120,6 +120,8 @@ void CHGraph<NodeT, EdgeT>::restructure(
 	_in_edges.assign(_out_edges.begin(), _out_edges.end());
 	BaseGraph::sortInEdges();
 	BaseGraph::initOffsets();
+        
+        BaseGraph::initIdToIndex();
 }
 
 template <typename NodeT, typename EdgeT>
@@ -167,15 +169,14 @@ void CHGraph<NodeT, EdgeT>::rebuildCompleteGraph()
 template <typename NodeT, typename EdgeT>
 bool CHGraph<NodeT, EdgeT>::isShortcutOfRound(EdgeID edge_id, uint round) const
 {
-    assert(0 <= edge_id && edge_id < _out_edges.size());
-    NodeID center_node_id = _out_edges[edge_id].center_node;
+    assert(0 <= edge_id && edge_id < _id_to_index.size());    
+    assert(0 <= _id_to_index[edge_id] && _id_to_index[edge_id] < _out_edges.size());
+    NodeID center_node_id = _out_edges[_id_to_index[edge_id]].center_node;
     if (center_node_id != c::NO_NID) { 
         return (_node_levels[center_node_id] == round);
     } else {
         return false;
     }
-
-    
 }
 
 template <typename NodeT, typename EdgeT>

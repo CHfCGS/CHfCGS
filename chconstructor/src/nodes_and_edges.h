@@ -471,8 +471,8 @@ struct OSMLine {
     chc::OSMNode tgt;
 };
 
-
-namespace DP {
+/*
+namespace ls {
 
 using namespace chc;
 //DouglasPeucker related types
@@ -538,21 +538,14 @@ struct NodeInBox {
     bool sign; // true: >= 0 false: < 0
 };
 
-struct PrioNodeData {
-    PrioNodeData(PrioNodeRef ref):ref(ref), nodesInBox(){}
-    PrioNodeRef ref;    
-    std::vector<NodeInBox> nodesInBox;
-};
 
 struct Intervall {    
 
     Intervall(const NodeID start, const NodeID end): start(start), end(end), prioNodesRefs() {        
-    }
-    
+    }    
     const NodeID start;
     const NodeID end;
-    std::list<PrioNodeRef> prioNodesRefs; //all nodes between start and end (excluding))
-    //QueueNodeIteratorList queueNodes;
+    std::list<PrioNodeRef> prioNodesRefs; //all nodes between start and end (excluding))    
 };
 
 
@@ -592,10 +585,54 @@ struct PrioNode {
 };
 
 
+struct Intervall2 {    
+
+    Intervall2(const NodeID start, const NodeID end): start(start), end(end), prioNodesRefs() {        
+    }    
+    const NodeID start;
+    const NodeID end;
+    std::list<PrioNodeRef> prioNodesRefs; //all nodes between start and end (excluding))    
+};
+
+
+struct PrioNode2 {
+    const NodeID node_id;
+    std::list<Intervall2>::iterator intervallIt;    
+    std::list<PrioNodeRef>::iterator posInIntervallIt;
+        
+    std::vector<NodeInBox> &leftBox;
+    std::vector<NodeInBox> &rightBox;
+    
+    double perpendicularLength;
+    uint nOfIntersections = 0; //used as orientation misses
+            
+    PrioNode2(const NodeID node, std::list<Intervall2>::iterator intervallIt, std::vector<NodeInBox> &leftBox, std::vector<NodeInBox> &rightBox)
+    : node_id(node), intervallIt(intervallIt), leftBox(leftBox), rightBox(rightBox), perpendicularLength(0) {        
+    }
+
+    explicit operator simplePrioNode() const {
+        return simplePrioNode(node_id, perpendicularLength, nOfIntersections);
+    }
+    
+    //< means later processed in DP and sooner contracted
+    bool operator <(const PrioNode2 &rhs) const {
+        
+        if (this->nOfIntersections > rhs.nOfIntersections) {
+            return true;
+        } else if (this->nOfIntersections == rhs.nOfIntersections) {            
+            return this->perpendicularLength < rhs.perpendicularLength;     
+        }
+        else {
+            return false;
+        }
+        
+        //return this->perpendicularLength < rhs.perpendicularLength; 
+    }
+};
+
 //data types used for ChainPair version of DouglasPeucker ("P" = "Pair")
 
 struct PPrioNode;
-//typedef std::reference_wrapper<PPrioNode> PPrioNodeRef;
 
 struct PIntervall {    
     PIntervall(const NodeID start, const NodeID end): start(start), end(end), prioNodesIts() {        
@@ -641,23 +678,8 @@ struct PPrioNode {
         else {
             return false;
         }        
-    }
-    /*
-    PPrioNode(const NodeID node, std::list<Intervall>::iterator intervallIt, std::vector<NodeInBox> &leftBox, std::vector<NodeInBox> &rightBox)
-    : PrioNode(node, intervallIt, leftBox, rightBox) {        
-    }
-     * */
+    }    
 };
 
-/*
-struct simplePrioNode {
-    const NodeID node_id;
-    double perpendicularLength;
-    uint nOfIntersections = 0;
-    
-    simplePrioNode(NodeID node_id, double perpendicularLength, uint nOfIntersections):
-        node_id(node_id), perpendicularLength(perpendicularLength), nOfIntersections(nOfIntersections) {}
-};
- * */
-    
 }
+*/

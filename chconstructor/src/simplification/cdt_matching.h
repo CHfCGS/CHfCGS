@@ -13,11 +13,12 @@
 #include <ostream>
 #include <fstream>
 #include <limits>
-#include "geoFunctions.h"
 
-#include "chains.h"
-#include "chgraph.h"
-#include "nodes_and_edges.h"
+#include "../geoFunctions.h"
+#include "../chains.h"
+#include "../chgraph.h"
+#include "../nodes_and_edges.h"
+#include "prio_nodes.h"
 
 using namespace ls;
 
@@ -28,7 +29,7 @@ namespace chc {
 }
 
 struct VertexInfo2 {
-    std::list<std::list<PPrioNode>::iterator>::iterator it;
+    std::list<PrioNodeHandle>::iterator it;
     uint posInChain;
     bool side;
     //Chain::iterator node_it;    
@@ -45,15 +46,16 @@ struct FaceInfo2
   }
 };
 
-//typedef CGAL::Quotient<CGAL::MP_Float>                  NT;
-typedef CGAL::Exact_predicates_inexact_constructions_kernel                       K;
+typedef CGAL::Quotient<CGAL::MP_Float>                  NT;
+typedef CGAL::Cartesian<NT> K;
+//typedef CGAL::Exact_predicates_inexact_constructions_kernel                       K;
 //typedef CGAL::Simple_cartesian<double> K;
 //typedef CGAL::Exact_predicates_inexact_constructions_kernel       K;
 typedef CGAL::Triangulation_vertex_base_with_info_2<VertexInfo2, K>                      Vb;
 typedef CGAL::Triangulation_face_base_with_info_2<FaceInfo2, K>    Fbb;
 typedef CGAL::Constrained_triangulation_face_base_2<K,Fbb>        Fb;
 typedef CGAL::Triangulation_data_structure_2<Vb,Fb>               TDS;
-typedef CGAL::Exact_predicates_tag                                Itag;
+typedef CGAL::Exact_intersections_tag                                Itag;
 typedef CGAL::Constrained_Delaunay_triangulation_2<K, TDS, Itag>  CDT;
 typedef CDT::Point                                                Point;
 //typedef CGAL::Polygon_2<K>                                        Polygon_2;
@@ -63,7 +65,7 @@ typedef CDT::Point                                                Point;
 
 
 template <class GraphT>
-class CDTMatching {
+class CDTMatching2 {
 private:
     const GraphT &graph;
     
@@ -176,43 +178,62 @@ private:
         return false;
     }
     
-    void setFollower (std::list<std::list<PPrioNode>::iterator>::iterator nodeIt,
+    void _setFollower (const std::list<PrioNodeHandle>::const_iterator nodeIt,
+                      const std::list<PrioNodeHandle>::const_iterator followerIt) {
+        PrioNode2 &node = *(*nodeIt);
+        PrioNode2 &follower = *(*followerIt);
+        node.followerValid = true;
+        node.follower_h = *followerIt;            
+        
+        const PrioNodeHandle pnh = *nodeIt;
+        std::list<PrioNodeHandle> &guidelist = follower.guides;
+        guidelist.push_back(pnh);
+    }
+    /*
+    void _setFollower (std::list<std::list<PPrioNode>::iterator>::iterator nodeIt,
                       std::list<std::list<PPrioNode>::iterator>::iterator followerIt) {
         (*nodeIt)->followerValid = true;
         (*nodeIt)->follower = *followerIt;            
         (*followerIt)->guides.push_back(*nodeIt);
+    }*/
+    
+    double geoDist(const PrioNodeHandle pnh1, const PrioNodeHandle pnh2) {
+        const PrioNode2 &pn1 = *pnh1;
+        const PrioNode2 &pn2 = *pnh2;
+        return geo::geoDist(graph.getNode(pn1.node_id), graph.getNode(pn2.node_id));
     }
     
-    void getAndSetNearestFollower(std::list<std::list<PPrioNode>::iterator>::iterator nodeIt,
-                std::list<std::list<std::list<PPrioNode>::iterator>::iterator> possibleFollowersIts) {
+    void getAndSetNearestFollower(std::list<PrioNodeHandle>::iterator nodeIt,
+                std::list<std::list<PrioNodeHandle>::iterator> possibleFollowersIts) {
         auto nearestFollowerIt = possibleFollowersIts.end();
         double minDist = std::numeric_limits<double>::max();
         for (auto it = possibleFollowersIts.begin(); it != possibleFollowersIts.end(); it++) {
-            double dist = geo::geoDist(graph.getNode((*nodeIt)->node_id), graph.getNode((*(*it))->node_id));
+            double dist = geoDist(*nodeIt, *(*it));
             if (dist < minDist) {
                 minDist = dist;
                 nearestFollowerIt = it;
             }            
         }
         if(nearestFollowerIt != possibleFollowersIts.end()) {
-            setFollower(nodeIt, *nearestFollowerIt);
+            _setFollower(nodeIt, *nearestFollowerIt);
         }
 
     }
     
-    void insertChainConstraints(std::list<std::list<PPrioNode>::iterator> &list,
+    void insertChainConstraints(std::list<PrioNodeHandle> &list,
                                     std::list<CDT::Vertex_handle> &vertexHandles,
-                                    bool direction,
+                                    bool side,
                                     CDT &cdt) {
         uint posInChain = 0;
         //insert points in cdt
         for (auto it = list.begin(); it != list.end(); it++) {
-            NodeID node_id = (*it)->node_id;
+            const PrioNode2 &pn = *(*it);
+            NodeID node_id = pn.node_id;
             auto node = graph.getNode(node_id);
             CDT::Vertex_handle vh = cdt.push_back(Point(node.lon, node.lat));            
             vh->info().it = it;
             vh->info().posInChain = posInChain;
-            vh->info().side = direction;
+            vh->info().side = side;
             vertexHandles.push_back(vh);
             posInChain++;
         }
@@ -224,8 +245,8 @@ private:
         }
     }
     
-    void insertConstraints(std::list<std::list<PPrioNode>::iterator> &toList,
-                            std::list<std::list<PPrioNode>::iterator> &fromList,
+    void insertConstraints(std::list<PrioNodeHandle> &toList,
+                            std::list<PrioNodeHandle> &fromList,
                             CDT &cdt) {
         
         std::list<CDT::Vertex_handle> vertexHandlesTo;
@@ -236,16 +257,17 @@ private:
         
         //set constraints at begin and end
         //cdt.insert_constraint(vertexHandlesTo.front(), vertexHandlesFrom.front());
-        cdt.insert_constraint(vertexHandlesTo.front(), vertexHandlesFrom.back());
-        cdt.insert_constraint(vertexHandlesTo.back(), vertexHandlesFrom.front());
+        
+        cdt.insert_constraint(vertexHandlesTo.front(), vertexHandlesFrom.front());
+        cdt.insert_constraint(vertexHandlesTo.back(), vertexHandlesFrom.back());
     }
     
 public:
-    CDTMatching(const GraphT &graph) : graph(graph) {        
+    CDTMatching2(const GraphT &graph) : graph(graph) {        
     }
 
-    void match(std::list<std::list<PPrioNode>::iterator> &toList,
-                std::list<std::list<PPrioNode>::iterator> &fromList) {
+    void match(std::list<PrioNodeHandle> &toList,
+                std::list<PrioNodeHandle> &fromList) {
         assert(toList.size() >= 1 && fromList.size() >= 1);
         CDT cdt;                
 
@@ -298,6 +320,8 @@ public:
 
         uint finiteVerticesCount = 0;
         for (CDT::Finite_vertices_iterator it = cdt.finite_vertices_begin(); it != cdt.finite_vertices_end(); it++) {
+            PrioNodeHandle pnh = *(it->info().it);
+            PrioNode2 pn = *pnh;
             finiteVerticesCount++;
         }
         
@@ -332,7 +356,7 @@ public:
             } while (++c != d);
             getAndSetNearestFollower(it->info().it, possibleFollowersIts);
             */
-            std::list<std::list<std::list<PPrioNode>::iterator>::iterator> possibleFollowersIts;
+            std::list<std::list<PrioNodeHandle>::iterator> possibleFollowersIts;
             
             CDT::Vertex_handle src_vh = srcIt->handle();
             CDT::Edge_circulator c = src_vh->incident_edges();

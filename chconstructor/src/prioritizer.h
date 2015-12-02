@@ -33,7 +33,9 @@ class Prioritizer
 		virtual bool hasNodesLeft() = 0;
                 
                 //virtual destructor                
-                virtual ~Prioritizer(){Print("Prioritizer is destructed");}
+                virtual ~Prioritizer(){
+                    //Print("Prioritizer is destructed");
+                }
 };
 
 }

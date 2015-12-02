@@ -12,6 +12,9 @@
 #include "ch_constructor.h"
 #include "dijkstra.h"
 #include "prioritizers.h"
+#include "simplification/cdt_matching.h"
+#include "self_intersection_checker.h"
+
 
 #include <map>
 #include <iostream>
@@ -49,8 +52,8 @@ void unit_tests::testNodesAndEdges()
 	MetricEdge edge1(Edge(1, node1.id, node2.id, 24), 32);
 	CHEdge ch_edge(make_shortcut(edge0, edge1));
 
-	Test(otherNode(edge0, EdgeType::IN) == 0);
-	Test(otherNode(ch_edge, EdgeType::OUT) == 2);
+	UnitTest(otherNode(edge0, EdgeType::IN) == 0);
+	UnitTest(otherNode(ch_edge, EdgeType::OUT) == 2);
 
 	Print("\n======================================");
 	Print("TEST: Nodes and edges test successful.");
@@ -68,7 +71,7 @@ void unit_tests::testGraph()
 
 	/* Test the normal iterator. */
 	for (NodeID node_id(0); node_id<g.getNrOfNodes(); node_id++) {
-		Test(g.getNode(node_id).id == node_id);
+		UnitTest(g.getNode(node_id).id == node_id);
 
 		/* Find for every out_edge the corresponding in edge. */
 		for (auto const& out_edge: g.nodeEdges(node_id, EdgeType::OUT)) {
@@ -81,7 +84,7 @@ void unit_tests::testGraph()
 				}
 			}
 
-			Test(found);
+			UnitTest(found);
 		}
 	}
 
@@ -125,7 +128,7 @@ void unit_tests::testCHConstructor()
 
 	for (NodeID node: independent_set) {
 		for (auto const& edge: g.nodeEdges(node, EdgeType::OUT)) {
-			Test(!is_in_ind_set[edge.tgt]);
+			UnitTest(!is_in_ind_set[edge.tgt]);
 		}
 	}
 
@@ -183,7 +186,7 @@ void unit_tests::testCHDijkstra()
 		NodeID src = rand_node();
 		NodeID tgt = rand_node();
 		Debug("From " << src << " to " << tgt << ".");
-		Test(dij.calcShopa(src,tgt,path) == chdij.calcShopa(src,tgt,path));
+		UnitTest(dij.calcShopa(src,tgt,path) == chdij.calcShopa(src,tgt,path));
 	}
 
 	// Export (destroys graph data)
@@ -209,7 +212,7 @@ void unit_tests::testDijkstra()
 	uint dist = dij.calcShopa(0, tgt, path);
 
 	Print("Dist of Dijkstra from 0 to " << tgt << ": " << dist);
-	Test(dist == 18);
+	UnitTest(dist == 18);
 
 	Print("Shortest path from 0 to " << tgt << ":");
 	for (auto edge_id: path) {
@@ -220,7 +223,7 @@ void unit_tests::testDijkstra()
 	Print("Test if shortest paths are the same from both sides for the 'test' graph.");
 	for (NodeID src(0); src<g.getNrOfNodes(); src++) {
 		for (NodeID tgt(src); tgt<g.getNrOfNodes(); tgt++) {
-			Test(dij.calcShopa(src, tgt, path) == dij.calcShopa(tgt, src, path));
+			UnitTest(dij.calcShopa(src, tgt, path) == dij.calcShopa(tgt, src, path));
 		}
 	}
 
@@ -279,7 +282,7 @@ void unit_tests::testPrioritizers()
 			NodeID src = rand_node();
 			NodeID tgt = rand_node();
 			Debug("From " << src << " to " << tgt << ".");
-			Test(dij.calcShopa(src,tgt,path) == chdij.calcShopa(src,tgt,path));
+			UnitTest(dij.calcShopa(src,tgt,path) == chdij.calcShopa(src,tgt,path));
 		}
 	}
 
@@ -302,62 +305,77 @@ void unit_tests::testCDTMatching()
 	chg.init(FormatSTD::Reader::readGraph<OSMNode, Shortcut>("../test_data/cdt_matchingTest2.txt"));
 
         std::vector<NodeInBox> nodesInBox;
-        std::list<PIntervall>::iterator intervallIt;
-        
-        //ChainTo
-        std::list<PPrioNode> pchainTo;        
-        for (int i = 0; i < 9; i++) {
-            PPrioNode p(i, intervallIt, nodesInBox, nodesInBox);
-            pchainTo.push_back(p);
-        }
-        std::list<std::list<PPrioNode>::iterator> chainTo;
-        for (auto it = pchainTo.begin(); it != pchainTo.end(); it++) {
-            chainTo.push_back(it);
+        std::list<Intervall2>::iterator intervallIt;
+        PrioNodeHeap heap;
+             
+        Chain chain1;
+        std::list<PrioNodeHandle> list1;        
+        for (int i = 0; i < 9; i++) {            
+            chain1.push_back(i);
+            PrioNode2 p(i, intervallIt, nodesInBox, nodesInBox);
+            PrioNodeHandle h = heap.push(p);
+            list1.push_back(h);
         }        
-        
-        //ChainFrom
-        std::list<PPrioNode> pchainFrom;        
+                
+        Chain chain2;
+        std::list<PrioNodeHandle> list2;        
         for (int i = 9; i < 14; i++) {
-            PPrioNode p(i, intervallIt, nodesInBox, nodesInBox);
-            pchainFrom.push_front(p);
-        }
-        std::list<std::list<PPrioNode>::iterator> chainFrom;
-        for (auto it = pchainFrom.begin(); it != pchainFrom.end(); it++) {
-            chainFrom.push_back(it);
-        }
+            chain2.push_back(i);
+            PrioNode2 p(i, intervallIt, nodesInBox, nodesInBox);
+            PrioNodeHandle h = heap.push(p);
+            list2.push_back(h);
+        }   
         
-        CDTMatching<CHGraphOSM> cdtm(chg);
+        //constrains space between chains
+        chain1.push_front(chain2.front());
+        chain2.push_back(chain1.back());   
         
-        cdtm.match(chainTo, chainFrom);                  
+        Print("self Intersection_test");
+        SelfIntersectionChecker<CHGraphOSM> sic(chg);
+        UnitTest(!sic.isSelfIntersecting(chain1, chain2));
         
-        for (auto it = chainTo.begin(); it!= chainTo.end(); it++) {                        
-            switch ((*it)->node_id) {
+        Print("CDTMatching");
+        CDTMatching2<CHGraphOSM> cdtm(chg);        
+        cdtm.match(list1, list2);                  
+        Print("CDTmatched");
+        
+        for (auto it = list1.begin(); it!= list1.end(); it++) {
+            const PrioNode2 pn = *(*it);
+                        
+            switch (pn.node_id) {
                 case 0: {                    
-                    Test((*it)->follower->node_id == 9);
+                    const PrioNode2 follower = *pn.follower_h;
+                    UnitTest(follower.node_id == 9);
                     break;
                 }
                 case 1: {
-                    Test((*it)->follower->node_id == 9);
+                    const PrioNode2 follower = *pn.follower_h;
+                    UnitTest(follower.node_id == 9);
                     break;
                 }
                 case 3: {
-                    Test((*it)->follower->node_id == 10);
+                    const PrioNode2 follower = *pn.follower_h;
+                    UnitTest(follower.node_id == 10);
                     break;
                 }                
                 case 5: {
-                    Test((*it)->follower->node_id == 11);
+                    const PrioNode2 follower = *pn.follower_h;
+                    UnitTest(follower.node_id == 11);
                     break;
                 }
                 case 6: {
-                    Test((*it)->follower->node_id == 11);
+                    const PrioNode2 follower = *pn.follower_h;
+                    UnitTest(follower.node_id == 11);
                     break;
                 }
                 case 7: {
-                    Test((*it)->follower->node_id == 12);
+                    const PrioNode2 follower = *pn.follower_h;
+                    UnitTest(follower.node_id == 12);
                     break;
                 }
                 case 8: {
-                    Test((*it)->follower->node_id == 13);
+                    const PrioNode2 follower = *pn.follower_h;
+                    UnitTest(follower.node_id == 13);
                     break;
                 }
                 default: {             
@@ -366,18 +384,18 @@ void unit_tests::testCDTMatching()
             }            
         }
         
-        for (auto it = chainFrom.begin(); it!= chainFrom.end(); it++) {                        
-            switch ((*it)->node_id) {
-                case 10: {                    
-                    Test((*it)->follower->node_id == 3);
-                    break;
-                }
+        for (auto it = list2.begin(); it!= list2.end(); it++) {
+            const PrioNode2 pn = *(*it);   
+            
+            switch (pn.node_id) {                                
                 case 12: {
-                    Test((*it)->follower->node_id == 7);
+                    const PrioNode2 follower = *pn.follower_h;
+                    UnitTest(follower.node_id == 7);
                     break;
                 }
                 case 13: {
-                    Test((*it)->follower->node_id == 8);
+                    const PrioNode2 follower = *pn.follower_h;
+                    UnitTest(follower.node_id == 8);
                     break;
                 }      
                 default: {             

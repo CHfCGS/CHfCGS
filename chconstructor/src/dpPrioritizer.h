@@ -8,6 +8,11 @@
 #pragma once
 
 #include "prioritizers.h"
+#include "simplification/lineSimplifierType.h"
+
+
+#include "simplification/lineSimplifier.h"
+#include "simplification/dp_simplifier.h"
 
 #include "chains.h"
 #include "grid.h"
@@ -19,6 +24,9 @@
 
 #include "4Dgrid.h"
 #include "chainPairDP.h"
+
+#include "simplification/prio_nodes.h"
+#include "nodes_and_edges.h"
 
 /*
  * Prioritizer that prioritizes chain nodes by DouglasPeucker.
@@ -63,9 +71,11 @@ namespace chc {
         FourDGrid<GraphT> fourDGrid;
         
         DeadEndDetector<GraphT> deadEndDetector;
-        ChainDetector<GraphT> chaindetector;
-        DP::DouglasPeucker<GraphT> dp;
-        DP::chainPairDP<GraphT> cpdp;
+        ChainDetector<GraphT> chaindetector;        
+        ls::DouglasPeucker<GraphT> dp;
+        ls::chainPairDP<GraphT> cpdp;
+                
+        std::unique_ptr<ls::LineSimplifier> lineSimplifier; 
         //node prio list
         //std::vector<NodeID> _chooseIndependentSet();		
         //std::vector<chc::Chain> chains;
@@ -73,7 +83,7 @@ namespace chc {
         std::list<Chain> deadEnds;
         //_prio_vec = chains + remainder        
         Chains_and_Remainder CaR;
-        std::vector<std::list<DP::simplePrioNode>> priolists;
+        std::vector<std::list<ls::simplePrioNode>> priolists;
 
         double epsilon;
         int roundcounter;
@@ -174,8 +184,9 @@ namespace chc {
                     //big chains are generalized
                     if (chain.size() >= 3) {                                      
                         
-                        priolists.push_back(dp.process(chain));
-                        //Print("Length of Priolist: " << pl.size());                                        
+                        priolists.push_back(lineSimplifier->process(chain, Chain()));
+                        //priolists.push_back(dp.process(chain));
+                        
                     //small chains are assigned to the remainder
                     } else {
                         for (NodeID node_id: chain) {
@@ -193,8 +204,9 @@ namespace chc {
                         
             for (ChainPair &chainPair: CaR.chainPairs) {    
                     if (chainPair.chainTo.size() + chainPair.chainFrom.size() >= 7
-                            && chainPair.chainTo.size() >=3 && chainPair.chainFrom.size() >= 3) {                                                              
-                        priolists.push_back(cpdp.process(chainPair));                        
+                            && chainPair.chainTo.size() >=3 && chainPair.chainFrom.size() >= 3) { 
+                        priolists.push_back(lineSimplifier->process(chainPair.chainTo, chainPair.chainFrom)); 
+                        //priolists.push_back(cpdp.process(chainPair));                        
                         //Print("Length of Priolist: " << pl.size());                                        
                     //small chains are assigned to the remainder
                     } else {
@@ -246,13 +258,14 @@ namespace chc {
         }*/
         
         DPPrioritizer(GraphT const& base_graph, CHConstructorT const& chc)
-        : _base_graph(base_graph), _chc(chc), state(State::removingChains),
+        : _base_graph(base_graph), _chc(chc), state(State::removingDeadEnds),
         grid(1000, base_graph), fourDGrid(1, base_graph), deadEndDetector(base_graph), chaindetector(base_graph), dp(this->_base_graph, grid),
         cpdp(this->_base_graph, grid), CaR(), priolists(), epsilon(10000), roundcounter(1) {            
+            lineSimplifier = createLineSimplifer(ls::LineSimplifierType::DP, base_graph, grid);
         }        
         //epsilon(0.0001)
         ~DPPrioritizer() {
-            Print("DPPrioritizer is destructed");
+            //Print("DPPrioritizer is destructed");
         }
 
         std::vector<NodeID> extractNextNodes() {
@@ -312,7 +325,7 @@ namespace chc {
                     //if (marked.at(marked.size()+1)) {Print("Getting Independent set from Chains");}
 
                     //extraction from chains
-                    for (std::list<DP::simplePrioNode> &priolist : priolists) {
+                    for (std::list<ls::simplePrioNode> &priolist : priolists) {
                         for (auto it = priolist.begin(); it != priolist.end();) {
                             if (epsilon > it->perpendicularLength) {
                                 NodeID node_id = it->node_id;
@@ -340,15 +353,7 @@ namespace chc {
                     break;
                 }
             }
-
-        
-
-
-
-
-        //auto next_nodes(EdgeDiffPrioritizer<GraphT, CHConstructorT>::_chooseIndependentSet());
-
-        //EdgeDiffPrioritizer<GraphT, CHConstructorT>::_remove(next_nodes); //remove from priovector
+            
         _remove(next_nodes); //remove from priovector               
 
         /*
@@ -356,8 +361,6 @@ namespace chc {
             Print(node_id);
         }
          * */
-
-
         return next_nodes;
     }
         

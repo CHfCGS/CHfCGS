@@ -1,3 +1,5 @@
+#pragma once
+
 /* 
  * File:   DouglasPeucker.h
  * Author: tobias
@@ -5,17 +7,18 @@
  * Created on 4. September 2015, 14:14
  */
 
+
+
 #include "nodes_and_edges.h"
+#include "simplification/prio_nodes.h"
 #include "grid.h"
+
 
 #include <limits>
 #include <math.h>
 
-#ifndef DOUGLASPEUCKER_H
-#define	DOUGLASPEUCKER_H
 
-namespace DP {
-
+namespace ls {
 
 template <class GraphT>
 class DouglasPeucker{
@@ -207,6 +210,7 @@ class DouglasPeucker{
         double gradient_Intervall = (y2-y1)/(x2-x1);
         double c_Intervall = y1-gradient_Intervall*x1;
         */
+        
         for (PrioNode &prioNode: intervall.prioNodesRefs) {
           
             //PrioNode &prioNode = prioNodeData.ref;
@@ -313,5 +317,4 @@ class DouglasPeucker{
 
 }
 
-#endif	/* DOUGLASPEUCKER_H */
 

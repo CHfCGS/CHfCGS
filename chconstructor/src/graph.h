@@ -61,6 +61,7 @@ class Graph
 		uint getNrOfEdges() const { return _out_edges.size(); }
 		EdgeT const& getEdge(EdgeID edge_id) const { return _out_edges[_id_to_index[edge_id]]; }
 		NodeT const& getNode(NodeID node_id) const { return _nodes[node_id]; }
+                std::vector<EdgeT> const& getAllEdges() {return _out_edges;};
 		Metadata const& getMetadata() const { return _meta_data; }
                 
 		uint getNrOfEdges(NodeID node_id) const;
@@ -170,7 +171,6 @@ void Graph<NodeT, EdgeT>::setEdgeFlag(EdgeID edge_id, bool tag) {
         }else {
             _out_edges[_id_to_index[edge_id]].speed = -1000; 
         }
-
 }
     
 
@@ -229,9 +229,8 @@ template <typename NodeT, typename EdgeT>
 void Graph<NodeT, EdgeT>::initIdToIndex()
 {
 	Debug("Renew the index mapper.");
-
-	_id_to_index.resize(edge_count);
-	for (uint i(0), size(_out_edges.size()); i<size; i++) {
+	_id_to_index.resize(edge_count);               
+	for (uint i(0), size(_out_edges.size()); i<size; i++) {             
 		_id_to_index[_out_edges[i].id] = i;
 	}
 }

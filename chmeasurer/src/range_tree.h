@@ -5,6 +5,8 @@
 #include <vector>
 #include "nodes_and_edges.h"
 #include "chgraph.h"
+#include "window.h"
+
 typedef CGAL::Cartesian<double> K;
 typedef CGAL::Range_tree_map_traits_2<K, chm::NodeID> Traits;
 typedef CGAL::Range_tree_2<Traits> Range_tree_2_type;
@@ -36,6 +38,11 @@ public:
                 << ":" << it->second << std::endl;
         }*/
     }
+    
+    std::list<NodeID> rectangleQuery(Window window) {
+        return rectangleQuery(window.MINLATITUDE, window.MINLONGITUDE, window.MAXLATITUDE, window.MAXLONGITUDE);
+    }
+    
     std::list<NodeID> rectangleQuery(double lat1, double lon1, double lat2, double lon2) {
         Interval win(Interval(K::Point_2(lat1, lon1), K::Point_2(lat2, lon2)));
         //Interval win(Interval(K::Point_2(0, 3), K::Point_2(4, 5)));

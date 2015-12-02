@@ -16,6 +16,7 @@
 #include "discreteFrechet.h"
 #include "dijkstra.h"
 #include "track_time.h"
+#include "cdthp_cross.h"
 
 
 #include <chrono>
@@ -31,7 +32,8 @@ namespace chm {
     namespace unit_tests
     {
 	void testLineSimplfication();
-        void testParallelLineSimplfication();        
+        void testParallelLineSimplfication();    
+        void testCDTHCross();
     }
 
     class CHMeasurer {
@@ -414,11 +416,12 @@ namespace chm {
             
             Print("Zooming ");
             graph.zoom(50, false, 0);
-            Print("Accumulating Error and Raycasting");
+            Print("Accumulating Error and Crossings Counting");
             //Grid grid = Grid(1, graph);
             double getNofCrossings = 0;
             double accumulatedError = 0;
-            RayCaster raycaster(graph, grid);
+            //RayCaster raycaster(graph, grid);
+            CDTHPCross cdthpC(graph, grid);
             for (uint edge_id = 0; edge_id < graph.getNrOfEdges(); edge_id++) {
                 //const CHEdge &edge = graph.getEdge(edge_id);
                 
@@ -429,7 +432,8 @@ namespace chm {
                     chain.push_front(graph.getEdge(edge_id).src);
                     chain.push_back(graph.getEdge(edge_id).tgt);                    
                                         
-                    getNofCrossings += raycaster.getNofCrossings(chain);
+                    //getNofCrossings += raycaster.getNofCrossings(chain);
+                    getNofCrossings += cdthpC.getNofCrossings(chain);
                     double epsilon_error = calcEdgeError(edge_id);
                     accumulatedError += epsilon_error;                        
   
