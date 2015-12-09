@@ -26,7 +26,9 @@ namespace geo {
         return 0.5 * determinant;
     }
     
-    
+    double calcArea(NodeID src_id, NodeID tgt_id, NodeID outlier_id, const CHGraph<OSMNode, OSMEdge> &graph) {
+        return calcArea(graph.getNode(src_id), graph.getNode(tgt_id), graph.getNode(outlier_id));
+    }
     
     double pythagoras(double a, double b) {
 	return sqrt(pow(a, 2) + pow(b, 2));
@@ -70,5 +72,41 @@ namespace geo {
         bool line2BetweenLine1 = differentSign(line1StartArea, line1EndArea);
 
         return line1BetweenLine2 && line2BetweenLine1;
-    }    
+    }  
+    /*
+    //originally from curve evolution
+    struct Kink {
+        const OSMNode src;
+        const OSMNode peak;
+        const OSMNode tgt;
+        Kink(OSMNode src, OSMNode peak, OSMNode tgt): src(src), peak(peak), tgt(tgt) {}
+    };*/
+    
+    struct twoDvector {
+        double x;
+        double y;
+        double length;
+        twoDvector(OSMNode src, OSMNode tgt) {
+            x = tgt.lon - src.lon;
+            y = tgt.lat - src.lat;
+            length = geo::geoDist(src, tgt);
+        }        
+    };
+    
+    double dotProduct (twoDvector s1, twoDvector s2) {        
+        double xProduct = s1.x * s2.x;
+        double yProduct = s1.y * s2.y;
+        return xProduct + yProduct;
+    }
+    
+    double calcTurnAngle(twoDvector s1, twoDvector s2){
+        //double length1 = geo::geoDist(graph.getNode(kink.src), graph.getNode(kink.peak));
+        //double length2 = geo::geoDist(graph.getNode(kink.peak), graph.getNode(kink.tgt));        
+        double divisor = s1.length * s2.length;   
+        assert(divisor > 0);
+        double toAcos = fabs(dotProduct(s1, s2))/divisor;
+        
+        return acos(toAcos);        
+    }       
+    
 }

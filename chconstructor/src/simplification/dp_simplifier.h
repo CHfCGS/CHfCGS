@@ -2,12 +2,14 @@
 
 #include "../nodes_and_edges.h"
 #include "prio_nodes.h"
+#include "cross_border.h"
 #include "../grid.h"
 //#include "lineSimplifierType.h"
 #include "lineSimplifier.h"
 #include "../geoFunctions.h"
 #include "matchChainPairNodes.h"
-
+#include "error_measure.h"
+#include "../s_options.h"
 
 #include <limits>
 #include <math.h>
@@ -23,7 +25,9 @@ class DPSimplifier : public LineSimplifier{
         //vector<Node> &nodes;
         const GraphT &graph;
         const Grid<GraphT> &grid;
-        std::list<std::vector<NodeInBox> > boxesWithNodes;
+        std::list<NodeBox> node_boxes;
+        std::unique_ptr<ErrorMeasure> errorMeasure;
+        const SOptions s_options;
         /*
         //naiv TODO: heap implementation; or make_heap
          std::list<PrioNode>::iterator getMax() {// (std::list<PrioNode> &nodePrios) {
@@ -47,7 +51,7 @@ class DPSimplifier : public LineSimplifier{
         if (prioNodeHeap.empty()) {
             return std::list<simplePrioNode>(); //empty list
         }
-        else {
+        else {            
             const PrioNode2 max =  prioNodeHeap.top();            
             //std::list<PPrioNode>::iterator maxIt = getMax();
             simplePrioNode spnMax(max);
@@ -88,7 +92,7 @@ class DPSimplifier : public LineSimplifier{
                 
                 const PrioNode2 maxAssert =  prioNodeHeap.top();     
                 assert(max.node_id == maxAssert.node_id);
-                prioNodeHeap.pop();   //remove max                                             
+                prioNodeHeap.pop();   //remove max, weights didnt change yet                                        
                 prioNodeHeap.erase(follower_h);                
                 
                 assert(max.intervallIt != follower.intervallIt);
@@ -179,60 +183,58 @@ class DPSimplifier : public LineSimplifier{
             r.push_back(spn);            
             return r;
              * */
-                 
-    }        
-    
-    inline double OrientationTest(NodeID aSource, NodeID bTarget, NodeID cOutlier) {
-        double ax = graph.getLon(aSource);
-        double ay = graph.getLat(aSource);
-        double bx = graph.getLon(bTarget);
-        double by = graph.getLat(bTarget);
-        double cx = graph.getLon(cOutlier);
-        double cy = graph.getLat(cOutlier);
-        
-        double acx = ax - cx; // pa[0] - pc[0];
-        double bcx = bx - cx; //pb[0] - pc[0];
-        double acy = ay - cy; //pa[1] - pc[1];
-        double bcy = by - cy; //pb[1] - pc[1];
-        return acx * bcy - acy * bcx;
     }
     
-    inline bool intersect(NodeID a, NodeID b, NodeID c, NodeID d) {
-        double sideOfc = OrientationTest(a, b, c);
-        double sideOfd = OrientationTest(a, b, d);
-        return (sideOfc * sideOfd) < 0;
-    }        
-    
     /*
-    calculates how many nodes are correctly oriented after the intervall
-    is spanned by the lines from start to split and from split to end
-    */
-    uint calcOrientationMisses(const PrioNode2 &split, const Intervall2 &intervall){
+    //calculates for a line all nodes in the lines' bounding box and also save their orientation with respect to the line
+    std::vector<NodeInBox> calcNodesInBoundingBox(NodeID node_id_src, NodeID node_id_tgt) {
+        BoundingBox bb = BoundingBox(
+                graph.getLat(node_id_src),
+                graph.getLon(node_id_src),
+                graph.getLat(node_id_tgt),
+                graph.getLon(node_id_tgt));
+
+        std::vector<NodeID> nodesInGrid = grid.nodesInNeigbourhood(bb.midLat, bb.midLon);
+        std::vector<NodeInBox> nodesInBox;
+        for (NodeID node_id: nodesInGrid) {                    
+            //consider only the nodes in the bounding box
+            if (bb.contains(graph.getLat(node_id), graph.getLon(node_id))) {
+                //int i1   =       3 > 4 ? 0 : 1;
+                //save on which side of the line the node lies
+                bool sign = (geo::calcArea(node_id_src, node_id_tgt, node_id, graph) >= 0) ? true : false;                
+                nodesInBox.push_back(NodeInBox(node_id, sign));
+            }            
+        }
+        return nodesInBox;
+    }      */     
+           
+    
+    uint calcOrientationMisses(const PrioNode2 &split, const Intervall2 &intervall) {
         uint misscount = 0;
         uint assertcounter = 0;
-        auto splitPosIntervallincr= split.posInIntervallIt;
+        auto splitPosIntervallincr = split.posInIntervallIt;
         splitPosIntervallincr++;
         for (auto it = intervall.prioNodeHandles.begin(); it != splitPosIntervallincr; it++) {
-            PrioNode2 p = (*(*it));
-            for(NodeInBox nodeInBox : p.leftBox) {
-                bool sign = (OrientationTest(intervall.start, split.node_id, nodeInBox.nodeID) >= 0) ? true : false;  
+            const PrioNode2 &p = (*(*it));
+            for (NodeInBox nodeInBox : p.leftBox) {
+                bool sign = (geo::calcArea(intervall.start, split.node_id, nodeInBox.nodeID, graph) >= 0) ? true : false;
                 if (sign != nodeInBox.sign) {
                     misscount++;
                 }
-            }                  
+            }
             assertcounter++;
         }
         for (auto it = split.posInIntervallIt; it != intervall.prioNodeHandles.end(); it++) {
-            PrioNode2 p = (*(*it));
-            for(NodeInBox nodeInBox : p.rightBox) {
-                bool sign = (OrientationTest(split.node_id, intervall.finish, nodeInBox.nodeID) >= 0) ? true : false;  
+            const PrioNode2 &p = (*(*it));
+            for (NodeInBox nodeInBox : p.rightBox) {
+                bool sign = (geo::calcArea(split.node_id, intervall.finish, nodeInBox.nodeID, graph) >= 0) ? true : false;
                 if (sign != nodeInBox.sign) {
                     misscount++;
                 }
-            }                                
+            }
             assertcounter++;
-        }        
-        debug_assert(assertcounter == intervall.prioNodeHandles.size()+1);
+        }
+        debug_assert(assertcounter == intervall.prioNodeHandles.size() + 1);
         return misscount;
     }
     
@@ -243,7 +245,7 @@ class DPSimplifier : public LineSimplifier{
         
         for (PrioNodeHandle prioNodeH: intervall.prioNodeHandles) {
             PrioNode2 &prioNode = *prioNodeH;            
-            prioNode.perpendicularLength = geo::calcPerpendicularLength(graph.getNode(intervall.start),
+            prioNode.perpendicularLength = errorMeasure->calcError(graph.getNode(intervall.start),
                                                                         graph.getNode(intervall.finish),
                                                                         graph.getNode(prioNode.node_id));
             
@@ -253,27 +255,7 @@ class DPSimplifier : public LineSimplifier{
         return;
     }
         
-    //calculates for a line all nodes in the lines' bounding box and also save their orientation with respect to the line
-    std::vector<NodeInBox> calcNodesInBoundingBox(NodeID node_id_src, NodeID node_id_tgt) {
-        BoundingBox bb = BoundingBox(
-                graph.getLat(node_id_src),
-                graph.getLon(node_id_src),
-                graph.getLat(node_id_tgt),
-                graph.getLon(node_id_tgt));
-        
-        std::vector<NodeID> nodesInGrid = grid.nodesInNeigbourhood(bb.midLat, bb.midLon);
-        std::vector<NodeInBox> nodesInBox;
-        for (NodeID node_id: nodesInGrid) {                    
-            //consider only the nodes in the bounding box
-            if (bb.contains(graph.getLat(node_id), graph.getLon(node_id))) {
-                //int i1   =       3 > 4 ? 0 : 1;
-                //save on which side of the line the node lies
-                bool sign = (OrientationTest(node_id_src, node_id_tgt, node_id) >= 0) ? true : false;                
-                nodesInBox.push_back(NodeInBox(node_id, sign));
-            }            
-        }
-        return nodesInBox;
-    }   
+      
     
     void initializeChain(const Chain &chain) {                   
         
@@ -284,28 +266,31 @@ class DPSimplifier : public LineSimplifier{
             const auto intervallIt = --(intervalls.end());
             
             //first box of a chain
-            std::vector<NodeInBox> nodesInFirstBox(calcNodesInBoundingBox(*(chain.begin()), *(++(chain.begin()))));
-            boxesWithNodes.push_back(nodesInFirstBox);  
+            std::vector<NodeInBox> nodesInFirstBox(cb::calcNodesInBoundingBox(*(chain.begin()), *(++(chain.begin())), graph, grid));
+            node_boxes.push_back(nodesInFirstBox);  
             
             //initialize lists                        
-            std::list<std::vector<NodeInBox> >::iterator leftBox = --boxesWithNodes.end(); //Iterator which runs in tandem with chainNodeIterator
+            std::list<std::vector<NodeInBox> >::iterator leftBox = --node_boxes.end(); //Iterator which runs in tandem with chainNodeIterator
             for (std::list<NodeID>::const_iterator it = ++(chain.begin()); it != --(chain.end()); it++) {                
                 auto nextIt = it;
                 nextIt++;
-                std::vector<NodeInBox> nodesInBox(calcNodesInBoundingBox(*it, *nextIt));                
-                //uint sizeBefore = boxesWithNodes.size();
-                boxesWithNodes.push_back(nodesInBox);
-                
-                //Print("boxesWithNodes" << boxesWithNodes.size());
                 
                 //getting iterators on the left and right boxes of a node
                 auto rightBox = leftBox;
-                rightBox++;
-                assert(rightBox == --(boxesWithNodes.end()));
-                
+                if (s_options.checkBorderCrossing) {
+                    std::vector<NodeInBox> nodesInBox(cb::calcNodesInBoundingBox(*it, *nextIt, graph, grid));                
+                    //uint sizeBefore = boxesWithNodes.size();
+                    node_boxes.push_back(nodesInBox);
+                    //Print("boxesWithNodes" << boxesWithNodes.size());
+                    rightBox++;
+                    assert(rightBox == --(node_boxes.end()));
+                }
+
                 PrioNodeHeap::handle_type lastInserted
                         = prioNodeHeap.push(PrioNode2(*it, intervallIt, *leftBox, *rightBox));
-                leftBox++;
+                if (s_options.checkBorderCrossing) {
+                    leftBox++;
+                }
 
                 //reference each other                
                 intervallIt->prioNodeHandles.emplace_back(lastInserted);
@@ -319,42 +304,40 @@ class DPSimplifier : public LineSimplifier{
             update(intervalls.back());             
     }
     
-    
+        
     public:        
-        DPSimplifier(const GraphT &graph, const Grid<GraphT> &grid):
-        prioNodeHeap(), intervalls(), graph(graph), grid(grid), boxesWithNodes() {}
+        DPSimplifier(const SOptions s_options, const GraphT &graph, const Grid<GraphT> &grid):
+                prioNodeHeap(), intervalls(), graph(graph), grid(grid), node_boxes(), s_options(s_options)  {
+            errorMeasure = createErrorMeasure(s_options.errorMeasure_type);            
+            assert(errorMeasure != nullptr);
+        }
         
         ~DPSimplifier() {            
         }
         
         std::list<simplePrioNode> process(const Chain &chain1, const Chain &chain2) {                
             debug_assert(chain1.size() >= 3);
+            
+            prioNodeHeap.clear();
+            intervalls.clear();
+            node_boxes.clear();  
+            
             if(chain2.empty()) {
-                
-                prioNodeHeap.clear();
-                intervalls.clear();
-                boxesWithNodes.clear();             
-
                 initializeChain(chain1);
                 intervalls.back().prioNodeHandles.reverse();
-
                 return simplify();
             } else {
                 debug_assert(chain1.size() + chain2.size() > 6);
-                debug_assert(chain1.size() >=3 && chain2.size() >= 3);
-                prioNodeHeap.clear();            
-                intervalls.clear();                                    
-                boxesWithNodes.clear();
-
+                debug_assert(chain1.size() >=3 && chain2.size() >= 3);              
+                                                
                 initializeChain(chain1);
                 initializeChain(chain2);
 
                 intervalls.back().prioNodeHandles.reverse();
                 
+                mc::match<GraphT> (graph, intervalls.front().prioNodeHandles, intervalls.back().prioNodeHandles, s_options.pairMatch_type);
                 //matchChainPairNodes2<GraphT> matcher(base_graph, intervalls.front(), intervalls.back());
-                //matcher.match();
-                mc::match<GraphT> (graph, intervalls.front().prioNodeHandles, intervalls.back().prioNodeHandles);
-
+                //matcher.match();                
                 return simplify();
             }
             

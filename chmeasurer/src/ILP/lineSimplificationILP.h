@@ -5,7 +5,7 @@
 #include <array>
 #include <sstream>
 
-#include "nodes_and_edges.h"
+#include "../nodes_and_edges.h"
 #include "ILP_data.h"
 
 class lineSimplificationILP {

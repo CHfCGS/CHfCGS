@@ -5,6 +5,7 @@
 #include "ch_parser.h"
 #include "chgraph.h"
 #include "ch_measurer.h"
+#include "measure_options.h"
 
 
 
@@ -12,13 +13,56 @@ using namespace chm;
 //using namespace std::chrono;
 
 
-
+void printHelp() {
+    std::cout
+            << "Usage: ./ch_measurer [ARGUMENTS]\n"
+            << "Mandatory arguments are:\n"
+            << "  -i, --infile <path>        Read graph from <path>\n"
+            << "Optional arguments are:\n"
+            << "  -d, --dijkstra <type>"
+            << "  -l, --ilp <type>"
+            << "  -p, --P_ilp <type>";
+}
 
 
 int main(int argc, char** argv) {
 
+    std::string filepath;
+    MeasureOptions m_options;
     
-    
+    const struct option longopts[] = {        
+        {"infile", required_argument, 0, 'i'}, 
+        {"dijkstra", no_argument, 0, 'd'},   
+        {"ilp", no_argument, 0, 'l'},   
+        {"p_ilp", no_argument, 0, 'p'},   
+        {0, 0, 0, 0},
+    };
+
+    int index(0);
+    int iarg(0);
+    opterr = 1;
+
+    while ((iarg = getopt_long(argc, argv, "i:dlp", longopts, &index)) != -1) {
+        switch (iarg) {            
+            case 'i':
+                filepath = optarg;
+                break;                                    
+            case 'd':
+                m_options.dijkstra = true;
+                break;
+            case 'l':
+                m_options.ilp = true;
+                break;
+            case 'p':
+                m_options.p_ilp = true;
+                break;            
+            default:
+                printHelp();
+                return 1;
+                break;
+        }
+    }
+    /*
     /////////////////////////////////////
     // overly simple command line parsing
     /////////////////////////////////////
@@ -43,7 +87,7 @@ int main(int argc, char** argv) {
             i++;
         }
     }
-
+     * */
     GraphInData<CHNode, CHEdge> graphInData;
     
     CH_Parser ch_Parser = CH_Parser();    
@@ -58,7 +102,7 @@ int main(int argc, char** argv) {
     g.init(std::move(graphInData));
     
     CHMeasurer ch_measurer = CHMeasurer(g);
-    ch_measurer.makeMeasurement();
+    ch_measurer.makeMeasurement(m_options);
     
     
     

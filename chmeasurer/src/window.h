@@ -16,10 +16,10 @@ struct Window {
     bool isIn(const CHGraph<CHNode, CHEdge> &graph, NodeID node_id) {
         CHNode node = graph.getNode(node_id);
 
-        if (node.lat > MINLATITUDE
-                && node.lat < MAXLATITUDE
-                && node.lat > MINLONGITUDE
-                && node.lat < MAXLONGITUDE) {
+        if (node.lat >= MINLATITUDE
+                && node.lat <= MAXLATITUDE
+                && node.lon >= MINLONGITUDE
+                && node.lon <= MAXLONGITUDE) {
             return true;
         } else {
             return false;

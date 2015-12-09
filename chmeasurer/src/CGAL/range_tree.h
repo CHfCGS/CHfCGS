@@ -3,9 +3,9 @@
 #include <CGAL/Range_segment_tree_traits.h>
 #include <CGAL/Range_tree_k.h>
 #include <vector>
-#include "nodes_and_edges.h"
-#include "chgraph.h"
-#include "window.h"
+#include "../nodes_and_edges.h"
+#include "../chgraph.h"
+#include "../window.h"
 
 typedef CGAL::Cartesian<double> K;
 typedef CGAL::Range_tree_map_traits_2<K, chm::NodeID> Traits;

@@ -4,6 +4,7 @@
 #include "file_formats.h"
 #include "track_time.h"
 #include "prioritizers.h"
+#include "s_options.h"
 
 #include <getopt.h>
 
@@ -21,6 +22,9 @@ void printHelp() {
             << "  -g, --outformat <format>   Writes outfile in <format> (" << getAllFileFormatsString() << " - default FMI_CH)\n"
             << "  -t, --threads <number>     Number of threads to use in the calculations (default: 1)\n"
             << "  -p, --prioritizer <type>   Uses prioritizer <type> for the CH construction. (default: NONE)\n"
+            << "  -s, --linesimplfier <type>   Uses linesimplfier <type> for the CH construction. (default: DP)\n"
+            << "  -e, --errormeasure <type>   Uses errormeasure <type> for the line simplfication. (default: EF)\n"
+            << "  -w, --pairmatch <type>   Uses pairmatch <type> for matching chains. (default: NONE)\n"
             << "Note: not all formats are available as input / ouput format, and not all combinations are possible.\n";
 }
 
@@ -31,6 +35,8 @@ struct BuildAndStoreCHGraph {
     TrackTime tt;
 
     PrioritizerType prioritizer_type;
+    
+    SOptions s_options;
 
     template<typename NodeT, typename EdgeT>
     //typedef WayOSMNode NodeT;
@@ -54,7 +60,7 @@ struct BuildAndStoreCHGraph {
             chc.quickContract(all_nodes, 4, 5);
             chc.contract(all_nodes);
         } else {
-            auto prioritizer(createPrioritizer(prioritizer_type, g, chc));
+            auto prioritizer(createPrioritizer(prioritizer_type, s_options, g, chc));
             chc.contract(all_nodes, *prioritizer);            
         }
 
@@ -82,6 +88,7 @@ int main(int argc, char* argv[]) {
     FileFormat outformat(FileFormat::FMI_CH);
     uint nr_of_threads(1);
     PrioritizerType prioritizer_type(PrioritizerType::NONE);
+    SOptions s_options;
 
     /*
      * Getopt argument parsing.
@@ -95,6 +102,7 @@ int main(int argc, char* argv[]) {
         {"outformat", required_argument, 0, 'g'},
         {"threads", required_argument, 0, 't'},
         {"prioritizer", required_argument, 0, 'p'},
+        {"linesimplfier", required_argument, 0, 's'},
         {0, 0, 0, 0},
     };
 
@@ -102,7 +110,7 @@ int main(int argc, char* argv[]) {
     int iarg(0);
     opterr = 1;
 
-    while ((iarg = getopt_long(argc, argv, "hi:f:o:g:t:p:", longopts, &index)) != -1) {
+    while ((iarg = getopt_long(argc, argv, "hi:f:o:g:t:p:s:e:w:c", longopts, &index)) != -1) {
         switch (iarg) {
             case 'h':
                 printHelp();
@@ -133,6 +141,18 @@ int main(int argc, char* argv[]) {
             case 'p':
                 prioritizer_type = toPrioritizerType(optarg);
                 break;
+            case 's':
+                s_options.lineSimplifier_type = toLineSimplifierType(optarg);
+                break;
+            case 'e':
+                s_options.errorMeasure_type = toErrorMeasureType(optarg);
+                break;
+            case 'w':
+                s_options.pairMatch_type = toPairMatchType(optarg);
+                break;
+            case 'c':
+                s_options.checkBorderCrossing = true;
+                break;
             default:
                 printHelp();
                 return 1;
@@ -149,7 +169,7 @@ int main(int argc, char* argv[]) {
     Print("Using " << nr_of_threads << " threads.");
 
     readGraphForWriteFormat(outformat, informat, infile,
-            BuildAndStoreCHGraph{outformat, outfile, nr_of_threads, VerboseTrackTime(), prioritizer_type});
+            BuildAndStoreCHGraph{outformat, outfile, nr_of_threads, VerboseTrackTime(), prioritizer_type, s_options});
 
     return 0;
 }

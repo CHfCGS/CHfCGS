@@ -1,8 +1,8 @@
 #pragma once
 
-#include "geoFunctions.h"
-#include "nodes_and_edges.h"
-#include "chgraph.h"
+#include "../geoFunctions.h"
+#include "../nodes_and_edges.h"
+#include "../chgraph.h"
 
 struct ILP_data {
     
@@ -106,7 +106,7 @@ struct ILP_data {
     static double computeLineError(const Line &line, const ILP_Chain &ilp_chain, ILP_Chain::iterator srcIt, ILP_Chain::iterator tgtIt) {
         assert(srcIt != tgtIt);
         assert(line.start.posInChain < line.end.posInChain);
-        assert(ilp_chain.size() > 2);
+        assert(ilp_chain.size() >= 2);
         double maxError = 0;
         
         //calculate error for all nodes between src and tgt
@@ -120,7 +120,6 @@ struct ILP_data {
     }
 
     std::vector<Line> createPotentialEdges(ILP_Chain &ilp_chain, double epsilon) {
-
         std::vector<Line> lines;
 
         assert(ilp_chain.size() >= 2);

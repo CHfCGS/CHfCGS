@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../nodes_and_edges.h"
 #include "boost/heap/binomial_heap.hpp"
 
 namespace ls {
@@ -121,9 +122,11 @@ struct PrioNode {
 
 //data used for more general simplification--------------------------------------------------------------------------------------
 struct PrioNode2;
+struct PrioNodeBase;
 
 
 
+//typedef typename boost::heap::binomial_heap<PrioNodeBase> PrioNodeHeap;
 typedef typename boost::heap::binomial_heap<PrioNode2> PrioNodeHeap;
 typedef typename PrioNodeHeap::handle_type PrioNodeHandle;    
 
@@ -137,14 +140,69 @@ struct Intervall2 {
     std::list<PrioNodeHandle> prioNodeHandles; //all nodes between start and end (excluding))    
 };
 
+//base class which handles follower information and can be put in a heap
+struct PrioNodeBase {    
+    const NodeID node_id;
+    
+    double perpendicularLength = 0;
+    uint nOfIntersections = 0; //used as orientation misses
+    
+    PrioNodeHandle follower_h; //if a PPrioNode is chosen to subdivide one way the follower is chosen to subdivide the other in the DP algorithm
+    bool followerValid = false;
+    std::list<PrioNodeHandle> guides; // this object would follow all PPrioNodes in the list    
+    
+    PrioNodeBase(const NodeID node_id): node_id(node_id) {}
+    
+    explicit operator simplePrioNode() const {
+        return simplePrioNode(node_id, perpendicularLength, nOfIntersections);
+    } 
+    
+    /*
+    PrioNode2 operator =(const PrioNode2 &p_IN) {
+        PrioNode2 p_out(p_IN.node_id, p_IN.intervallIt, p_IN.leftBox, p_IN.rightBox);
+        p_out.posInIntervallIt = p_IN.posInIntervallIt;
+        p_out.perpendicularLength = p_IN.perpendicularLength;
+        p_out.nOfIntersections = p_IN.nOfIntersections;
+        p_out.follower_h = p_IN.follower_h;
+        p_out.followerValid = p_IN.followerValid;
+        p_out.guides = p_IN.guides;
+        
+        return p_out;        
+    }*/
+    
+};
+
+struct PrioNodeTD: public PrioNodeBase {
+    std::list<Intervall2>::iterator intervallIt;    
+    std::list<PrioNodeHandle>::iterator posInIntervallIt;
+    
+    std::vector<NodeInBox> &leftBox;
+    std::vector<NodeInBox> &rightBox;
+    //PrioNodeTD(): PrioNode2()
+     PrioNodeTD(const NodeID node, std::list<Intervall2>::iterator intervallIt,
+                std::vector<NodeInBox> &leftBox, std::vector<NodeInBox> &rightBox
+                //, std::list<PrioNode2>::iterator follower, bool followerValid,
+                //std::list<std::list<PrioNode2>::iterator> guides
+                    ): PrioNodeBase(node_id), intervallIt(intervallIt), leftBox(leftBox), rightBox(rightBox)
+                    //, follower(follower), followerValid(followerValid), guides(guides)
+    {}
+      
+};
+
+
+typedef std::vector<NodeInBox> NodeBox;
 
 struct PrioNode2 {        
     const NodeID node_id;
     std::list<Intervall2>::iterator intervallIt;    
     std::list<PrioNodeHandle>::iterator posInIntervallIt;
         
-    std::vector<NodeInBox> &leftBox;
-    std::vector<NodeInBox> &rightBox;
+    NodeBox &leftBox;
+    NodeBox &rightBox;
+    
+    //iterators in a list of all node boxes
+    std::list<std::list<NodeBox>::iterator> left_node_boxes_its;
+    std::list<std::list<NodeBox>::iterator> right_node_boxes_its;
     
     double perpendicularLength;
     uint nOfIntersections = 0; //used as orientation misses
@@ -161,9 +219,9 @@ struct PrioNode2 {
                     //, follower(follower), followerValid(followerValid), guides(guides)
     {}
 
-    explicit operator simplePrioNode() const {
+     explicit operator simplePrioNode() const {
         return simplePrioNode(node_id, perpendicularLength, nOfIntersections);
-    }    
+    } 
     
     PrioNode2 operator =(const PrioNode2 &p_IN) {
         PrioNode2 p_out(p_IN.node_id, p_IN.intervallIt, p_IN.leftBox, p_IN.rightBox);
@@ -195,7 +253,30 @@ struct PrioNode2 {
     }
 };
 
+struct MatchNode {
+    std::list<MatchNode>::iterator follower; //if a PPrioNode is chosen to subdivide one way the follower is chosen to subdivide the other in the DP algorithm
+    bool followerValid = false;
+    std::list<std::list<MatchNode>::iterator> guides; // this object would follow all PPrioNodes in the list
+    
+    NodeID node_id = c::NO_NID;
+    
+    MatchNode(NodeID node_id): node_id(node_id) {}
+};
 
+struct MatchPair {
+    std::list<MatchNode> matchNodes1;
+    std::list<MatchNode> matchNodes2;
+    
+    //MatchPair(Chain chain1, Chain chain2) {     
+    MatchPair(std::list<NodeID> &chain1, std::list<NodeID> &chain2) {                
+        for (chc::NodeID node_id: chain1) {            
+            matchNodes1.push_back(MatchNode(node_id));
+        }
+        for (chc::NodeID node_id: chain2) {            
+            matchNodes2.push_front(MatchNode(node_id));
+        }
+    }
+};
 
 //data types used for ChainPair version of DouglasPeucker ("P" = "Pair")--------------------------------------------------------
 struct PPrioNode;

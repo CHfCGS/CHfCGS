@@ -11,12 +11,13 @@
 #include "ch_parser.h"
 #include "chgraph.h"
 #include "ch_measurer.h"
-#include "lineSimplificationILP.h"
-#include "parallelLineSimplficationILP.h"
+#include "ILP/lineSimplificationILP.h"
+#include "ILP/parallelLineSimplficationILP.h"
 #include "dijkstra.h"
 #include "discreteFrechet.h"
 //#include "prioritizers.h"
-#include "cdthp_cross.h"
+#include "CGAL/range_tree.h"
+#include "CGAL/cdthp_cross.h"
 
 #include <map>
 #include <iostream>
@@ -347,7 +348,8 @@ void unit_tests::testCDTHCross()
         graph.init(std::move(graphInData));
         Grid<CHGraph<CHNode, CHEdge> > grid(1, graph);
         
-        CDTHPCross cdthpC(graph, grid);
+        RangeTree rangeTree(graph);
+        CDTHPCross cdthpC(graph, grid, rangeTree);
         Test(cdthpC.getNofCrossings(chain) == 4);
                    
 	Print("\n=================================");

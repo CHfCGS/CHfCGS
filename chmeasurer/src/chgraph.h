@@ -4,6 +4,7 @@
 #include "indexed_container.h"
 #include "geoFunctions.h"
 #include "nodes_and_edges.h"
+#include "chains.h"
 
 #include <vector>
 #include <list>
@@ -104,6 +105,66 @@ class CHGraph
                 std::vector<EdgeT> nodeEdges(NodeID node_id, StreetType streetType) const;
                 
 		
+        std::list<NodeID> getCenterNodes(const EdgeID edge_id) {
+            std::list<NodeID> centerNodes;
+            const CHEdge &edge = getEdge(edge_id);
+            if (isShortcut(edge_id)) {
+                centerNodes.splice(centerNodes.end(), getCenterNodes(edge.child_edge1));
+
+                assert(getEdge(edge.child_edge1).tgt == getEdge(edge.child_edge2).src);
+                const NodeID centerNode_id = getEdge(edge.child_edge1).tgt;
+                centerNodes.push_back(centerNode_id);
+
+                centerNodes.splice(centerNodes.end(), getCenterNodes(edge.child_edge2));
+            }
+            return centerNodes;
+        }
+        
+        double calcEdgeError(EdgeID edge_id) {
+            std::list<NodeID> centerNodes = getCenterNodes(edge_id);
+            double maxError = 0;
+            const CHEdge &edge = getEdge(edge_id);
+            for (NodeID center_node_id : centerNodes) {
+                double error = geo::calcPerpendicularLength(getNode(edge.src), getNode(edge.tgt), getNode(center_node_id));
+                if (error > maxError) maxError = error;
+            }
+            return maxError;
+        }
+        
+        //fill up an edge chain with the nodes in between (the center nodes of the connecting edges)
+        Chain expandEdgeChain(const RedetectedChain &redetected_edge_chain) {
+            assert(redetected_edge_chain.remaining_chain.size()>=2 &&redetected_edge_chain.edges.size()>=1);
+            assert(redetected_edge_chain.remaining_chain.size() == redetected_edge_chain.edges.size()+1);
+            Chain expandedChain;
+            
+            auto nodeIt = redetected_edge_chain.remaining_chain.begin();
+            expandedChain.push_back(*nodeIt);
+            nodeIt++;
+            for (auto edgeIt = redetected_edge_chain.edges.begin(); edgeIt!= redetected_edge_chain.edges.end(); edgeIt++) {
+                std::list<NodeID> centerNodes = getCenterNodes(*edgeIt);
+                for (NodeID node_id: centerNodes) {
+                    expandedChain.push_back(node_id);
+                }                
+                expandedChain.push_back(*nodeIt);
+                nodeIt++;
+            }
+            assert(nodeIt == redetected_edge_chain.remaining_chain.end());
+
+            return expandedChain;
+        }
+                
+        double calcChainLength(const Chain &chain)  {
+            assert(chain.size() >= 2);                            
+            double chain_length = 0;
+
+            for (auto it = chain.begin(); it!= --chain.end(); it++) {
+                auto next = it;
+                next++;
+                chain_length += geo::geoDist(getNode(*it), getNode(*next));            
+            }
+            return chain_length;            
+        }
+                
 };
 
 /*

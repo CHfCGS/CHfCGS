@@ -20,7 +20,7 @@ template <class GraphT>
 class ChainDetector {
     
 public:    
-    ChainDetector(const GraphT &base_graph): base_graph(base_graph), marked(base_graph.getNrOfNodes(), false) {}
+    ChainDetector(const GraphT &base_graph): graph(base_graph), marked(base_graph.getNrOfNodes(), false) {}
         
     virtual ~ChainDetector(){        
     };  
@@ -41,7 +41,7 @@ public:
                     //    && base_graph.getNrOfEdges(node_id, chc::EdgeType::IN) <= 2) {
                     //std::list<chc::NodeID> neighbours = base_graph.nodeNeighbours(node_id);
                     //if (neighbours.size() <= 2) {                        
-                    if (base_graph.degree_leq_two(node_id)) {                        
+                    if (graph.degree_leq_two(node_id)) {                        
                         collectChain(node_id, CaR);
                     }
                 //}
@@ -65,8 +65,8 @@ public:
         chain.emplace_back(node_id);
         marked[node_id] = true;
 
-        StreetType type = base_graph.getMaxStreetType(node_id);
-        bool isOneway = base_graph.isOneway(node_id);
+        StreetType type = graph.getMaxStreetType(node_id);
+        bool isOneway = graph.isOneway(node_id);
         
         //backward direction
         NodeID next = nextChainElement(node_id, type, EdgeType::IN, isOneway);
@@ -99,9 +99,9 @@ public:
             //only neighbours which are reachable by a street of streettype
             //std::list<chc::NodeID> neighbours = base_graph.nodeNeighbours(current);
             //if (neighbours.size() <= 2) {
-            if (base_graph.degree_leq_two(current)) {
-                if (base_graph.isOneway(current) == isOneway) { //current node has to be oneway (twoway) if the chain is oneway (twoway)
-                    std::list<NodeID> neighboursOnStreetType = base_graph.nodeNeighbours(current, streetType, edgeDirection);
+            if (graph.degree_leq_two(current)) {
+                if (graph.isOneway(current) == isOneway) { //current node has to be oneway (twoway) if the chain is oneway (twoway)
+                    std::list<NodeID> neighboursOnStreetType = graph.nodeNeighbours(current, streetType, edgeDirection);
                     debug_assert(neighboursOnStreetType.size() <=2);                                              
                     for (auto it = neighboursOnStreetType.begin(); it != neighboursOnStreetType.end(); it++) {
                         if (marked.at(*it) == false) {
@@ -114,31 +114,68 @@ public:
         return next;
     }
     
-    
-    
-    EdgeChain redetect(const Chain &old_chain, StreetType streettype) {
+    Chain getFullChain(const Chain &old_chain, const Chain &remaining_chain) {
+        assert(old_chain.size() >= 2);
+        assert(remaining_chain.size() >= 2);
+        Chain full_chain;
         
-        Chain remaining_chain_nodes;
-        
-        for (NodeID node_id : old_chain) {
-            if (base_graph.isValidNode(node_id)) {
-                remaining_chain_nodes.push_back(node_id);
+        //get start
+        Chain::const_iterator first = old_chain.end();
+        for (auto it = old_chain.begin(); it != old_chain.end(); it++) {
+            if (*it == remaining_chain.front()) {
+                first = it;
+                break;
+            }
+        }
+        //get end
+        Chain::const_iterator last = old_chain.end();
+        for (Chain::const_reverse_iterator rit = old_chain.rbegin(); rit != old_chain.rend(); rit++) {
+            if (*rit == remaining_chain.back()) {                
+                last = --rit.base();
+                assert(*last == remaining_chain.back());
+                break;
             }
         }
         
-        
+        assert(first != old_chain.end());
+        assert(last != old_chain.end());
+        Chain::const_iterator end = last;
+        end++;
+        //copy part in between
+        for (auto it = first; it != end; it++) {
+            full_chain.push_back(*it);
+        }
+        return full_chain;
+    }    
+    
+    RedetectedChain redetect(const Chain &old_chain, StreetType streettype) {     
+        assert(old_chain.size() >=2);
+        Chain remaining_chain_nodes;
+               
+        for (NodeID node_id : old_chain) {
+            if (graph.isValidNode(node_id)) {
+                remaining_chain_nodes.push_back(node_id);
+            }
+        }
+                
         bool valid = true;
+        /*
         //first and last node have to remain
         if (old_chain.front() != remaining_chain_nodes.front()
                 || old_chain.back() != remaining_chain_nodes.back()) {
             valid = false;
+        }*/
+        if (remaining_chain_nodes.size() < 2) {
+            valid = false;
         }
         
         
-        EdgeChain remaining_chain;
-        remaining_chain.chain = remaining_chain_nodes;
+        RedetectedChain redetected_chain;
+        redetected_chain.remaining_chain = remaining_chain_nodes;
+        
         
         if (valid) {
+            redetected_chain.hull_chain = getFullChain(old_chain, redetected_chain.remaining_chain);
             //test connectivity
             for (auto it = remaining_chain_nodes.begin(); it != --remaining_chain_nodes.end(); it++) {
                 //dont test for degree and oneway
@@ -150,10 +187,10 @@ public:
                 //auto nodeEdges = base_graph.nodeEdges(*it, streettype);
                 
                 
-                auto nodeEdges = base_graph.nodeEdges(*it, streettype);
+                auto nodeEdges = graph.nodeEdges(*it, streettype);
                 for (auto edge: nodeEdges) {
                     if (edge.src == *next || edge.tgt == *next) {
-                        remaining_chain.edges.push_back(edge.id);
+                        redetected_chain.edges.push_back(edge.id);
                         found = true;
                         break;
                     }
@@ -165,38 +202,43 @@ public:
         }
         
         if (valid) {
-            assert(remaining_chain.chain.size()>=2 &&remaining_chain.edges.size()>=1);
-            assert(remaining_chain.chain.size() == remaining_chain.edges.size()+1);
-            return remaining_chain;
+            assert(redetected_chain.remaining_chain.size()>=2);
+            assert(redetected_chain.edges.size()>=1);
+            assert(redetected_chain.remaining_chain.size() == redetected_chain.edges.size()+1);
+            return redetected_chain;
         } else {
             //Chain emptyChain;
-            return EdgeChain();
+           return RedetectedChain();
         }
     }
-    
-    EdgeChain redetect(const Chain &old_chain) {
-        
+    RedetectedChain redetect(const Chain &old_chain) {
+        assert(old_chain.size() >=2);
         Chain remaining_chain_nodes;
         
         for (NodeID node_id : old_chain) {
-            if (base_graph.isValidNode(node_id)) {
+            if (graph.isValidNode(node_id)) {
                 remaining_chain_nodes.push_back(node_id);
             }
         }
         
         
         bool valid = true;
+        /*
         //first and last node have to remain
         if (old_chain.front() != remaining_chain_nodes.front()
                 || old_chain.back() != remaining_chain_nodes.back()) {
             valid = false;
+        }*/
+        if (remaining_chain_nodes.size() < 2) {
+            valid = false;
         }
         
         
-        EdgeChain remaining_chain;
-        remaining_chain.chain = remaining_chain_nodes;
+        RedetectedChain redetected_chain;
+        redetected_chain.remaining_chain = remaining_chain_nodes;
         
         if (valid) {
+            redetected_chain.hull_chain = getFullChain(old_chain, redetected_chain.remaining_chain);
             //test connectivity
             for (auto it = remaining_chain_nodes.begin(); it != --remaining_chain_nodes.end(); it++) {
                 
@@ -208,10 +250,10 @@ public:
                 //auto nodeEdges = base_graph.nodeEdges(*it, streettype);
                                                                
                 
-                auto nodeEdges = base_graph.nodeEdges(*it);
+                auto nodeEdges = graph.nodeEdges(*it);
                 for (auto edge: nodeEdges) {
                     if (edge.src == *next || edge.tgt == *next) {
-                        remaining_chain.edges.push_back(edge.id);
+                        redetected_chain.edges.push_back(edge.id);
                         found = true;
                         break;
                     }
@@ -223,97 +265,18 @@ public:
         }
         
         if (valid) {
-            assert(remaining_chain.chain.size()>=2 &&remaining_chain.edges.size()>=1);
-            assert(remaining_chain.chain.size() == remaining_chain.edges.size()+1);
-            return remaining_chain;
+            assert(redetected_chain.remaining_chain.size()>=2);
+            assert(redetected_chain.edges.size()>=1);
+            assert(redetected_chain.remaining_chain.size() == redetected_chain.edges.size()+1);
+            return redetected_chain;
         } else {
             //Chain emptyChain;
-            return EdgeChain();
+           return RedetectedChain();
         }
     }
     
-    /*
-    struct nextRemainingNodes {
-        Chain nextRemainingNodes;
-        bool hasOneShortcut;
-    }
-    
-    std::list<NodeID> getNextRemainingNodes(const NodeID node_id) {
-        std::list<NodeID> centerNodes;
-        const CHEdge &edge = graph.getEdge(edge_id);
-        
-        if (graph.isShortcut(edge_id)) {
-            centerNodes.splice(centerNodes.end(), getCenterNodes(edge.child_edge1));
-
-            assert(graph.getEdge(edge.child_edge1).tgt == graph.getEdge(edge.child_edge2).src);
-            const NodeID centerNode_id = graph.getEdge(edge.child_edge1).tgt;
-            centerNodes.push_back(centerNode_id);
-
-            centerNodes.splice(centerNodes.end(), getCenterNodes(edge.child_edge2));
-        }
-        return centerNodes;
-    } 
-    
-    Chain redetectSafe(const Chain &old_chain, StreetType streettype) {
-        
-        Chain remaining_chain_nodes;
-        
-        for (NodeID node_id : old_chain) {
-            if (base_graph.isValidNode(node_id)) {
-                remaining_chain_nodes.push_back(node_id);
-            }
-        }
-        
-        
-        bool valid = true;
-        //first and last node have to remain
-        if (old_chain.front() != remaining_chain_nodes.front()
-                || old_chain.back() != remaining_chain_nodes.back()) {
-            valid = false;
-        }
-        
-        
-        EdgeChain remaining_chain;
-        remaining_chain.chain = remaining_chain_nodes;
-        
-        if (valid) {
-            //test connectivity
-            for (auto it = remaining_chain_nodes.begin(); it != --remaining_chain_nodes.end(); it++) {
-                //dont test for degree and oneway
-                auto next = it;
-                next++;
-                
-                //check if there is an edge connecting the two nodes and add the first
-                bool found = false;
-                //auto nodeEdges = base_graph.nodeEdges(*it, streettype);
-                
-                
-                auto nodeEdges = base_graph.nodeEdges(*it, streettype);
-                for (auto edge: nodeEdges) {
-                    if (edge.src == *next || edge.tgt == *next) {
-                        remaining_chain.edges.push_back(edge.id);
-                        found = true;
-                        break;
-                    }
-                }
-                if (found == false) {
-                    valid = false;
-                }                
-            }                    
-        }
-        
-        if (valid) {
-            assert(remaining_chain.chain.size()>=2 &&remaining_chain.edges.size()>=1);
-            assert(remaining_chain.chain.size() == remaining_chain.edges.size()+1);
-            return remaining_chain;
-        } else {
-            //Chain emptyChain;
-            return EdgeChain();
-        }
-    }
-    */
 private:
-    const GraphT &base_graph;
+    const GraphT &graph;
     std::vector<bool> marked;    
 };
 

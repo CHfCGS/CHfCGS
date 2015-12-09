@@ -4,7 +4,7 @@
 #include "grid.h"
 #include "geoFunctions.h"
 #include "chgraph.h"
-#include "range_tree.h"
+#include "CGAL/range_tree.h"
 #include "limits"
 
 namespace chm {

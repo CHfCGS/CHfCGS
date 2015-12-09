@@ -34,7 +34,7 @@ find_package(Boost REQUIRED thread)
 find_package(CGAL REQUIRED)
 
 
-enable_testing()
+
 
 include(CMakeDetermineCXXCompiler)
 
@@ -77,15 +77,20 @@ add_executable(ch_constructor
 )
 target_link_libraries(ch_constructor ${CGAL_LIBRARY} ${GMP_LIBRARIES} ${Boost_LIBRARIES} ) 
 
+set(TESTING OFF)
 
-add_executable(run_tests
-	src/run_tests.cpp
-	src/unit_tests.cpp
-	$<TARGET_OBJECTS:common>
-)
-target_link_libraries(run_tests ${CGAL_LIBRARY} ${GMP_LIBRARIES} ${Boost_LIBRARIES} ) 
+if(TESTING)
+	enable_testing()
+	add_executable(run_tests
+		src/run_tests.cpp
+		src/unit_tests.cpp
+		$<TARGET_OBJECTS:common>
+	)
+	target_link_libraries(run_tests ${CGAL_LIBRARY} ${GMP_LIBRARIES} ${Boost_LIBRARIES} ) 
 
-add_test(NAME unit-test
-	WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/src"
-	COMMAND $<TARGET_FILE:run_tests>
-)
+	add_test(NAME unit-test
+		WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/src"
+		COMMAND $<TARGET_FILE:run_tests>
+	)
+	
+endif()

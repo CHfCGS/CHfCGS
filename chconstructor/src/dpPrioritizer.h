@@ -8,11 +8,11 @@
 #pragma once
 
 #include "prioritizers.h"
+
 #include "simplification/lineSimplifierType.h"
-
-
 #include "simplification/lineSimplifier.h"
 #include "simplification/dp_simplifier.h"
+#include "simplification/discreteCurveEvolution.h"
 
 #include "chains.h"
 #include "grid.h"
@@ -27,6 +27,8 @@
 
 #include "simplification/prio_nodes.h"
 #include "nodes_and_edges.h"
+#include "s_options.h"
+
 
 /*
  * Prioritizer that prioritizes chain nodes by DouglasPeucker.
@@ -87,6 +89,7 @@ namespace chc {
 
         double epsilon;
         int roundcounter;
+        const SOptions s_options;
         
         void init(std::vector<NodeID>& node_ids) {
             _prio_vec = std::move(node_ids);
@@ -257,11 +260,13 @@ namespace chc {
         cpdp(this->_base_graph, grid), CaR(), priolists(), epsilon(0.0001), roundcounter(1) {
         }*/
         
-        DPPrioritizer(GraphT const& base_graph, CHConstructorT const& chc)
+        DPPrioritizer(SOptions s_options, GraphT const& base_graph, CHConstructorT const& chc)
         : _base_graph(base_graph), _chc(chc), state(State::removingDeadEnds),
         grid(1000, base_graph), fourDGrid(1, base_graph), deadEndDetector(base_graph), chaindetector(base_graph), dp(this->_base_graph, grid),
-        cpdp(this->_base_graph, grid), CaR(), priolists(), epsilon(10000), roundcounter(1) {            
-            lineSimplifier = createLineSimplifer(ls::LineSimplifierType::DP, base_graph, grid);
+        cpdp(this->_base_graph, grid), CaR(), priolists(), epsilon(10000), roundcounter(1),
+        s_options(s_options) {                        
+            lineSimplifier = createLineSimplifier(s_options, s_options.lineSimplifier_type, base_graph, grid);
+            assert(lineSimplifier != nullptr);
         }        
         //epsilon(0.0001)
         ~DPPrioritizer() {
@@ -300,9 +305,11 @@ namespace chc {
                         CaR = chaindetector.detectChains(_prio_vec);
                         Print("Number of chains: " << CaR.getNrOfChains());
                         debug_assert(CaR.getNrOfNodesInChains() + CaR.remainder.size() == this->_prio_vec.size());
-
-                        Print("IdentifyingChainPairs ");
-                        fourDGrid.identifyPairs(CaR);
+                        if (s_options.pairMatch_type != PairMatchType::NONE) {
+                            Print("IdentifyingChainPairs ");
+                            fourDGrid.identifyPairs(CaR);
+                        }
+                        
                         Print("Number of chain pairs: " << CaR.chainPairs.size());
 
                         FillPriolists();

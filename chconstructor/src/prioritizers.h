@@ -4,6 +4,7 @@
 #include "nodes_and_edges.h"
 #include "indexed_container.h"
 #include "dpPrioritizer.h"
+#include "s_options.h"
 
 #include <memory>
 
@@ -454,7 +455,25 @@ std::unique_ptr<Prioritizer> createPrioritizer(PrioritizerType prioritizer_type,
 	case PrioritizerType::ONE_BY_ONE:
 		return std::unique_ptr<Prioritizer>(new OneByOnePrioritizer<GraphT>(graph));
         case PrioritizerType::DP:
-		return std::unique_ptr<Prioritizer>(new DPPrioritizer<GraphT, CHConstructorT>(graph, chc));
+		return std::unique_ptr<Prioritizer>(new DPPrioritizer<GraphT, CHConstructorT>(SOptions(), graph, chc));
+	case PrioritizerType::EDGE_DIFF:
+		return std::unique_ptr<Prioritizer>(new EdgeDiffPrioritizer<GraphT, CHConstructorT>(graph, chc));
+	}
+
+	return nullptr;
+}
+
+template <class GraphT, class CHConstructorT>
+std::unique_ptr<Prioritizer> createPrioritizer(PrioritizerType prioritizer_type, SOptions s_options, GraphT const& graph,
+		CHConstructorT const& chc)
+{
+	switch (prioritizer_type) {
+	case PrioritizerType::NONE:
+		return nullptr;
+	case PrioritizerType::ONE_BY_ONE:
+		return std::unique_ptr<Prioritizer>(new OneByOnePrioritizer<GraphT>(graph));
+        case PrioritizerType::DP:
+		return std::unique_ptr<Prioritizer>(new DPPrioritizer<GraphT, CHConstructorT>(s_options, graph, chc));
 	case PrioritizerType::EDGE_DIFF:
 		return std::unique_ptr<Prioritizer>(new EdgeDiffPrioritizer<GraphT, CHConstructorT>(graph, chc));
 	}

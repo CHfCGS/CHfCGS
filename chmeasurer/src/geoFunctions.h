@@ -8,6 +8,7 @@ using namespace chm;
 //utility functions for geometric calculations (in a plane)
 namespace geo {
     
+    static const double PI = 3.14159265;
     //static double R = 6371.009; //Erdradius 
     
     double calcArea(CHNode aSource, CHNode bTarget, CHNode cOutlier) {
@@ -70,5 +71,37 @@ namespace geo {
         bool line2BetweenLine1 = differentSign(line1StartArea, line1EndArea);
 
         return line1BetweenLine2 && line2BetweenLine1;
-    }    
+    }   
+    
+    struct twoDvector {
+        double x;
+        double y;
+        double length;
+        twoDvector(CHNode src, CHNode tgt) {
+            x = tgt.lon - src.lon;
+            y = tgt.lat - src.lat;
+            length = geo::geoDist(src, tgt);
+        }        
+    };
+    
+    double dotProduct (twoDvector s1, twoDvector s2) {        
+        double xProduct = s1.x * s2.x;
+        double yProduct = s1.y * s2.y;
+        return xProduct + yProduct;
+    }
+    
+    double calcTurnAngle(twoDvector s1, twoDvector s2){
+        //double length1 = geo::geoDist(graph.getNode(kink.src), graph.getNode(kink.peak));
+        //double length2 = geo::geoDist(graph.getNode(kink.peak), graph.getNode(kink.tgt)); 
+        double divisor = s1.length * s2.length;                       
+        assert(divisor > 0);
+        double toAcos = fabs(dotProduct(s1, s2))/divisor;
+        
+        //safe for acos
+        if (toAcos < -1.0) toAcos = -1.0;
+        else if (toAcos > 1.0) toAcos = 1.0;
+        
+        double turnAngle = acos(toAcos) * 180.0 / PI;
+        return turnAngle;                        
+    }  
 }

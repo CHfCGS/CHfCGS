@@ -82,11 +82,13 @@ struct ChainsAccordingToType {
 };
  */
 
-struct EdgeChain {
+struct RedetectedChain {
     //EdgeChain(Chain &chain): chain(chain) {}
-    Chain chain;
+    Chain remaining_chain;
     //edges between the nodes of chain
     std::list<EdgeID> edges;
+    //enclosing chain in full graph
+    Chain hull_chain;
 };
 
 

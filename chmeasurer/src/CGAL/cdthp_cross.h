@@ -1,10 +1,13 @@
 #pragma once
 
-#include "window.h"
-#include "nodes_and_edges.h"
-#include "chgraph.h"
+#include "../window.h"
+#include "../nodes_and_edges.h"
+#include "../chgraph.h"
+#include "range_tree.h"
+#include "../grid.h"
 
 #include <CGAL/Constrained_Delaunay_triangulation_2.h>
+#include <CGAL/Constrained_triangulation_2.h>
 #include <CGAL/Triangulation_hierarchy_2.h>
 #include <CGAL/Constrained_triangulation_plus_2.h>
 #include <CGAL/Triangulation_face_base_with_info_2.h>
@@ -63,7 +66,8 @@ class CDTHPCross {
 
     typedef CGAL::Triangulation_data_structure_2<Vb,Fb>               TDS;
     typedef CGAL::Exact_intersections_tag                                Itag;
-    typedef CGAL::Constrained_Delaunay_triangulation_2<K, TDS, Itag>  CDT;
+    //typedef CGAL::Constrained_Delaunay_triangulation_2<K, TDS, Itag>  CDT;
+    typedef CGAL::Constrained_triangulation_2<K, TDS, Itag>  CDT;
     typedef CGAL::Triangulation_hierarchy_2<CDT> CDTH;
     typedef CGAL::Constrained_triangulation_plus_2<CDTH> CDTHP;
     typedef CDTHP::Point                                                Point;
@@ -75,7 +79,7 @@ class CDTHPCross {
     CHGraph<CHNode, CHEdge> &graph;
     Grid<CHGraph<CHNode, CHEdge> > &grid;
     
-    RangeTree rangeTree;
+    RangeTree &rangeTree;
     
     
     void 
@@ -190,16 +194,36 @@ class CDTHPCross {
     std::list<NodeID> getOutliers(const Chain &chain) {
         
         Window window(graph, chain);
-        std::list<NodeID> outliers = rangeTree.rectangleQuery(window);
-
+        //std::list<NodeID> outliers = rangeTree.rectangleQuery(window);
+        std::list<NodeID> outliers = grid.nodesInWindow(window);
+        /*
+        Print("rangeTree");
+        outliers.sort();
+        for (NodeID node_id: outliers) {
+            Print("node_id" << node_id);
+        }
+        
+        
+        Print("grid");
+        //outliers2.sort();
+        for (NodeID node_id: outliers2) {
+            Print("node_id" << node_id);
+        }
+        Print("chain");
+        //outliers2.sort();
+        for (NodeID node_id: chain) {
+            Print("node_id" << node_id);
+        }
+         * */
+        //assert(outliers.size() == outliers2.size());
         subtractLists(outliers, chain);
         
         return outliers;
     }
     
 public:
-    CDTHPCross(CHGraph<CHNode, CHEdge> &graph, Grid<CHGraph<CHNode, CHEdge> > &grid):
-        graph(graph), grid(grid), rangeTree(RangeTree(graph)){                
+    CDTHPCross(CHGraph<CHNode, CHEdge> &graph, Grid<CHGraph<CHNode, CHEdge> > &grid, RangeTree &rangeTree):
+        graph(graph), grid(grid), rangeTree(rangeTree){                
     }
     
     uint getNofCrossings (const Chain &chain) {

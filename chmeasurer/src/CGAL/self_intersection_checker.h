@@ -7,8 +7,8 @@
 #include <CGAL/Sweep_line_2_algorithms.h>
 #include <list>
 
-#include "chains.h"
-#include "chgraph.h"
+#include "../chains.h"
+#include "../chgraph.h"
 
 typedef CGAL::Quotient<CGAL::MP_Float>                  NT;
 //typedef CGAL::Exact_predicates_inexact_constructions_kernel                       Kernel;
