@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <math.h>
 #include "nodes_and_edges.h"
 
 using namespace chc;
@@ -104,9 +105,13 @@ namespace geo {
         //double length2 = geo::geoDist(graph.getNode(kink.peak), graph.getNode(kink.tgt));        
         double divisor = s1.length * s2.length;   
         assert(divisor > 0);
-        double toAcos = fabs(dotProduct(s1, s2))/divisor;
+        double toAcos = dotProduct(s1, s2)/divisor;
         
-        return acos(toAcos);        
+        if (toAcos < -1.0) toAcos = -1.0;
+        else if (toAcos > 1.0) toAcos = 1.0;
+        
+        double turnAngle = acos(toAcos) * 180.0 / M_PI;
+        return turnAngle;                        
     }       
     
 }

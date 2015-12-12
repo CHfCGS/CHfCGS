@@ -95,7 +95,7 @@ namespace geo {
         //double length2 = geo::geoDist(graph.getNode(kink.peak), graph.getNode(kink.tgt)); 
         double divisor = s1.length * s2.length;                       
         assert(divisor > 0);
-        double toAcos = fabs(dotProduct(s1, s2))/divisor;
+        double toAcos = dotProduct(s1, s2)/divisor;
         
         //safe for acos
         if (toAcos < -1.0) toAcos = -1.0;

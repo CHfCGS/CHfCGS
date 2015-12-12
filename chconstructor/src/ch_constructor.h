@@ -87,7 +87,7 @@ namespace chc {
         void quickContract(std::vector<NodeID>& nodes, uint max_degree,
                 uint max_rounds);
         void contract(std::vector<NodeID>& nodes);
-        void contract(std::vector<NodeID>& nodes, Prioritizer& prioritizer);
+        void contract(std::vector<NodeID>& nodes, Prioritizer& prioritizer, bool taggingVisuallyUnpleasantSh);
         void rebuildCompleteGraph();
 
         /* const functions that use algorithms from the CHConstructor */
@@ -540,7 +540,7 @@ namespace chc {
     }
 
     template <typename NodeT, typename EdgeT>
-    void CHConstructor<NodeT, EdgeT>::contract(std::vector<NodeID>& nodes, Prioritizer& prioritizer) {
+    void CHConstructor<NodeT, EdgeT>::contract(std::vector<NodeID>& nodes, Prioritizer& prioritizer, bool taggingVisuallyUnpleasantSh) {
         using namespace std::chrono;
 
         Print("\nStarting the contraction of " << nodes.size() << " nodes.\n");
@@ -552,8 +552,10 @@ namespace chc {
             steady_clock::time_point t1 = steady_clock::now();
             Print("Starting round " << round);
             
-            Print("Tagging visually unpleasant for shortcuts of last round");
-            _taggingLastRoundShortcuts(round);
+            if(taggingVisuallyUnpleasantSh) {
+                Print("Tagging visually unpleasant for shortcuts of last round");
+                _taggingLastRoundShortcuts(round);
+            }
             
             Debug("Initializing the vectors for a new round.");
             _initVectors();
@@ -632,7 +634,7 @@ namespace chc {
 
         return edge_diffs;
     }
-
+       
     template <typename NodeT, typename EdgeT>
     auto CHConstructor<NodeT, EdgeT>::getShortcutsOfContracting(NodeID node) const -> std::vector<Shortcut> {
         ThreadData td;

@@ -32,7 +32,7 @@ void unit_tests::testAll()
 	unit_tests::testCHDijkstra();
 	//unit_tests::testDijkstra();
 	//unit_tests::testPrioritizers();
-        testCDTMatching();
+        unit_tests::testCDTMatching();
 }
 
 void unit_tests::testNodesAndEdges()
@@ -265,7 +265,7 @@ void unit_tests::testPrioritizers()
 		std::random_shuffle(all_nodes.begin(), all_nodes.end()); /* random initial node order */
 		auto prioritizer(createPrioritizer(type, chg, chc));
 		if (prioritizer == nullptr && type == PrioritizerType::NONE) { continue; }
-		chc.contract(all_nodes, *prioritizer);
+		chc.contract(all_nodes, *prioritizer, false);
 		chc.rebuildCompleteGraph();
 
 		/* Random Dijkstras */
@@ -304,6 +304,8 @@ void unit_tests::testCDTMatching()
 	CHGraphOSM chg;
 	chg.init(FormatSTD::Reader::readGraph<OSMNode, Shortcut>("../test_data/cdt_matchingTest2.txt"));
 
+        using namespace ls;
+        
         std::vector<NodeInBox> nodesInBox;
         std::list<Intervall2>::iterator intervallIt;
         PrioNodeHeap heap;
@@ -335,7 +337,7 @@ void unit_tests::testCDTMatching()
         UnitTest(!sic.isSelfIntersecting(chain1, chain2));
         
         Print("CDTMatching");
-        CDTMatching2<CHGraphOSM> cdtm(chg);        
+        ls::mc::CDTMatching2<CHGraphOSM> cdtm(chg);        
         cdtm.match(list1, list2);                  
         Print("CDTmatched");
         

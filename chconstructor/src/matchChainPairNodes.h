@@ -154,7 +154,7 @@ class matchChainPairNodes {
         }
     }
     
-    int getPreviousNodeOnOtherSide(vector<ZipNode> &zipOrder, int i) {
+    int getPreviousNodeOnOtherSide(std::vector<ZipNode> &zipOrder, int i) {
         debug_assert(0 <= i && i < (int) zipOrder.size());
         bool activeSide = zipOrder[i].listDirection;
         
@@ -167,7 +167,7 @@ class matchChainPairNodes {
         return i;                
     }
     
-    int getNextNodeOnOtherSide(vector<ZipNode> &zipOrder, int i) {
+    int getNextNodeOnOtherSide(std::vector<ZipNode> &zipOrder, int i) {
         debug_assert(0 <= i && i < (int) zipOrder.size());
         bool activeSide = zipOrder[i].listDirection;
         
@@ -188,7 +188,7 @@ class matchChainPairNodes {
         (*followerIt)->guides.push_back(*nodeIt);
     }
     
-    void _setFollowers (list<ZipNode> &zipNodes, std::list<std::list<PPrioNode>::iterator>::iterator followerIt) {
+    void _setFollowers (std::list<ZipNode> &zipNodes, std::list<std::list<PPrioNode>::iterator>::iterator followerIt) {
         for (ZipNode &zn : zipNodes) {
            _setFollower (zn.nodeIt, followerIt); 
         }
@@ -198,7 +198,7 @@ class matchChainPairNodes {
         if (zs.zipNodes.empty()) {
             return; //Recursion end
         } else {
-            double minDist = numeric_limits<double>::max();
+            double minDist = std::numeric_limits<double>::max();
             bool minSide; //true==previous false == next
             auto minIt = zs.zipNodes.begin();
             
@@ -243,7 +243,7 @@ class matchChainPairNodes {
         }
     }
     
-    void setFollowers (vector<ZipNode> &zipOrder, bool careOrdering) {
+    void setFollowers (std::vector<ZipNode> &zipOrder, bool careOrdering) {
         
         if (careOrdering && toList.size()>=1 && fromList.size()>=1) {
             
@@ -315,7 +315,7 @@ class matchChainPairNodes {
                 //closest previous Node on the other chain according to zipOrder
                 int previous = getPreviousNodeOnOtherSide(zipOrder, i);
                 if (previous == -1) { //if there is no sooner node on the other side
-                    distPrevious = numeric_limits<double>::max();
+                    distPrevious = std::numeric_limits<double>::max();
                 } else {
                     distPrevious = geoDist((*zipOrder[i].nodeIt)->node_id, (*zipOrder[previous].nodeIt)->node_id);
                 }
@@ -323,7 +323,7 @@ class matchChainPairNodes {
                 //closest next Node on the other chain according to zipOrder
                 int next = getNextNodeOnOtherSide(zipOrder, i);
                 if (next == (int) zipOrder.size()) { //if there is no later node on the other side
-                    distNext = numeric_limits<double>::max();
+                    distNext = std::numeric_limits<double>::max();
                 } else {
                     distNext = geoDist((*zipOrder[i].nodeIt)->node_id, (*zipOrder[next].nodeIt)->node_id);
                 }
@@ -350,7 +350,7 @@ class matchChainPairNodes {
     }
 
     void zipOrder() {
-        vector<ZipNode> zipOrder;
+        std::vector<ZipNode> zipOrder;
         size_t size = toList.size() + fromList.size();
         zipOrder.reserve(size);
         //construct an ordering to get follow-function

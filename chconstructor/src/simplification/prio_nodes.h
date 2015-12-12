@@ -27,6 +27,7 @@ struct PrioNode;
 //typedef list<list<PrioNode>::iterator> QueueNodeIteratorList;
 typedef std::reference_wrapper<PrioNode> PrioNodeRef;
 
+/*
 struct BoundingBox {
     double upperLat;
     double LeftLon;   
@@ -59,7 +60,7 @@ struct BoundingBox {
                 && (LeftLon < lon) && (lon < RightLon));
     }
     
-};
+};*/
 
 struct NodeInBox {
     NodeInBox():nodeID(0), sign(false) {}
@@ -192,6 +193,14 @@ struct PrioNodeTD: public PrioNodeBase {
 
 typedef std::vector<NodeInBox> NodeBox;
 
+struct NofCrossings {
+    uint right = 0;
+    uint left = 0;
+    uint getSum() const{
+        return right + left;
+    }
+};
+
 struct PrioNode2 {        
     const NodeID node_id;
     std::list<Intervall2>::iterator intervallIt;    
@@ -204,8 +213,10 @@ struct PrioNode2 {
     std::list<std::list<NodeBox>::iterator> left_node_boxes_its;
     std::list<std::list<NodeBox>::iterator> right_node_boxes_its;
     
-    double perpendicularLength;
-    uint nOfIntersections = 0; //used as orientation misses
+    double error;
+    NofCrossings nof_crossings;
+    //uint nof_crossings = 0;
+    int cross_diff = 0;
             
     PrioNodeHandle follower_h; //if a PPrioNode is chosen to subdivide one way the follower is chosen to subdivide the other in the DP algorithm
     bool followerValid = false;
@@ -215,19 +226,19 @@ struct PrioNode2 {
                 std::vector<NodeInBox> &leftBox, std::vector<NodeInBox> &rightBox
                 //, std::list<PrioNode2>::iterator follower, bool followerValid,
                 //std::list<std::list<PrioNode2>::iterator> guides
-                    ): node_id(node), intervallIt(intervallIt), leftBox(leftBox), rightBox(rightBox), perpendicularLength(0)
+                    ): node_id(node), intervallIt(intervallIt), leftBox(leftBox), rightBox(rightBox), error(0)
                     //, follower(follower), followerValid(followerValid), guides(guides)
     {}
 
      explicit operator simplePrioNode() const {
-        return simplePrioNode(node_id, perpendicularLength, nOfIntersections);
+        return simplePrioNode(node_id, error, nof_crossings.getSum());
     } 
     
     PrioNode2 operator =(const PrioNode2 &p_IN) {
         PrioNode2 p_out(p_IN.node_id, p_IN.intervallIt, p_IN.leftBox, p_IN.rightBox);
         p_out.posInIntervallIt = p_IN.posInIntervallIt;
-        p_out.perpendicularLength = p_IN.perpendicularLength;
-        p_out.nOfIntersections = p_IN.nOfIntersections;
+        p_out.error = p_IN.error;
+        p_out.nof_crossings = p_IN.nof_crossings;
         p_out.follower_h = p_IN.follower_h;
         p_out.followerValid = p_IN.followerValid;
         p_out.guides = p_IN.guides;
@@ -240,14 +251,48 @@ struct PrioNode2 {
     //< means later processed in DP and sooner contracted
     bool operator <(const PrioNode2 &rhs) const {
         
-        if (this->nOfIntersections > rhs.nOfIntersections) {
+        //left hand side
+        double lhs_error;
+        double lhs_cross_diff;
+        if (this->followerValid) {
+            PrioNode2 &follower = *(this->follower_h);
+            lhs_error = (this->error + follower.error)/2;
+            lhs_cross_diff = (this->cross_diff + follower.cross_diff)/2.0;
+        } else {
+            lhs_error = this->error;
+            lhs_cross_diff = this->cross_diff;
+        }
+        
+        //right hand side
+        double rhs_error;
+        int rhs_cross_diff;
+        if (this->followerValid) {
+            PrioNode2 &follower = *(rhs.follower_h);
+            rhs_error = (rhs.error + follower.error)/2;
+            rhs_cross_diff = (rhs.cross_diff + follower.cross_diff)/2.0;
+        } else {
+            rhs_error = rhs.error;
+            rhs_cross_diff = rhs.cross_diff;
+        }
+                  
+        if (lhs_cross_diff > rhs_cross_diff) {
             return true;
-        } else if (this->nOfIntersections == rhs.nOfIntersections) {            
-            return this->perpendicularLength < rhs.perpendicularLength;     
+        } else if (lhs_cross_diff == rhs_cross_diff) {            
+            return lhs_error < rhs_error;     
         }
         else {
             return false;
         }
+        
+        /*
+        if (this->cross_diff > rhs.cross_diff) {
+            return true;
+        } else if (this->cross_diff == rhs.cross_diff) {            
+            return this->perpendicularLength < rhs.perpendicularLength;     
+        }
+        else {
+            return false;
+        }*/
         
         //return this->perpendicularLength < rhs.perpendicularLength; 
     }
@@ -304,22 +349,23 @@ struct PPrioNode {
     std::vector<NodeInBox> &rightBox;
     
     double perpendicularLength;
-    uint nOfIntersections = 0; //used as orientation misses
+    uint cross_diff = 0; //used as orientation misses
             
     PPrioNode(const NodeID node, std::list<PIntervall>::iterator intervallIt, std::vector<NodeInBox> &leftBox, std::vector<NodeInBox> &rightBox)
     : node_id(node), intervallIt(intervallIt), leftBox(leftBox), rightBox(rightBox), perpendicularLength(0) {        
     }    
     
     explicit operator simplePrioNode() const {
-        return simplePrioNode(node_id, perpendicularLength, nOfIntersections);
+        return simplePrioNode(node_id, perpendicularLength, cross_diff);
     }
     
     //< means later processed in DP and sooner contracted
     bool operator <(const PPrioNode &rhs) const {
+        
         //TODO also take follower values into account                
-        if (this->nOfIntersections > rhs.nOfIntersections) {
+        if (this->cross_diff > rhs.cross_diff) {
             return true;
-        } else if (this->nOfIntersections == rhs.nOfIntersections) {            
+        } else if (this->cross_diff == rhs.cross_diff) {            
             return this->perpendicularLength < rhs.perpendicularLength;     
         }
         else {

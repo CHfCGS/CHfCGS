@@ -256,7 +256,7 @@ class chainPairDP{
             
             prioNode.perpendicularLength = dist;
             //prioNode.nOfIntersections = calcNoFIntersections(intervall.start, prioNode.node_id, intervall.end);
-            prioNode.nOfIntersections = calcOrientationMisses(prioNode, intervall);
+            prioNode.cross_diff = calcOrientationMisses(prioNode, intervall);
         }
         return;
     }

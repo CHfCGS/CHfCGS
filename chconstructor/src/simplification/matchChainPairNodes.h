@@ -9,6 +9,7 @@
 #include "prio_nodes.h"
 #include "zip_order.h"
 #include "../s_options.h"
+#include "perfect_matching.h"
 
 #undef matchChainPairNodesNDEBUG
 
@@ -60,12 +61,15 @@ namespace ls {
                         //CDTMatching2<GraphT> ctd_matcher(graph);
                         //ctd_matcher.match(list1, list2);
                     }                                
-
                     break;
+                }
+                case PairMatchType::P: {
+                    PerfectMatching<GraphT> pm(graph);
+                    pm.match(list1, list2);
                 }
             }              
             return;
-        }            
+        }                        
 
     }
 }

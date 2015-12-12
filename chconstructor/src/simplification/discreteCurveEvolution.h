@@ -10,6 +10,7 @@
 #include "matchChainPairNodes.h"
 #include "error_measure.h"
 #include "../s_options.h"
+#include "../bounding_box.h"
 
 #include <limits>
 #include <math.h>
@@ -117,7 +118,8 @@ private:
                                             pn.left_node_boxes_its.begin(),
                                             pn.left_node_boxes_its.end());
             pn.intervallIt->prioNodeHandles.erase(pn.posInIntervallIt);
-            update(*pn.intervallIt, nextIt);
+            update(next);
+            //update(*pn.intervallIt, nextIt);
         } else if (pn.posInIntervallIt == --pn.intervallIt->prioNodeHandles.end()) {
             auto prevIt = pn.posInIntervallIt;
             prevIt--;
@@ -128,7 +130,8 @@ private:
                                             pn.right_node_boxes_its.begin(),
                                             pn.right_node_boxes_its.end());
             pn.intervallIt->prioNodeHandles.erase(pn.posInIntervallIt);
-            update(*pn.intervallIt, prevIt);            
+            update(prev);
+            //update(*pn.intervallIt, prevIt);            
         } else {
             auto prevIt = pn.posInIntervallIt;
             prevIt--;
@@ -147,41 +150,105 @@ private:
                                             pn.left_node_boxes_its.begin(),
                                             pn.left_node_boxes_its.end());
             pn.intervallIt->prioNodeHandles.erase(pn.posInIntervallIt);
-            update(*pn.intervallIt, prevIt);
-            update(*pn.intervallIt, nextIt);
+            update(prev);
+            update(next);
+            //update(*pn.intervallIt, prevIt);
+            //update(*pn.intervallIt, nextIt);            
         } 
     }
     
-    void update(Intervall2 &intervall, const std::list<PrioNodeHandle>::iterator posInIntervallIt) {
+    
+    uint _calcOrientationMisses(const std::list<std::list<NodeBox>::iterator> &node_boxes_its, NodeID src, NodeID tgt) {
+        uint crossings_counter = 0;
+        for (std::list<NodeBox>::iterator it: node_boxes_its) {
+            NodeBox &node_box = *it;                   
+            for (NodeInBox nodeInBox : node_box) {
+                bool sign = (geo::calcArea(src, tgt, nodeInBox.nodeID, graph) >= 0) ? true : false;
+                if (sign != nodeInBox.sign) {
+                    crossings_counter++;
+                }
+            }
+        }
+        return crossings_counter;
+    }
+    
+    NofCrossings calcOrientationMisses(const PrioNode2 &pn, NodeID src, NodeID tgt) {        
+        NofCrossings nof_crossings;                        
+        /*
+        for (std::list<NodeBox>::iterator it: pn.left_node_boxes_its) {
+            NodeBox &node_box = *it;                   
+            for (NodeInBox nodeInBox : node_box) {
+                bool sign = (geo::calcArea(src, tgt, nodeInBox.nodeID, graph) >= 0) ? true : false;
+                if (sign != nodeInBox.sign) {
+                    nof_crossings.left++;
+                }
+            }
+        }
+                    
+        for (std::list<NodeBox>::iterator it: pn.right_node_boxes_its) {
+            NodeBox &node_box = *it;
+            for (NodeInBox nodeInBox : node_box) {
+                bool sign = (geo::calcArea(src, tgt, nodeInBox.nodeID, graph) >= 0) ? true : false;
+                if (sign != nodeInBox.sign) {
+                    nof_crossings.right++;
+                }
+            }            
+        }*/
+        nof_crossings.left = _calcOrientationMisses(pn.left_node_boxes_its, src, tgt);
+        nof_crossings.right = _calcOrientationMisses(pn.right_node_boxes_its, src, tgt);
+        return nof_crossings;
+    }
+    
+    void _updateErrors(PrioNode2 &cur, NodeID prev, NodeID next) {
+        //negative weight since heap is a max heap it should always eliminate the least critical value
+        cur.error = -errorMeasure->calcError(graph.getNode(prev),
+                        graph.getNode(next),
+                        graph.getNode(cur.node_id));            
+        cur.cross_diff = calcOrientationMisses(cur, prev, next).getSum();
+    }
+    
+    //void update(Intervall2 &intervall, const std::list<PrioNodeHandle>::iterator posInIntervallIt) {
+    void update(PrioNode2 &pn) {
+        Intervall2 &intervall = *pn.intervallIt;
+        const std::list<PrioNodeHandle>::iterator &posInIntervallIt = pn.posInIntervallIt;
         PrioNodeHandle prev_h;
         PrioNodeHandle cur_h;
         PrioNodeHandle next_h;
         assert(!intervall.prioNodeHandles.empty());
         if (intervall.prioNodeHandles.size() == 1) {
             cur_h = *intervall.prioNodeHandles.begin();
-            PrioNode2 &cur = *cur_h;            
-            cur.perpendicularLength = errorMeasure->calcError(graph.getNode(intervall.start),
-                                                              graph.getNode(intervall.finish),
-                                                              graph.getNode(cur.node_id));            
+            PrioNode2 &cur = *cur_h;
+            _updateErrors(cur, intervall.start, intervall.finish);   
+            /*
+            cur.error = -errorMeasure->calcError(graph.getNode(intervall.start),
+                        graph.getNode(intervall.finish),
+                        graph.getNode(cur.node_id));            
+            cur.cross_diff = calcOrientationMisses(cur, intervall.start, intervall.finish).getSum();*/
         } else if (posInIntervallIt == intervall.prioNodeHandles.begin()) {
             //front
             cur_h = *intervall.prioNodeHandles.begin();
             PrioNode2 &cur = *cur_h;
             next_h = *++(intervall.prioNodeHandles.begin());
-            PrioNode2 &next = *next_h;            
-            cur.perpendicularLength = errorMeasure->calcError(graph.getNode(intervall.start),
-                                                              graph.getNode(next.node_id),
-                                                              graph.getNode(cur.node_id));
+            PrioNode2 &next = *next_h;   
+            _updateErrors(cur, intervall.start, next.node_id);
+            /*
+            cur.error = -errorMeasure->calcError(graph.getNode(intervall.start),
+                        graph.getNode(next.node_id),
+                        graph.getNode(cur.node_id));
+            cur.cross_diff = calcOrientationMisses(cur, intervall.start, next.node_id).getSum();*/
             
         } else if (posInIntervallIt == --intervall.prioNodeHandles.end()) {
             //back            
             prev_h = *--(--intervall.prioNodeHandles.end());
             PrioNode2 &prev = *prev_h;
             cur_h = *--intervall.prioNodeHandles.end();
-            PrioNode2 &cur = *cur_h;            
-            cur.perpendicularLength = errorMeasure->calcError(graph.getNode(prev.node_id),
-                    graph.getNode(intervall.finish),
-                    graph.getNode(cur.node_id));            
+            PrioNode2 &cur = *cur_h; 
+            _updateErrors(cur, prev.node_id, intervall.finish);
+            /*
+            cur.error = -errorMeasure->calcError(graph.getNode(prev.node_id),
+                        graph.getNode(intervall.finish),
+                        graph.getNode(cur.node_id));
+            cur.cross_diff = calcOrientationMisses(cur, prev.node_id, intervall.finish).getSum();  */          
         } else {
             //middle
             auto lastIt = posInIntervallIt;
@@ -195,12 +262,15 @@ private:
             PrioNode2 &cur = *cur_h;
             next_h = *nextIt;
             PrioNode2 &next = *next_h;
-            
-            cur.perpendicularLength = errorMeasure->calcError(graph.getNode(prev.node_id),
+        
+            _updateErrors(cur, prev.node_id, next.node_id);
+            /*
+            cur.error = -errorMeasure->calcError(graph.getNode(prev.node_id),
                         graph.getNode(next.node_id),
                         graph.getNode(cur.node_id)); 
-            
-        }        
+            cur.cross_diff = calcOrientationMisses(cur, prev.node_id, next.node_id).getSum(); */
+        }                
+        
         prioNodeHeap.update(cur_h);  
     }
     
@@ -208,62 +278,12 @@ private:
         for(std::list<PrioNodeHandle>::iterator it = intervall.prioNodeHandles.begin();
                 it != intervall.prioNodeHandles.end();
                 it++) {
-            update(intervall, it);
+            PrioNodeHandle pn_h = *it;
+            PrioNode2 &pn = *pn_h;
+            update(pn);
+            //update(intervall, it);
         }
-    }
-    
-    /*
-    void setIntervall(Intervall2 &intervall){
-        if(intervall.prioNodeHandles.empty()) {
-            return;
-        } else if(intervall.prioNodeHandles.size() == 1) {
-            PrioNodeHandle prioNodeH = *intervall.prioNodeHandles.begin();
-            PrioNode2 &prioNode = *prioNodeH;
-            //Kink kink(intervall.start, prioNode.node_id, intervall.finish);
-            prioNode.perpendicularLength = errorMeasure->calcError(intervall.start, intervall.finish, prioNode.node_id)
-            prioNodeHeap.update(prioNodeH);
-        } else {
-            PrioNodeHandle prev_h;
-            PrioNodeHandle cur_h;
-            PrioNodeHandle next_h;
-            //front
-            cur_h = *intervall.prioNodeHandles.begin();
-            PrioNode2 &cur = *cur_h;
-            next_h = *++(intervall.prioNodeHandles.begin());
-            PrioNode2 &next = *next_h;
-            //Kink kink(intervall.start, cur.node_id, next.node_id);
-            cur.perpendicularLength = errorMeasure->calcError(intervall.start, next.node_id, cur.node_id);
-            prioNodeHeap.update(cur);
-            //middle
-            for(std::list<PrioNodeHandle>::iterator it = ++intervall.prioNodeHandles.begin();
-                it != --intervall.prioNodeHandles.end();
-                it++) {
-                auto lastIt = it;
-                lastIt--;
-                auto nextIt = it;
-                nextIt++;
-                
-                prev_h = *lastIt;
-                PrioNode2 &prev = *prev_h;
-                cur_h = *it;
-                PrioNode2 &cur = *cur_h;
-                next_h = *nextIt;
-                PrioNode2 &next = *next_h;
-                
-                //Kink kink(prev.node_id, cur.node_id, next.node_id);
-                cur.perpendicularLength = errorMeasure->calcError(prev.node_id, next.node_id, cur.node_id);
-                prioNodeHeap.update(cur);                
-            }
-            //back            
-            prev_h = *--(intervall.prioNodeHandles.end());
-            PrioNode2 &prev = *prev_h;
-            cur_h = *intervall.prioNodeHandles.end();
-            PrioNode2 &cur = *cur_h;
-            //Kink kink(prev.node_id, cur.node_id, intervall.finish);
-            cur.perpendicularLength = errorMeasure->calcError(prev.node_id, intervall.finish, cur.node_id);
-            prioNodeHeap.update(cur);
-        }                        
-    }*/
+    }        
     
     void initializeChain(const Chain &chain) {                   
         
@@ -338,8 +358,7 @@ public:
                 
         
         if (chain2.empty()) {
-            initializeChain(chain1);
-            intervalls.back().prioNodeHandles.reverse();
+            initializeChain(chain1);            
             return simplify();
         } else {
             debug_assert(chain1.size() + chain2.size() > 6);
@@ -348,8 +367,8 @@ public:
             initializeChain(chain1);
             initializeChain(chain2);
 
+            //one chain need to reversed for matching
             intervalls.back().prioNodeHandles.reverse();
-
             mc::match<GraphT> (graph, intervalls.front().prioNodeHandles, intervalls.back().prioNodeHandles, s_options.pairMatch_type);
             //matchChainPairNodes2<GraphT> matcher(base_graph, intervalls.front(), intervalls.back());
             //matcher.match();                
@@ -359,31 +378,3 @@ public:
 };
 
 }
-/*
-std::list<simplePrioNode> process(const Chain &chain1, const Chain &chain2) {                
-            debug_assert(chain1.size() >= 3);
-            
-            prioNodeHeap.clear();
-            intervalls.clear();
-            node_boxes.clear();  
-            
-            if(chain2.empty()) {
-                initializeChain(chain1);
-                intervalls.back().prioNodeHandles.reverse();
-                return simplify();
-            } else {
-                debug_assert(chain1.size() + chain2.size() > 6);
-                debug_assert(chain1.size() >=3 && chain2.size() >= 3);              
-                                                
-                initializeChain(chain1);
-                initializeChain(chain2);
-
-                intervalls.back().prioNodeHandles.reverse();
-                
-                mc::match<GraphT> (graph, intervalls.front().prioNodeHandles, intervalls.back().prioNodeHandles, s_options.pairMatch_type);
-                //matchChainPairNodes2<GraphT> matcher(base_graph, intervalls.front(), intervalls.back());
-                //matcher.match();                
-                return simplify();
-            }
-            
-        }    */

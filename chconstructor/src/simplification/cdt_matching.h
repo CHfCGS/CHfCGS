@@ -19,8 +19,7 @@
 #include "../chgraph.h"
 #include "../nodes_and_edges.h"
 #include "prio_nodes.h"
-
-using namespace ls;
+#include "match_functions.h"
 
 namespace chc {
     namespace unit_tests {
@@ -28,9 +27,14 @@ namespace chc {
     }
 }
 
+namespace ls {
+
+namespace mc {
+    
 struct VertexInfo2 {
-    std::list<PrioNodeHandle>::iterator it;
-    uint posInChain;
+    //std::list<PrioNodeHandle>::iterator it;
+    PrioNodeHandle pnh;
+    //uint posInChain;
     bool side;
     //Chain::iterator node_it;    
     //std::reference_wrapper<Node> node;
@@ -177,65 +181,60 @@ private:
         }
         return false;
     }
-    
-    void _setFollower (const std::list<PrioNodeHandle>::const_iterator nodeIt,
-                      const std::list<PrioNodeHandle>::const_iterator followerIt) {
-        PrioNode2 &node = *(*nodeIt);
-        PrioNode2 &follower = *(*followerIt);
+    /*
+    void _setFollower (PrioNodeHandle node_h,
+                      PrioNodeHandle follower_h) {
+        PrioNode2 &node = *node_h;
+        PrioNode2 &follower = *follower_h;
         node.followerValid = true;
-        node.follower_h = *followerIt;            
+        node.follower_h = follower_h;            
         
-        const PrioNodeHandle pnh = *nodeIt;
+        const PrioNodeHandle pnh = node_h;
         std::list<PrioNodeHandle> &guidelist = follower.guides;
         guidelist.push_back(pnh);
-    }
-    /*
-    void _setFollower (std::list<std::list<PPrioNode>::iterator>::iterator nodeIt,
-                      std::list<std::list<PPrioNode>::iterator>::iterator followerIt) {
-        (*nodeIt)->followerValid = true;
-        (*nodeIt)->follower = *followerIt;            
-        (*followerIt)->guides.push_back(*nodeIt);
-    }*/
+    }    
     
-    double geoDist(const PrioNodeHandle pnh1, const PrioNodeHandle pnh2) {
+    double geoDist(const PrioNodeHandle pnh1, const PrioNodeHandle pnh2, const GraphT &graph) {
         const PrioNode2 &pn1 = *pnh1;
         const PrioNode2 &pn2 = *pnh2;
         return geo::geoDist(graph.getNode(pn1.node_id), graph.getNode(pn2.node_id));
     }
     
-    void getAndSetNearestFollower(std::list<PrioNodeHandle>::iterator nodeIt,
-                std::list<std::list<PrioNodeHandle>::iterator> possibleFollowersIts) {
-        auto nearestFollowerIt = possibleFollowersIts.end();
+    void getAndSetNearestFollower(PrioNodeHandle pnh,
+                std::list<PrioNodeHandle> possibleFollowers,
+                const GraphT &graph) {
+        auto nearestFollowerIt = possibleFollowers.end();
         double minDist = std::numeric_limits<double>::max();
-        for (auto it = possibleFollowersIts.begin(); it != possibleFollowersIts.end(); it++) {
-            double dist = geoDist(*nodeIt, *(*it));
+        for (auto it = possibleFollowers.begin(); it != possibleFollowers.end(); it++) {
+            double dist = geoDist(pnh, *it, graph);
             if (dist < minDist) {
                 minDist = dist;
                 nearestFollowerIt = it;
             }            
         }
-        if(nearestFollowerIt != possibleFollowersIts.end()) {
-            _setFollower(nodeIt, *nearestFollowerIt);
+        if(nearestFollowerIt != possibleFollowers.end()) {
+            _setFollower(pnh, *nearestFollowerIt);
         }
 
     }
+    */
     
     void insertChainConstraints(std::list<PrioNodeHandle> &list,
                                     std::list<CDT::Vertex_handle> &vertexHandles,
                                     bool side,
                                     CDT &cdt) {
-        uint posInChain = 0;
+        //uint posInChain = 0;
         //insert points in cdt
         for (auto it = list.begin(); it != list.end(); it++) {
             const PrioNode2 &pn = *(*it);
             NodeID node_id = pn.node_id;
             auto node = graph.getNode(node_id);
             CDT::Vertex_handle vh = cdt.push_back(Point(node.lon, node.lat));            
-            vh->info().it = it;
-            vh->info().posInChain = posInChain;
+            vh->info().pnh = *it;
+            //vh->info().posInChain = posInChain;
             vh->info().side = side;
             vertexHandles.push_back(vh);
-            posInChain++;
+            //posInChain++;
         }
         //insert constraints
         for (auto it = vertexHandles.begin(); it != --vertexHandles.end(); it++) {
@@ -320,7 +319,7 @@ public:
 
         uint finiteVerticesCount = 0;
         for (CDT::Finite_vertices_iterator it = cdt.finite_vertices_begin(); it != cdt.finite_vertices_end(); it++) {
-            PrioNodeHandle pnh = *(it->info().it);
+            PrioNodeHandle pnh = it->info().pnh;
             PrioNode2 pn = *pnh;
             finiteVerticesCount++;
         }
@@ -356,7 +355,7 @@ public:
             } while (++c != d);
             getAndSetNearestFollower(it->info().it, possibleFollowersIts);
             */
-            std::list<std::list<PrioNodeHandle>::iterator> possibleFollowersIts;
+            std::list<PrioNodeHandle> possibleFollowers;
             
             CDT::Vertex_handle src_vh = srcIt->handle();
             CDT::Edge_circulator c = src_vh->incident_edges();
@@ -370,20 +369,21 @@ public:
                         //std::cout << vh->info().node_it->node_id << " " << vh->point().x() << " " << vh->point().y() << std::endl;
                         
                         if (arePossiblePartners(src_vh->info(), tgt_vh->info())) {
-                            possibleFollowersIts.push_back(tgt_vh->info().it);
+                            possibleFollowers.push_back(tgt_vh->info().pnh);
                         }
                     }
                 }
             } while (++c != d);
-            
-            getAndSetNearestFollower(src_vh->info().it, possibleFollowersIts);            
+                        
+            getAndSetNearestFollower(src_vh->info().pnh, possibleFollowers, graph);            
             //for (CDT::Finite_vertices_iterator it2 = it->; it != cdt.finite_vertices_end(); it++) {
             //std::cout << std::endl;
         }
         
-    }
-
-
-    
+    }    
 };
+
+}
+
+}
 

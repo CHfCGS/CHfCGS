@@ -15,22 +15,18 @@
 #include <array>
 
 #include "nodes_and_edges.h"
-
-
-using namespace std;
-
-
+#include "bounding_box.h"
 
 template <class GraphT>
 class Grid {
-    typedef vector<vector<int> > twoDvector;
+    typedef std::vector<std::vector<int> > twoDvector;
     //typedef vector<vector<twoDvector> > fourDvector;
     
 private:
     //const std::vector<NodeT> &nodes;
     //constexpr auto M_PI = 3.14159265358979323846;
     double R = 6371.009; //Erdradius
-    const double epsilon = 0.0001;
+    //const double epsilon = 0.0001;
     //Longitude ~ x Latitude ~ y
     double MINLONGITUDE;
     double MAXLONGITUDE;
@@ -46,7 +42,7 @@ private:
     const GraphT &base_graph;
 
     twoDvector FirstNodeGrid;
-    vector<int> NextNodeInSameCell;
+    std::vector<int> NextNodeInSameCell;
     //vector<int> gridtest;
 
     double pythagoras(double a, double b) {
@@ -56,16 +52,16 @@ private:
     void calculateBorders() {
         for (u_int32_t k = 0; k < base_graph.getNrOfNodes(); k++) {
             if (base_graph.getLon(k) > MAXLONGITUDE) {
-                MAXLONGITUDE = base_graph.getLon(k) + epsilon;
+                MAXLONGITUDE = base_graph.getLon(k);
             }
             if (base_graph.getLon(k) < MINLONGITUDE) {
-                MINLONGITUDE = base_graph.getLon(k) - epsilon;
+                MINLONGITUDE = base_graph.getLon(k);
             }
             if (base_graph.getLat(k) > MAXLATITUDE) {
-                MAXLATITUDE = base_graph.getLat(k) + epsilon;
+                MAXLATITUDE = base_graph.getLat(k);
             }
             if (base_graph.getLat(k) < MINLATITUDE) {
-                MINLATITUDE = base_graph.getLat(k) - epsilon;
+                MINLATITUDE = base_graph.getLat(k);
             }
         }
     }
@@ -91,11 +87,11 @@ public:
         //vector<int> assignVector(size, -1);
         
         //FirstNodeGrid.reserve(size);
-        FirstNodeGrid.assign(size, vector<int>(size, -1));
+        FirstNodeGrid.assign(size, std::vector<int>(size, -1));
         NextNodeInSameCell.assign(base_graph.getNrOfNodes(), -1);
-        MINLONGITUDE = numeric_limits<double>::max();
+        MINLONGITUDE = std::numeric_limits<double>::max();
         MAXLONGITUDE = 0;
-        MINLATITUDE = numeric_limits<double>::max();
+        MINLATITUDE = std::numeric_limits<double>::max();
         MAXLATITUDE = 0;
         calculateBorders();
         gridwidth = MAXLONGITUDE - MINLONGITUDE;
@@ -104,12 +100,14 @@ public:
         cellsizey = gridheight / gridsidesize;
 
         //wird nur für Konstruktion gebraucht
-        twoDvector LastNodeGrid(size, vector<int>(size, -1));
+        twoDvector LastNodeGrid(size, std::vector<int>(size, -1));
         
         //Knoten in Grid einordnen
         for (u_int32_t k = 0; k < base_graph.getNrOfNodes(); k++) {
-            int x = (int) ((base_graph.getLon(k) - MINLONGITUDE - epsilon) / cellsizex);
-            int y = (int) ((base_graph.getLat(k) - MINLATITUDE - epsilon) / cellsizey);
+            //int x = (int) ((base_graph.getLon(k) - MINLONGITUDE - epsilon) / cellsizex);
+            //int y = (int) ((base_graph.getLat(k) - MINLATITUDE - epsilon) / cellsizey);
+            int x = xCoordinate(base_graph.getLon(k));
+            int y = yCoordinate(base_graph.getLat(k));
 
             //Zelle bisher leer? Aufbau einer Liste
             if (FirstNodeGrid[x][y] == -1) {
@@ -152,8 +150,10 @@ public:
     std::vector<chc::NodeID> nodesInNeigbourhood(double lat, double lon) const {
         std::vector<chc::NodeID> neighbours;
         
-        int x = (int) ((lon - MINLONGITUDE - epsilon) / cellsizex);
-        int y = (int) ((lat - MINLATITUDE - epsilon) / cellsizey);
+        int x = xCoordinate(lon);
+        int y = yCoordinate(lat);
+        //int x = (int) ((lon - MINLONGITUDE - epsilon) / cellsizex);
+        //int y = (int) ((lat - MINLATITUDE - epsilon) / cellsizey);
         
         for (int dx = -1; dx <= 1; dx++) {
             if (indexInRange(x, dx)) {
@@ -170,6 +170,64 @@ public:
         }
         
         return neighbours;
+    }
+    
+    int xCoordinate (double lon) const {
+        int x = (int) ((lon - MINLONGITUDE) / cellsizex);
+        if (!indexInRange(x)) {
+            if (x == -1) {
+                x = 0;
+            } else if (x == gridsidesize) {
+                x = gridsidesize - 1;
+            } else {
+                assert(false);
+            }
+        }
+        return x;
+    }
+    int yCoordinate (double lat) const {
+        int y = (int) ((lat - MINLATITUDE) / cellsizey);
+        if (!indexInRange(y)) {
+            if (y == -1) {
+                y = 0;
+            } else if (y == gridsidesize) {
+                y = gridsidesize - 1;
+            } else {
+                assert(false);
+            }
+        }
+        return y;
+    }
+    
+    bool indexInRange(const int index) const {
+        return (0 <= index && index < gridsidesize);
+    }
+    
+    std::list<NodeID> nodesInBoundingBox(BoundingBox bb) const {
+        std::list<chc::NodeID> bbNodes;
+        //get cell coordinates of the window corners
+        
+        int min_x = xCoordinate(bb.LeftLon); //(int) ((window.MINLONGITUDE - MINLONGITUDE) / cellsizex);
+        int min_y = yCoordinate(bb.lowerLat); //(int) ((window.MINLATITUDE - MINLATITUDE) / cellsizey);
+        int max_x = xCoordinate(bb.RightLon); //(int) ((window.MAXLONGITUDE - MINLONGITUDE) / cellsizex);
+        int max_y = yCoordinate(bb.upperLat); //(int) ((window.MAXLATITUDE - MINLATITUDE) / cellsizey);
+        assert(min_x <= max_x);
+        assert(min_y <= max_y);
+        for (int x = min_x; x <= max_x; x++) {
+            assert(indexInRange(x, 0));
+            for (int y = min_y; y <= max_y; y++) {
+                assert(indexInRange(y, 0));
+                int currentNode_id = FirstNodeGrid[x][y];
+                while (currentNode_id != -1) {                            
+                    if (bb.contains(base_graph.getLat(currentNode_id), base_graph.getLon(currentNode_id))) {
+                        bbNodes.push_back(currentNode_id);
+                    }
+
+                    currentNode_id = NextNodeInSameCell[currentNode_id];                            
+                }                                        
+            }            
+        }
+        return bbNodes;
     }
 
 };

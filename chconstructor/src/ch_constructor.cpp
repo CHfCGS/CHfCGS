@@ -23,8 +23,11 @@ void printHelp() {
             << "  -t, --threads <number>     Number of threads to use in the calculations (default: 1)\n"
             << "  -p, --prioritizer <type>   Uses prioritizer <type> for the CH construction. (default: NONE)\n"
             << "  -s, --linesimplfier <type>   Uses linesimplfier <type> for the CH construction. (default: DP)\n"
-            << "  -e, --errormeasure <type>   Uses errormeasure <type> for the line simplfication. (default: EF)\n"
+            << "  -e, --errormeasure <type>   Uses errormeasure <type> for the line simplfication. (default: VE)\n"
             << "  -w, --pairmatch <type>   Uses pairmatch <type> for matching chains. (default: NONE)\n"
+            << "  -d, --deadenddetect <type>   Uses deadenddetect <type> for detecting dead ends. (default: NONE)\n"
+            << "  -c, --checkcrossborder <type>   checking for bordercrossings while simplifying (default: false)\n"
+            << "  -v, --tagvisunpleassh <type>   tagging visually unpleasant shortcuts (default: false)\n"
             << "Note: not all formats are available as input / ouput format, and not all combinations are possible.\n";
 }
 
@@ -61,7 +64,7 @@ struct BuildAndStoreCHGraph {
             chc.contract(all_nodes);
         } else {
             auto prioritizer(createPrioritizer(prioritizer_type, s_options, g, chc));
-            chc.contract(all_nodes, *prioritizer);            
+            chc.contract(all_nodes, *prioritizer, s_options.taggingViusallyUnpleasantSh);            
         }
 
         tt.track("contracting graph");
@@ -103,6 +106,11 @@ int main(int argc, char* argv[]) {
         {"threads", required_argument, 0, 't'},
         {"prioritizer", required_argument, 0, 'p'},
         {"linesimplfier", required_argument, 0, 's'},
+        {"errormeasure", required_argument, 0, 'e'},
+        {"pairmatch", required_argument, 0, 'w'},
+        {"deadenddetect", required_argument, 0, 'd'},
+        {"checkcrossborder", required_argument, 0, 'c'},                        
+        {"tagvisunpleassh", required_argument, 0, 'v'},                        
         {0, 0, 0, 0},
     };
 
@@ -110,7 +118,7 @@ int main(int argc, char* argv[]) {
     int iarg(0);
     opterr = 1;
 
-    while ((iarg = getopt_long(argc, argv, "hi:f:o:g:t:p:s:e:w:c", longopts, &index)) != -1) {
+    while ((iarg = getopt_long(argc, argv, "hi:f:o:g:t:p:s:e:w:d:cv", longopts, &index)) != -1) {
         switch (iarg) {
             case 'h':
                 printHelp();
@@ -142,17 +150,23 @@ int main(int argc, char* argv[]) {
                 prioritizer_type = toPrioritizerType(optarg);
                 break;
             case 's':
-                s_options.lineSimplifier_type = toLineSimplifierType(optarg);
+                s_options.lineSimplifier_type = ls::toLineSimplifierType(optarg);
                 break;
             case 'e':
-                s_options.errorMeasure_type = toErrorMeasureType(optarg);
+                s_options.errorMeasure_type = ls::toErrorMeasureType(optarg);
                 break;
             case 'w':
-                s_options.pairMatch_type = toPairMatchType(optarg);
+                s_options.pairMatch_type = ls::toPairMatchType(optarg);
+                break;
+            case 'd':
+                s_options.deadEndDetect_type = toDeadEndDetectType(optarg);
                 break;
             case 'c':
                 s_options.checkBorderCrossing = true;
-                break;
+                break;                
+            case 'v':
+                s_options.taggingViusallyUnpleasantSh = true;
+                break;                
             default:
                 printHelp();
                 return 1;

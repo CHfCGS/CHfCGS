@@ -17,13 +17,13 @@
 #include "chains.h"
 #include "grid.h"
 #include "chainDetector.h"
-#include "DouglasPeucker.h"
+//#include "DouglasPeucker.h"
 #include "indexed_container.h"
-#include "dpPrioritizer.h"
+//#include "dpPrioritizer.h"
 #include "dead_end_detector.h"
 
 #include "4Dgrid.h"
-#include "chainPairDP.h"
+//#include "chainPairDP.h"
 
 #include "simplification/prio_nodes.h"
 #include "nodes_and_edges.h"
@@ -73,22 +73,39 @@ namespace chc {
         FourDGrid<GraphT> fourDGrid;
         
         DeadEndDetector<GraphT> deadEndDetector;
-        ChainDetector<GraphT> chaindetector;        
-        ls::DouglasPeucker<GraphT> dp;
-        ls::chainPairDP<GraphT> cpdp;
+        ChainDetector<GraphT> chaindetector;                
                 
-        std::unique_ptr<ls::LineSimplifier> lineSimplifier; 
-        //node prio list
-        //std::vector<NodeID> _chooseIndependentSet();		
-        //std::vector<chc::Chain> chains;
+        std::unique_ptr<ls::LineSimplifier> lineSimplifier;         
 
         std::list<Chain> deadEnds;
+        
+        
         //_prio_vec = chains + remainder        
         Chains_and_Remainder CaR;
-        std::vector<std::list<ls::simplePrioNode>> priolists;
+        
+        typedef std::list<ls::simplePrioNode> PrioList;
+        struct ChainPriolist{
+            PrioList priolist;
+            std::list<NodeID> outer_nodes;
+            ChainPriolist(PrioList &&priolist, const Chain &chain): priolist(priolist) {
+                outer_nodes.push_back(chain.front());
+                outer_nodes.push_back(chain.back());
+            }
+            ChainPriolist(PrioList &&priolist, const ChainPair &chain_pair): priolist(priolist) {
+                outer_nodes.push_back(chain_pair.chainTo.front());
+                outer_nodes.push_back(chain_pair.chainTo.back());
+                outer_nodes.push_back(chain_pair.chainFrom.front());
+                outer_nodes.push_back(chain_pair.chainFrom.back());
+            }
+            ChainPriolist(std::list<NodeID> outer_nodes): outer_nodes(outer_nodes){}
+        };
+        std::list<ChainPriolist> chain_prio_lists;
+        std::list<ChainPriolist> deadEndPrioLists;
+        //std::list<std::list<ls::simplePrioNode>> priolists;
 
         double epsilon;
-        int roundcounter;
+        int roundcounter = 1;
+        uint deadEndPhaseCounter = 0;
         const SOptions s_options;
         
         void init(std::vector<NodeID>& node_ids) {
@@ -185,9 +202,8 @@ namespace chc {
                 //for (auto it = chainsOfType.begin(); it!=chainsOfType.end(); ++it) {                       
                 for (Chain &chain: chainsOfType) {                                                                
                     //big chains are generalized
-                    if (chain.size() >= 3) {                                      
-                        
-                        priolists.push_back(lineSimplifier->process(chain, Chain()));
+                    if (chain.size() >= 3) {                          
+                        chain_prio_lists.push_back(ChainPriolist(lineSimplifier->process(chain, Chain()), chain));
                         //priolists.push_back(dp.process(chain));
                         
                     //small chains are assigned to the remainder
@@ -201,14 +217,14 @@ namespace chc {
         }
         
         void FillPriolists() {
-            priolists.clear();        
+            chain_prio_lists.clear();        
             FillChainsInPriolists(CaR.oneWayChainsAccordingToType);
             FillChainsInPriolists(CaR.twoWayChainsAccordingToType);                        
                         
             for (ChainPair &chainPair: CaR.chainPairs) {    
                     if (chainPair.chainTo.size() + chainPair.chainFrom.size() >= 7
-                            && chainPair.chainTo.size() >=3 && chainPair.chainFrom.size() >= 3) { 
-                        priolists.push_back(lineSimplifier->process(chainPair.chainTo, chainPair.chainFrom)); 
+                            && chainPair.chainTo.size() >=3 && chainPair.chainFrom.size() >= 3) {                        
+                        chain_prio_lists.push_back(ChainPriolist(lineSimplifier->process(chainPair.chainTo, chainPair.chainFrom), chainPair)); 
                         //priolists.push_back(cpdp.process(chainPair));                        
                         //Print("Length of Priolist: " << pl.size());                                        
                     //small chains are assigned to the remainder
@@ -220,6 +236,18 @@ namespace chc {
                             CaR.remainder.push_back(node_id);
                         }                    
                     }    
+            }
+        }
+        
+        void FillDeadEndPrioLists (std::list<Chain> deadEnds) {
+            deadEndPrioLists.clear();
+            for (Chain &chain: deadEnds) {
+                if (chain.size() >= 3) {
+                    deadEndPrioLists.push_back(ChainPriolist(lineSimplifier->process(chain, Chain()), chain));
+                } else {                    
+                    //pseudo remainder
+                    deadEndPrioLists.push_back(ChainPriolist(chain));                    
+                }
             }
         }
         
@@ -238,6 +266,11 @@ namespace chc {
         }
         
         /*
+        std::vector<NodeID> removeDeadEnds {
+            
+        }*/
+        
+        /*
         std::vector<NodeID> removeRemainder() {
             std::vector<NodeID> next_nodes;
             Print("Getting Independent set from Remainder");
@@ -252,6 +285,8 @@ namespace chc {
          * */
         
         
+        
+        
     public:
         /*
         DPPrioritizer(GraphT const& base_graph, CHConstructorT const& chc)
@@ -260,11 +295,14 @@ namespace chc {
         cpdp(this->_base_graph, grid), CaR(), priolists(), epsilon(0.0001), roundcounter(1) {
         }*/
         
+        //, dp(this->_base_graph, grid), cpdp(this->_base_graph,
+        
         DPPrioritizer(SOptions s_options, GraphT const& base_graph, CHConstructorT const& chc)
-        : _base_graph(base_graph), _chc(chc), state(State::removingDeadEnds),
-        grid(1000, base_graph), fourDGrid(1, base_graph), deadEndDetector(base_graph), chaindetector(base_graph), dp(this->_base_graph, grid),
-        cpdp(this->_base_graph, grid), CaR(), priolists(), epsilon(10000), roundcounter(1),
-        s_options(s_options) {                        
+                : _base_graph(base_graph), _chc(chc), state(State::start),
+                grid(1000, base_graph), fourDGrid(1, base_graph), deadEndDetector(base_graph),
+                chaindetector(base_graph), epsilon(10000),        
+                s_options(s_options) {                        
+                    
             lineSimplifier = createLineSimplifier(s_options, s_options.lineSimplifier_type, base_graph, grid);
             assert(lineSimplifier != nullptr);
         }        
@@ -281,18 +319,74 @@ namespace chc {
                         
             switch (state) {
                 case State::start: {
-                    deadEnds = deadEndDetector.detectDeadEnds(_prio_vec);
+                    //deadEnds = deadEndDetector.detectDeadEnds(_prio_vec);
                     state = State::removingDeadEnds;
-                    break;
+                    //break;
                 }
                 case State::removingDeadEnds: {
+                    if(deadEndPrioLists.empty()) {
+                        switch (s_options.deadEndDetect_type) {
+                            case DeadEndDetectType::NONE: {
+                                break;
+                            }
+                            case DeadEndDetectType::DE: {
+                                FillDeadEndPrioLists(deadEndDetector.detectDeadEnds(_prio_vec));
+                                break;
+                            }
+                            case DeadEndDetectType::EDE: {
+                                FillDeadEndPrioLists(deadEndDetector.detectExtendedDeadEnds(_prio_vec));
+                                break;
+                            }
+                        }                        
+                        deadEndPhaseCounter++;
+                    }
+                    //calc independent set of nodes from priolists
+                    std::vector<bool> marked(this->_base_graph.getNrOfNodes(), false);    
+                    
+                    if (!deadEndPrioLists.empty()) {
+                        for (auto p_it = deadEndPrioLists.begin(); p_it != deadEndPrioLists.end();) {
+                            PrioList &priolist = p_it->priolist;
+                            if (!priolist.empty()) {
+                                for (auto it = priolist.begin(); it != priolist.end();) {                                    
+                                    NodeID node_id = it->node_id;
+                                    if (!marked[node_id]) {                                   
+                                        _chc._markNeighbours(node_id, marked);
+                                        next_nodes.push_back(node_id);
+                                        it = priolist.erase(it);                                        
+                                    } else {
+                                        break;
+                                    }                                    
+                                }
+                                p_it++;
+                            } else {
+                                //remove remainder of chain
+                                if (!p_it->outer_nodes.empty()) {
+                                    NodeID node_id = p_it->outer_nodes.front();
+                                    if (!marked[node_id]) {  
+                                        _chc._markNeighbours(node_id, marked);
+                                        next_nodes.push_back(node_id);
+                                        p_it->outer_nodes.pop_front();
+                                    }
+                                    p_it++;                                    
+                                } else {
+                                    p_it = deadEndPrioLists.erase(p_it);
+                                }
+                            }                        
+                        }
+                        break;
+                    } else {
+                        state = State::removingChains;                        
+                    }
+                    
+                    //if(deadEndPrioLists.empty && deadEndPhaseCounter < 3)
+                        /*
                     next_nodes = removeDeadEnds(deadEnds);
                     if (!next_nodes.empty()) {
                         break;
                     } else {
                         state = State::removingChains;
                         break;
-                    }
+                    }*/    
                 }
                 case State::removingChains: {
                     if ((roundcounter - 1) % 5 == 0) {
@@ -305,7 +399,7 @@ namespace chc {
                         CaR = chaindetector.detectChains(_prio_vec);
                         Print("Number of chains: " << CaR.getNrOfChains());
                         debug_assert(CaR.getNrOfNodesInChains() + CaR.remainder.size() == this->_prio_vec.size());
-                        if (s_options.pairMatch_type != PairMatchType::NONE) {
+                        if (s_options.pairMatch_type != ls::PairMatchType::NONE) {
                             Print("IdentifyingChainPairs ");
                             fourDGrid.identifyPairs(CaR);
                         }
@@ -317,40 +411,43 @@ namespace chc {
 
                     Print("Getting Independent set from Remainder");
                     //independent set from remainder
-
                     if (roundcounter > 20) {
                         next_nodes = _chooseIndependentSetFromRemainder();
                     }
                     //remove from remainder
                     _removeFromRemainder(next_nodes);
-                    //std::vector<NodeID> next_nodes;
 
                     Print("Getting Independent set from Chains");
                     //calc independent set of nodes from priolists
-                    std::vector<bool> marked(this->_base_graph.getNrOfNodes(), false);
-
-                    //if (marked.at(marked.size()+1)) {Print("Getting Independent set from Chains");}
-
+                    std::vector<bool> marked(this->_base_graph.getNrOfNodes(), false);                    
                     //extraction from chains
-                    for (std::list<ls::simplePrioNode> &priolist : priolists) {
-                        for (auto it = priolist.begin(); it != priolist.end();) {
-                            if (epsilon > it->perpendicularLength) {
-                                NodeID node_id = it->node_id;
-                                if (!marked[node_id]) {
-
-                                    //EdgeDiffPrioritizer<GraphT, CHConstructorT>::_chc._markNeighbours(node_id, marked); 
-                                    _chc._markNeighbours(node_id, marked);
-                                    next_nodes.push_back(node_id);
-                                    it = priolist.erase(it);
+                    //for (std::list<ls::simplePrioNode> &priolist : priolists) {
+                    for (auto p_it = chain_prio_lists.begin(); p_it != chain_prio_lists.end();) {
+                        PrioList &priolist = p_it->priolist;
+                        if (!priolist.empty()) {
+                            for (auto it = priolist.begin(); it != priolist.end();) {
+                                if (epsilon > it->perpendicularLength) {
+                                    NodeID node_id = it->node_id;
+                                    if (!marked[node_id]) {                                   
+                                        _chc._markNeighbours(node_id, marked);
+                                        next_nodes.push_back(node_id);
+                                        it = priolist.erase(it);
+                                        break; //DEBUG
+                                    } else {
+                                        break;
+                                    }
                                 } else {
                                     break;
                                 }
-                            } else {
-                                break;
                             }
-
-
-                        }
+                            p_it++;
+                        } else {
+                            //outer nodes are free to be contracted now
+                            for (NodeID outer_node: p_it->outer_nodes) {
+                                CaR.remainder.push_back(outer_node);
+                            }
+                            p_it = chain_prio_lists.erase(p_it);
+                        }                        
                     }
                     roundcounter++;
                     break;

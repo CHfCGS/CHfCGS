@@ -10,6 +10,7 @@
 #include "matchChainPairNodes.h"
 #include "error_measure.h"
 #include "../s_options.h"
+#include "../bounding_box.h"
 
 #include <limits>
 #include <math.h>
@@ -27,25 +28,7 @@ class DPSimplifier : public LineSimplifier{
         const Grid<GraphT> &grid;
         std::list<NodeBox> node_boxes;
         std::unique_ptr<ErrorMeasure> errorMeasure;
-        const SOptions s_options;
-        /*
-        //naiv TODO: heap implementation; or make_heap
-         std::list<PrioNode>::iterator getMax() {// (std::list<PrioNode> &nodePrios) {
-            
-            assert(!PrioNodes.empty());
-            PrioNodes.sort();
-            std::list<PrioNode>::iterator maxIt = --(PrioNodes.end());            
-            
-            
-                        
-            //nodePrios.erase(maxIt);            
-            //PrioNode r(*maxIt);
-                                    
-            return maxIt;
-        }
-        */
-    
-    
+        const SOptions s_options;        
      
     std::list<simplePrioNode> simplify() {
         if (prioNodeHeap.empty()) {
@@ -171,8 +154,8 @@ class DPSimplifier : public LineSimplifier{
               
             
             
-            update (*leftIt);
-            update (*rightIt);
+            update (*leftIt, max.nof_crossings.left);
+            update (*rightIt, max.nof_crossings.right);
             
             /*
             simplePrioNode spn(max);
@@ -209,8 +192,8 @@ class DPSimplifier : public LineSimplifier{
     }      */     
            
     
-    uint calcOrientationMisses(const PrioNode2 &split, const Intervall2 &intervall) {
-        uint misscount = 0;
+    NofCrossings calcOrientationMisses(const PrioNode2 &split, const Intervall2 &intervall) {
+        NofCrossings nof_crossings;        
         uint assertcounter = 0;
         auto splitPosIntervallincr = split.posInIntervallIt;
         splitPosIntervallincr++;
@@ -219,7 +202,7 @@ class DPSimplifier : public LineSimplifier{
             for (NodeInBox nodeInBox : p.leftBox) {
                 bool sign = (geo::calcArea(intervall.start, split.node_id, nodeInBox.nodeID, graph) >= 0) ? true : false;
                 if (sign != nodeInBox.sign) {
-                    misscount++;
+                    nof_crossings.left++;
                 }
             }
             assertcounter++;
@@ -229,27 +212,29 @@ class DPSimplifier : public LineSimplifier{
             for (NodeInBox nodeInBox : p.rightBox) {
                 bool sign = (geo::calcArea(split.node_id, intervall.finish, nodeInBox.nodeID, graph) >= 0) ? true : false;
                 if (sign != nodeInBox.sign) {
-                    misscount++;
+                    nof_crossings.right++;
                 }
             }
             assertcounter++;
         }
         debug_assert(assertcounter == intervall.prioNodeHandles.size() + 1);
-        return misscount;
+        return nof_crossings;
     }
     
     /*
      * updates the priority data for all prionodes in an Intervall
      */    
-    void update(Intervall2 &intervall){
+    void update(Intervall2 &intervall, uint pre_nof_crossings){
         
         for (PrioNodeHandle prioNodeH: intervall.prioNodeHandles) {
             PrioNode2 &prioNode = *prioNodeH;            
-            prioNode.perpendicularLength = errorMeasure->calcError(graph.getNode(intervall.start),
+            prioNode.error = errorMeasure->calcError(graph.getNode(intervall.start),
                                                                         graph.getNode(intervall.finish),
                                                                         graph.getNode(prioNode.node_id));
             
-            prioNode.nOfIntersections = calcOrientationMisses(prioNode, intervall);
+            prioNode.nof_crossings = calcOrientationMisses(prioNode, intervall);
+                                    
+            prioNode.cross_diff = (int) prioNode.nof_crossings.getSum() - (int) pre_nof_crossings;
             prioNodeHeap.update(prioNodeH);
         }
         return;
@@ -301,7 +286,7 @@ class DPSimplifier : public LineSimplifier{
                 PrioNode2 prioNodeAssert(*lastInserted);
                 assert(prioNodeAssert.posInIntervallIt == pos);                              
             }
-            update(intervalls.back());             
+            update(intervalls.back(), 0);             
     }
     
         
@@ -323,8 +308,7 @@ class DPSimplifier : public LineSimplifier{
             node_boxes.clear();  
             
             if(chain2.empty()) {
-                initializeChain(chain1);
-                intervalls.back().prioNodeHandles.reverse();
+                initializeChain(chain1);                
                 return simplify();
             } else {
                 debug_assert(chain1.size() + chain2.size() > 6);
@@ -333,8 +317,8 @@ class DPSimplifier : public LineSimplifier{
                 initializeChain(chain1);
                 initializeChain(chain2);
 
-                intervalls.back().prioNodeHandles.reverse();
-                
+                //one chain need to reversed for matching
+                intervalls.back().prioNodeHandles.reverse();                
                 mc::match<GraphT> (graph, intervalls.front().prioNodeHandles, intervalls.back().prioNodeHandles, s_options.pairMatch_type);
                 //matchChainPairNodes2<GraphT> matcher(base_graph, intervalls.front(), intervalls.back());
                 //matcher.match();                

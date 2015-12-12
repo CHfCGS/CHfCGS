@@ -48,7 +48,9 @@ class KinkError : public ErrorMeasure{
     double calcError(OSMNode source, OSMNode target, OSMNode outlier) {
         geo::twoDvector s1(source, outlier);
         geo::twoDvector s2(outlier, target);
-        return (calcTurnAngle(s1, s2) * s1.length * s2.length) / (s1.length + s2.length);        
+        double divisor = s1.length + s2.length;
+        assert(divisor != 0);
+        return (geo::calcTurnAngle(s1, s2) * s1.length * s2.length) / divisor;        
     } 
     ~KinkError() {}
 };
@@ -58,8 +60,8 @@ class KinkError : public ErrorMeasure{
 //utitility functions
 namespace ls {
 
-enum class ErrorMeasureType { NONE = 0, AE, KE, EF };
-static constexpr ErrorMeasureType LastErrorMeasureType = ErrorMeasureType::EF;
+enum class ErrorMeasureType { NONE = 0, AE, KE, VE };
+static constexpr ErrorMeasureType LastErrorMeasureType = ErrorMeasureType::VE;
 
 ErrorMeasureType toErrorMeasureType(std::string const& type)
 {
@@ -71,8 +73,8 @@ ErrorMeasureType toErrorMeasureType(std::string const& type)
         else if (type == "KE") {
 		return ErrorMeasureType::KE;
 	}	
-        else if (type == "DP") {
-		return ErrorMeasureType::EF;
+        else if (type == "VE") {
+		return ErrorMeasureType::VE;
 	}	
 
 	return ErrorMeasureType::NONE;
@@ -87,8 +89,8 @@ std::string to_string(ErrorMeasureType type)
 		return "AE";
         case ErrorMeasureType::KE:
 		return "AE";
-        case ErrorMeasureType::EF:
-		return "DP";	
+        case ErrorMeasureType::VE:
+		return "VE";	
         }
 	std::cerr << "Unknown ErrorMeasureType type: " << static_cast<int>(type) << "\n";
 	return "NONE";
@@ -104,7 +106,7 @@ std::string to_string(ErrorMeasureType type)
                 return std::unique_ptr<ErrorMeasure>(new AreaError());
             case ErrorMeasureType::KE:
                 return std::unique_ptr<ErrorMeasure>(new KinkError());
-            case ErrorMeasureType::EF:
+            case ErrorMeasureType::VE:
                 return std::unique_ptr<ErrorMeasure>(new EpsilonError());
         }
         return nullptr;

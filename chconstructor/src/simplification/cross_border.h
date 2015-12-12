@@ -4,6 +4,7 @@
 #include "../grid.h"
 #include "prio_nodes.h"
 #include "../geoFunctions.h"
+#include "../bounding_box.h"
 
 namespace ls {
     namespace cb {
@@ -69,13 +70,20 @@ namespace ls {
                                         const CHGraph<OSMNode, OSMEdge> &graph,
                                         const Grid<CHGraph<OSMNode, OSMEdge> > &grid) {
             const OSMNode src = graph.getNode(node_id_src);
-            const OSMNode tgt = graph.getNode(node_id_tgt);
+            const OSMNode tgt = graph.getNode(node_id_tgt);            
             BoundingBox bb = BoundingBox(
                     src.lat,
                     src.lon,
                     tgt.lat,
                     tgt.lon);
 
+            std::list<NodeID> nodesInGrid = grid.nodesInBoundingBox(bb);
+            std::vector<NodeInBox> nodesInBox;
+            for (NodeID node_id: nodesInGrid) {                    
+                bool sign = (geo::calcArea(src, tgt, graph.getNode(node_id)) >= 0) ? true : false;                
+                nodesInBox.push_back(NodeInBox(node_id, sign));
+            }
+            /*
             std::vector<NodeID> nodesInGrid = grid.nodesInNeigbourhood(bb.midLat, bb.midLon);
             std::vector<NodeInBox> nodesInBox;
             for (NodeID node_id: nodesInGrid) {                    
@@ -86,6 +94,7 @@ namespace ls {
                     nodesInBox.push_back(NodeInBox(node_id, sign));
                 }            
             }
+             * */
             return nodesInBox;
         }                       
     }

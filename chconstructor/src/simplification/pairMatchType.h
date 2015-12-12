@@ -2,7 +2,7 @@
 
 //#include "../s_options.h"
 
-struct SOptions;
+//struct SOptions;
 
 namespace ls {
 
@@ -10,9 +10,9 @@ namespace ls {
     //enum class LineSimplifierType { NONE = 0, DP };
 //}
     
-enum class PairMatchType { NONE = 0, ZO, CD};
+enum class PairMatchType { NONE = 0, ZO, CD, P};
 
-static constexpr PairMatchType LastPairMatchType = PairMatchType::CD;
+static constexpr PairMatchType LastPairMatchType = PairMatchType::P;
 
 PairMatchType toPairMatchType(std::string const& type)
 {
@@ -24,7 +24,10 @@ PairMatchType toPairMatchType(std::string const& type)
 	}
         else if (type == "CD") {
             return PairMatchType::CD;
-	}	
+	}
+        else if (type == "P") {
+            return PairMatchType::P;
+	}
 
 	return PairMatchType::NONE;
 }
@@ -37,7 +40,9 @@ std::string to_string(PairMatchType type)
         case PairMatchType::ZO:
 		return "ZO";	
         case PairMatchType::CD:
-		return "CD";	
+		return "CD";
+        case PairMatchType::P:
+		return "P";
         }
 	std::cerr << "Unknown PairMatchType type: " << static_cast<int>(type) << "\n";
 	return "NONE";
