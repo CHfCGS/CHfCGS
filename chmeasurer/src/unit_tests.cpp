@@ -5,19 +5,23 @@
 
 #include "unit_tests.h"
 
+#include "chgraph.h"
 #include "defs.h"
+
 #include "nodes_and_edges.h"
 #include "chains.h"
 #include "ch_parser.h"
-#include "chgraph.h"
+#include "grid.h"
+
+
 #include "ch_measurer.h"
 #include "ILP/lineSimplificationILP.h"
 #include "ILP/parallelLineSimplficationILP.h"
 #include "dijkstra.h"
 #include "discreteFrechet.h"
-//#include "prioritizers.h"
-#include "CGAL/range_tree.h"
-#include "CGAL/cdthp_cross.h"
+
+//#include "CGAL/range_tree.h"
+//#include "CGAL/cdthp_cross.h"
 
 #include <map>
 #include <iostream>
@@ -27,6 +31,13 @@
 namespace chm
 {
 
+    namespace unit_tests
+    {
+	void testLineSimplfication();
+        void testParallelLineSimplfication();    
+        void testCDTHCross();
+    }
+    
 void unit_tests::testAll()
 {
     
@@ -145,26 +156,9 @@ void unit_tests::testCHDijkstra()
         CHGraph<CHNode, CHEdge> g;
         g.init(std::move(graphInData));
         g.zoom(100, false, 0);
-	/*
-	Graph<CHNode, CHEdge> g;
-	g.init(FormatSTD::Reader::readGraph<CHNode, CHEdge>("../test_data/15kSZHK.txt"));
-
 	
-	CHGraphOSM chg;
-	chg.init(FormatSTD::Reader::readGraph<CHNode, Shortcut>("../test_data/15kSZHK.txt"));
 
-	
-	CHConstructor<CHNode, CHEdge> chc(chg, 2);
-	std::vector<NodeID> all_nodes(g.getNrOfNodes());
-	for (NodeID i(0); i<all_nodes.size(); i++) {
-		all_nodes[i] = i;
-	}
-	chc.quickContract(all_nodes, 4, 5);
-	chc.contract(all_nodes);
-	chc.rebuildCompleteGraph();
-         * */
-
-	/* Random Dijkstras */
+	// Random Dijkstras
 	Print("\nStarting random Dijkstras.");
 	uint nr_of_dij(10);
 	Dijkstra<CHNode, CHEdge> dij(g);
@@ -325,6 +319,7 @@ void unit_tests::testCDTHCross()
         
         graphInData.nodes.push_back(CHNode(0, 0));
         graphInData.nodes.push_back(CHNode(1, 1));
+        graphInData.nodes.push_back(CHNode(2, 0));
         graphInData.nodes.push_back(CHNode(0, -2));
         graphInData.nodes.push_back(CHNode(-2, 0));
         graphInData.nodes.push_back(CHNode(1, 3));
@@ -332,7 +327,7 @@ void unit_tests::testCDTHCross()
         graphInData.nodes.push_back(CHNode(8, 0));
         
         Chain chain;
-        for (int i = 0; i < 7; i++) {
+        for (int i = 0; i < 8; i++) {
             chain.push_back(i);
         }
 
@@ -348,8 +343,13 @@ void unit_tests::testCDTHCross()
         graph.init(std::move(graphInData));
         Grid<CHGraph<CHNode, CHEdge> > grid(1, graph);
         
-        RangeTree rangeTree(graph);
-        CDTHPCross cdthpC(graph, grid, rangeTree);
+        
+        //RangeTree rangeTree(graph);
+        CDTHPCross cdthpC(graph, grid);
+        for (uint i= 0; i< 100; i++) {
+            Print("cdthpC.getNofCrossings(chain)" << cdthpC.getNofCrossings(chain));
+        }
+                
         Test(cdthpC.getNofCrossings(chain) == 4);
                    
 	Print("\n=================================");

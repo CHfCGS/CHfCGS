@@ -3,7 +3,7 @@
 #include "../window.h"
 #include "../nodes_and_edges.h"
 #include "../chgraph.h"
-#include "range_tree.h"
+//#include "range_tree.h"
 #include "../grid.h"
 
 #include <CGAL/Constrained_Delaunay_triangulation_2.h>
@@ -12,7 +12,6 @@
 #include <CGAL/Constrained_triangulation_plus_2.h>
 #include <CGAL/Triangulation_face_base_with_info_2.h>
 #include <CGAL/Triangulation_vertex_base_with_info_2.h>
-#include <CGAL/Polygon_2.h>
 #include <CGAL/Cartesian.h>
 #include <CGAL/MP_Float.h>
 #include <CGAL/Quotient.h>
@@ -33,18 +32,18 @@ class CDTHPCross {
 
 
 
-    struct VertexInfo2 {
+    struct VertexInfo {
         //Chain::iterator node_it;
         uint posInChain;
         bool side;
 
         //std::reference_wrapper<Node> node;
-        VertexInfo2() {};
+        VertexInfo() {};
     };
     
-    struct FaceInfo2
+    struct FaceInfo
     {
-      FaceInfo2(){}
+      FaceInfo(){}
       int nesting_level;
       bool in_inner() {
           return nesting_level >=1;
@@ -58,10 +57,10 @@ class CDTHPCross {
     //typedef CGAL::Exact_predicates_inexact_constructions_kernel                       K;
     typedef CGAL::Cartesian<NT> K;
 
-    typedef CGAL::Triangulation_vertex_base_with_info_2<VertexInfo2, K>                      Vbb;
+    typedef CGAL::Triangulation_vertex_base_with_info_2<VertexInfo, K>                      Vbb;
     typedef CGAL::Triangulation_hierarchy_vertex_base_2<Vbb> Vb;
 
-    typedef CGAL::Triangulation_face_base_with_info_2<FaceInfo2, K>    Fbb;
+    typedef CGAL::Triangulation_face_base_with_info_2<FaceInfo, K>    Fbb;
     typedef CGAL::Constrained_triangulation_face_base_2<K,Fbb>        Fb;
 
     typedef CGAL::Triangulation_data_structure_2<Vb,Fb>               TDS;
@@ -72,17 +71,17 @@ class CDTHPCross {
     typedef CGAL::Constrained_triangulation_plus_2<CDTH> CDTHP;
     typedef CDTHP::Point                                                Point;
     //typedef CGAL::Polygon_2<Vb>                                        Polygon_2;
-    typedef CGAL::Polygon_2<K>                                        Polygon_2;
-    typedef K::Point_2                                 Point_2;
+    //typedef CGAL::Polygon_2<K>                                        Polygon_2;
+    //typedef K::Point_2                                 Point_2;
 
     
-    CHGraph<CHNode, CHEdge> &graph;
-    Grid<CHGraph<CHNode, CHEdge> > &grid;
+    const CHGraph<CHNode, CHEdge> &graph;
+    const Grid<CHGraph<CHNode, CHEdge> > &grid;
     
-    RangeTree &rangeTree;
+    //const RangeTree &rangeTree;
     
     
-    void 
+    static void 
     mark_domains(CDTHP& ct, 
                  CDTHP::Face_handle start, 
                  int index, 
@@ -115,7 +114,7 @@ class CDTHPCross {
     //level of 0. Then we recursively consider the non-explored facets incident 
     //to constrained edges bounding the former set and increase the nesting level by 1.
     //Facets in the domain are those with an odd nesting level.
-    void
+    static void
     mark_domains(CDTHP& cdt)
     {
       for(CDTHP::All_faces_iterator it = cdt.all_faces_begin(); it != cdt.all_faces_end(); ++it){
@@ -134,7 +133,7 @@ class CDTHPCross {
     }
     
     //adds chain and its shortcuts as constraints
-    void insertConstraints(CDTHP &cdthp, const Chain &chain) {
+    void insertConstraints(CDTHP &cdthp, const Chain &chain) const {
         std::list<CDTHP::Vertex_handle> vertexHandles;
     
         for (auto it = chain.begin(); it != chain.end(); it++) {
@@ -145,8 +144,8 @@ class CDTHPCross {
             // --cdt.vertices_end();
             
             //vh->info().node_it = it;
-            vh->info().posInChain = 5;
-            vh->info().side = true;
+            //vh->info().posInChain = 5;
+            //vh->info().side = true;
         }    
         for (auto it = vertexHandles.begin(); it != --vertexHandles.end(); it++) {
             auto next = it;
@@ -154,16 +153,16 @@ class CDTHPCross {
             cdthp.insert_constraint(*it, *next);
         }
         //shortcut
-        cdthp.insert_constraint(vertexHandles.back(), vertexHandles.front());
+        cdthp.insert_constraint(vertexHandles.back(), vertexHandles.front());                
     }
     
-    uint countInFacets(const CDTHP &cdthp, const std::list<NodeID> &outliers) {
+    uint countInFacets(const CDTHP &cdthp, const std::list<NodeID> &outliers) const {
         uint counter = 0;
         
         for (NodeID node_id: outliers) {
-            CHNode node = graph.getNode(node_id);
-            CDTHP::Face_handle fh = cdthp.locate(Point_2(node.lon, node.lat));
-            if (fh->info().in_inner()) {
+            const CHNode &node = graph.getNode(node_id);            
+            CDTHP::Face_handle fh = cdthp.locate(Point(node.lon, node.lat));
+            if (fh->info().in_inner()) {        
                 counter++;
             }
         }
@@ -171,7 +170,7 @@ class CDTHPCross {
     }
 
 
-    void subtractLists(std::list<NodeID> &minuend, std::list<NodeID> subtrahend) {
+    void subtractLists(std::list<NodeID> &minuend, std::list<NodeID> subtrahend) const {
         minuend.sort();
         minuend.unique();
         subtrahend.sort();
@@ -191,7 +190,7 @@ class CDTHPCross {
         }        
     }
     
-    std::list<NodeID> getOutliers(const Chain &chain) {
+    std::list<NodeID> getOutliers(const Chain &chain) const {
         
         Window window(graph, chain);
         //std::list<NodeID> outliers = rangeTree.rectangleQuery(window);
@@ -222,15 +221,28 @@ class CDTHPCross {
     }
     
 public:
-    CDTHPCross(CHGraph<CHNode, CHEdge> &graph, Grid<CHGraph<CHNode, CHEdge> > &grid, RangeTree &rangeTree):
-        graph(graph), grid(grid), rangeTree(rangeTree){                
+    CDTHPCross(const CHGraph<CHNode, CHEdge> &graph, const Grid<CHGraph<CHNode, CHEdge> > &grid):
+        graph(graph), grid(grid){                
     }
     
-    uint getNofCrossings (const Chain &chain) {
+    uint getNofCrossings (const Chain &chain) const {
         std::list<NodeID> outliers = getOutliers(chain);
+                
+        
+        if (outliers.size() == 0) {
+            return 0;
+        } else {
+            CDTHP cdthp;
+            insertConstraints(cdthp, chain);
+            mark_domains(cdthp);
+            return countInFacets(cdthp, outliers);        
+        }
+        /*
         CDTHP cdthp;
         insertConstraints(cdthp, chain);
-        return countInFacets(cdthp, outliers);        
+        mark_domains(cdthp);
+        return countInFacets(cdthp, outliers);     
+         * */   
     }
     
 };

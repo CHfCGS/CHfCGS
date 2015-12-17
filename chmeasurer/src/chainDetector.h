@@ -114,7 +114,7 @@ public:
         return next;
     }
     
-    Chain getFullChain(const Chain &old_chain, const Chain &remaining_chain) {
+    Chain getHullChain(const Chain &old_chain, const Chain &remaining_chain) {
         assert(old_chain.size() >= 2);
         assert(remaining_chain.size() >= 2);
         Chain full_chain;
@@ -175,7 +175,7 @@ public:
         
         
         if (valid) {
-            redetected_chain.hull_chain = getFullChain(old_chain, redetected_chain.remaining_chain);
+            redetected_chain.hull_chain = getHullChain(old_chain, redetected_chain.remaining_chain);
             //test connectivity
             for (auto it = remaining_chain_nodes.begin(); it != --remaining_chain_nodes.end(); it++) {
                 //dont test for degree and oneway
@@ -238,7 +238,7 @@ public:
         redetected_chain.remaining_chain = remaining_chain_nodes;
         
         if (valid) {
-            redetected_chain.hull_chain = getFullChain(old_chain, redetected_chain.remaining_chain);
+            redetected_chain.hull_chain = getHullChain(old_chain, redetected_chain.remaining_chain);
             //test connectivity
             for (auto it = remaining_chain_nodes.begin(); it != --remaining_chain_nodes.end(); it++) {
                 

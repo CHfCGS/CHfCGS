@@ -4,6 +4,7 @@
 #include "nodes_and_edges.h"
 #include "indexed_container.h"
 
+#include <limits>
 #include <vector>
 #include <list>
 #include <algorithm>
@@ -318,7 +319,7 @@ std::list<NodeID> Graph<NodeT, EdgeT>::nodeNeighbours(NodeID node_id, StreetType
 template <typename NodeT, typename EdgeT>
 StreetType Graph<NodeT, EdgeT>::getMaxStreetType(NodeID node_id) const
 {
-        StreetType MaxStreetType = 0;
+        StreetType MaxStreetType = std::numeric_limits<StreetType>::lowest();
         for (auto const& edge : nodeEdges(node_id, EdgeType::IN)) {
             if (edge.type > MaxStreetType) {
                 MaxStreetType = edge.type;

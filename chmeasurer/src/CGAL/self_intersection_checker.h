@@ -1,3 +1,5 @@
+#pragma once
+
 // Computing intersection points among curves using the sweep line.
 //#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Cartesian.h>
@@ -10,14 +12,17 @@
 #include "../chains.h"
 #include "../chgraph.h"
 
-typedef CGAL::Quotient<CGAL::MP_Float>                  NT;
-//typedef CGAL::Exact_predicates_inexact_constructions_kernel                       Kernel;
-typedef CGAL::Cartesian<NT> Kernel;
-typedef Kernel::Point_2                                 Point_2;
-typedef CGAL::Arr_segment_traits_2<Kernel>              Traits_2;
-typedef Traits_2::Curve_2                               Segment_2;
+namespace chm {
 
 class SelfIntersectionChecker {
+    
+    typedef CGAL::Quotient<CGAL::MP_Float>                  NT;
+    //typedef CGAL::Exact_predicates_inexact_constructions_kernel                       Kernel;
+    typedef CGAL::Cartesian<NT> Kernel;
+    typedef Kernel::Point_2                                 Point_2;
+    typedef CGAL::Arr_segment_traits_2<Kernel>              Traits_2;
+    typedef Traits_2::Curve_2                               Segment_2; 
+    
 private:
     CHGraph<CHNode, CHEdge> &graph;
 public:
@@ -91,3 +96,5 @@ public:
     }
     
 };
+
+}

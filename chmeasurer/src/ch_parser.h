@@ -45,7 +45,7 @@ class CH_Parser {
         r_edge.type = atoi(buffer.c_str());
 
         ss >> buffer;
-        //r_edge.speed = atoi(buffer.c_str());
+        r_edge.speed = atoi(buffer.c_str());
 
         ss >> buffer;
         r_edge.child_edge1 = atof(buffer.c_str());

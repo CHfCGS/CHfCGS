@@ -11,7 +11,7 @@ out=$data"FMAXSPEED.txt"
 #chconstructor
 in=$out
 out=$data"_ch_out.graph"
-chconstructor/build/ch_constructor -i data/Graph/$in -o data/CH/$out  -p DP -s DP -e VE -w ZO -c -f FMI_DIST -g FMI_CH
+chconstructor/build/ch_constructor -i data/Graph/$in -o data/CH/$out  -p DP -s DP -e VE -w P -c -v -f FMI_DIST -g FMI_CH
 
 #visualizer
 in=$out

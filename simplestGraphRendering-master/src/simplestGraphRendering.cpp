@@ -945,7 +945,9 @@ int main(int argc, char*argv[])
 	//std::vector<Edge> edges;
 	
 	//Zoomer zoomer = Zoomer();
-	Zoomer::zoom(state.ch_nodes, state.ch_edges, state.nodes, state.edges, 2 , 0.002, false);
+	double start_percent_of_nodes = 0.02;
+	double expandSize = 0.002;
+	Zoomer::zoom(state.ch_nodes, state.ch_edges, state.nodes, state.edges, start_percent_of_nodes , expandSize, false);
 
 	/////////////////////////////////////////////////////////////////////
 	// Creation of graphics resources, i.e. shader programs, meshes, etc.
@@ -1008,11 +1010,13 @@ int main(int argc, char*argv[])
     GtkWidget *labelPercent = gtk_label_new ("% of nodes");
     gtk_grid_attach (GTK_GRID(grid), labelPercent , 0, 0, 1, 1);    
         
-	GtkAdjustment *adjPercent = gtk_adjustment_new(2.0, 0.0, 100.0, 1.0, 1.0, 1.0);	
-	GtkWidget *hscalePercent = gtk_scale_new(GtkOrientation::GTK_ORIENTATION_HORIZONTAL, adjPercent);
+	GtkAdjustment *adjPercent = gtk_adjustment_new(start_percent_of_nodes, 0.0, 100.0, 0.01, 1.0, 1.0);	
+	GtkWidget *hscalePercent = gtk_scale_new(GtkOrientation::GTK_ORIENTATION_HORIZONTAL, adjPercent);	
+	gtk_scale_set_digits (GTK_SCALE(hscalePercent), 2);
 	gtk_scale_set_draw_value(GTK_SCALE(hscalePercent), true);
 	gtk_grid_attach (GTK_GRID(grid), hscalePercent, 0, 1, 1, 1);                 
 	state.hscalePercent = GTK_RANGE(hscalePercent);
+	
 	
 	//check Button to enable/disable edge expand
 	GtkWidget *checkButtonExpand = gtk_check_button_new_with_label("enable edge expand");
@@ -1023,7 +1027,7 @@ int main(int argc, char*argv[])
 	GtkWidget *labelExpandSize = gtk_label_new ("expand all edges with size > :");
     gtk_grid_attach (GTK_GRID(grid), labelExpandSize , 0, 3, 1, 1);
 		
-	GtkAdjustment *adjExpandSize = gtk_adjustment_new(0.002, 0.0, 0.01, 0.001, 0.001, 0.0005);	
+	GtkAdjustment *adjExpandSize = gtk_adjustment_new(expandSize, 0.0, 0.01, 0.001, 0.001, 0.0005);	
 	GtkWidget *hscaleExpandSize = gtk_scale_new(GtkOrientation::GTK_ORIENTATION_HORIZONTAL, adjExpandSize);
 	gtk_scale_set_digits (GTK_SCALE(hscaleExpandSize), 4);
 	gtk_scale_set_draw_value(GTK_SCALE(hscaleExpandSize), true);

@@ -51,7 +51,7 @@ private:
     vector<int> NextNodeInSameCell;
     //vector<int> gridtest;
 
-    double pythagoras(double a, double b) {
+    double pythagoras(double a, double b) const {
         return sqrt(pow(a, 2) + pow(b, 2));
     }
 
@@ -72,7 +72,7 @@ private:
         }
     }
     
-    int xCoordinate (double lon) {
+    int xCoordinate (double lon) const {
         int x = (int) ((lon - MINLONGITUDE) / cellsizex);
         if (!indexInRange(x)) {
             if (x == -1) {
@@ -85,7 +85,7 @@ private:
         }
         return x;
     }
-    int yCoordinate (double lat) {
+    int yCoordinate (double lat) const {
         int y = (int) ((lat - MINLATITUDE) / cellsizey);
         if (!indexInRange(y)) {
             if (y == -1) {
@@ -160,7 +160,7 @@ public:
         
     }
        
-    std::list<NodeID> nodeGeoNeighbours(chm::NodeID node_id) {
+    std::list<NodeID> nodeGeoNeighbours(chm::NodeID node_id) const {
         //std::vector<chc::NodeID> neighbours;
         //int x = (int) ((base_graph.getLon(node_id) - MINLONGITUDE) / cellsizex);
         //int y = (int) ((base_graph.getLat(node_id) - MINLATITUDE) / cellsizey);
@@ -210,7 +210,7 @@ public:
         return neighbours;
     }
     
-    std::list<NodeID> nodesInWindow(Window window) {
+    std::list<NodeID> nodesInWindow(Window window) const {
         std::list<chm::NodeID> windowNodes;
         //get cell coordinates of the window corners
         

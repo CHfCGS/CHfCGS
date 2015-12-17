@@ -16,7 +16,12 @@
 using namespace std;
 
 //class Zoomer {	
-namespace Zoomer {			
+namespace Zoomer {
+
+	struct ValidLevelInfo {
+	    Level allValidUntilLevel;
+	    size_t validNofNodesOnThatLevel;
+	};			
 	
 	
 	static void removeShortcut(const vector<CHNode> &nodes, vector<CHEdge> &edges, const EdgeID edgeID){
@@ -72,76 +77,134 @@ namespace Zoomer {
 		return i+1;
 	}	 	
 	
-		static void zoom(std::vector<CHNode> &ch_nodes, std::vector<CHEdge> &ch_edges, std::vector<Node> &nodes, std::vector<Edge> &edges,
-			double percent_of_showed_nodes = 2, //normal: 2
-			double expandSize = 0.002, //normal: 0.002
-			bool expand = false,
-                        bool spareShortcuts = false
-			) {						
-				
-			DEBUG("Calculating zoomlvl");
-			Level zoomlvl = calculateZoomlvl(ch_nodes, percent_of_showed_nodes);    
+	static ValidLevelInfo calcValidLevel(vector<CHNode> &nodes, size_t numberOfValidNodes) {
+		ValidLevelInfo vli;
+		Level maxLevel = 0;
+		for (CHNode node : nodes) {
+		    if (node.lvl > maxLevel) {
+		        maxLevel = node.lvl;
+		    }
+		}
+
+		std::vector<uint> nofNodesPerLevel(maxLevel + 1, 0); //one field for level 0 is also needed
+		for (CHNode node : nodes) {
+		    nofNodesPerLevel[node.lvl]++;
+		}
+
+		assert(numberOfValidNodes >= 0 && numberOfValidNodes <= nodes.size());        
+		uint nofCollectedNodes = 0;
+		uint oldNofCollectedNodes = 0;
+		Level l = maxLevel;
+		while (nofCollectedNodes < numberOfValidNodes) {
+		    oldNofCollectedNodes = nofCollectedNodes;
+		    nofCollectedNodes += nofNodesPerLevel[l];
+		    l--;
+		}
+		vli.allValidUntilLevel = l + 1;
+		vli.validNofNodesOnThatLevel = numberOfValidNodes - oldNofCollectedNodes;
+		return vli;
+	}
+
+	static void markValidNodes(vector<CHNode> &nodes, double percent_of_valid_nodes) { 
+	    assert(percent_of_valid_nodes >= 0 && percent_of_valid_nodes <= 100);
+	    size_t numberOfValidNodes = (uint) trunc((percent_of_valid_nodes/100.0) * nodes.size());
+	    ValidLevelInfo vli = calcValidLevel(nodes, numberOfValidNodes);
+//	    _validNodes.resize(_nodes.size());
+	    size_t nofValidatedNodesOnCriticalLevel = 0;
+	    for (NodeID nodeID = 0; nodeID < (int) nodes.size(); nodeID++) {
+		CHNode &node = nodes[nodeID];
+		if (node.lvl > vli.allValidUntilLevel) {
+		    nodes[nodeID].remaining = true;
+		}else if(node.lvl == vli.allValidUntilLevel) {
+		    if(nofValidatedNodesOnCriticalLevel < vli.validNofNodesOnThatLevel) {
+			nofValidatedNodesOnCriticalLevel++;
+			nodes[nodeID].remaining = true;
+		    }else {
+			nodes[nodeID].remaining = false;
+		    }        
+		}else {
+		    nodes[nodeID].remaining = false;
+		}
+	    }
+	    assert(nofValidatedNodesOnCriticalLevel == vli.validNofNodesOnThatLevel);    
+	}
+
+	static void zoom(std::vector<CHNode> &ch_nodes, std::vector<CHEdge> &ch_edges, std::vector<Node> &nodes, std::vector<Edge> &edges,
+		double percent_of_showed_nodes = 2, //normal: 2
+		double expandSize = 0.002, //normal: 0.002
+		bool expand = false,
+                bool spareShortcuts = false
+		) {	
+
+		DEBUG("markValidNodes");
+		markValidNodes(ch_nodes, percent_of_showed_nodes);					
 			
-			DEBUG("Processing zoomlvl");
-			//process zoomlvl    
-			//build graph of level zoomlvl
-			//mark valid nodes
-			for (uint nodeID = 0; nodeID < ch_nodes.size(); nodeID++){
-				ch_nodes[nodeID].remaining = (ch_nodes[nodeID].lvl >= zoomlvl);
-			}        
-			
-			//mark valid edges
+		/*
+		DEBUG("Calculating zoomlvl");
+		Level zoomlvl = calculateZoomlvl(ch_nodes, percent_of_showed_nodes);    
+		
+		DEBUG("Processing zoomlvl");
+		//process zoomlvl    
+		//build graph of level zoomlvl
+		//mark valid nodes
+		for (uint nodeID = 0; nodeID < ch_nodes.size(); nodeID++){
+			ch_nodes[nodeID].remaining = (ch_nodes[nodeID].lvl >= zoomlvl);
+		}        
+		*/
+
+		DEBUG("Processing edges");
+		//mark valid edges
+		for (uint edgeID = 0; edgeID < ch_edges.size(); edgeID++){
+			ch_edges[edgeID].remaining = ch_edges[edgeID].is_valid(ch_nodes);
+		}    
+		
+		//remove high-level shortcuts
+		//not all valid shortcuts will remain
+		for (uint edgeID = 0; edgeID < ch_edges.size(); edgeID++){        
+			removeShortcut(ch_nodes, ch_edges, edgeID);             
+		}
+                if (spareShortcuts) {
+                    //do not draw visually unpleasing shortcuts
+                    for (uint edgeID = 0; edgeID < ch_edges.size(); edgeID++){
+                        if (ch_edges[edgeID].speed == -1000) {
+                            ch_edges[edgeID].remaining = false;       
+                        }				
+                    }
+                }
+                
+		
+		if (expand) {
+			DEBUG("Processing expandSize");
+			//process expandSize
 			for (uint edgeID = 0; edgeID < ch_edges.size(); edgeID++){
-				ch_edges[edgeID].remaining = ch_edges[edgeID].is_valid(ch_nodes);
-			}    
-			
-			//remove high-level shortcuts
-			//not all valid shortcuts will remain
-			for (uint edgeID = 0; edgeID < ch_edges.size(); edgeID++){        
-				removeShortcut(ch_nodes, ch_edges, edgeID);             
-			}
-                        if (spareShortcuts) {
-                            //do not draw visually unpleasing shortcuts
-                            for (uint edgeID = 0; edgeID < ch_edges.size(); edgeID++){
-                                if (ch_edges[edgeID].speed == -1000) {
-                                    ch_edges[edgeID].remaining = false;       
-                                }				
-                            }
-                        }
-                        
-			
-			if (expand) {
-				DEBUG("Processing expandSize");
-				//process expandSize
-				for (uint edgeID = 0; edgeID < ch_edges.size(); edgeID++){
-					if (ch_edges[edgeID].remaining) {
-						expandEdge(ch_nodes, ch_edges, edgeID, expandSize);
-					}        
-				}  
-			}
-			
-			/*			
-			EdgeID nofRemainingEdges = 0;
-			for (auto it = ch_edges.begin(); it != ch_edges.end(); it++){
-				if (it->remaining) {
-					nofRemainingEdges++;
-				}       
-			}
-			*/
-			
-			//TODO omit this part, nodes don't need to be refreshed, maybe no 2 node structures at all
-			nodes.clear();
-			for (auto it = ch_nodes.begin(); it != ch_nodes.end(); it++){
-				Node node = Node(it->lat, it->lon);
-				nodes.push_back(node);
-			}
-			
-			edges.clear();
-			for (auto it = ch_edges.begin(); it != ch_edges.end(); it++){
-				if (it->remaining) {					
-					Edge edge = Edge(it->src, it->tgt, 1 /*width(it->type)*/, color(it->type));
-					edges.push_back(edge);
-				}       
-			}												
+				if (ch_edges[edgeID].remaining) {
+					expandEdge(ch_nodes, ch_edges, edgeID, expandSize);
+				}        
+			}  
+		}
+		
+		/*			
+		EdgeID nofRemainingEdges = 0;
+		for (auto it = ch_edges.begin(); it != ch_edges.end(); it++){
+			if (it->remaining) {
+				nofRemainingEdges++;
+			}       
+		}
+		*/
+		
+		//TODO omit this part, nodes don't need to be refreshed, maybe no 2 node structures at all
+		nodes.clear();
+		for (auto it = ch_nodes.begin(); it != ch_nodes.end(); it++){
+			Node node = Node(it->lat, it->lon);
+			nodes.push_back(node);
+		}
+		
+		edges.clear();
+		for (auto it = ch_edges.begin(); it != ch_edges.end(); it++){
+			if (it->remaining) {					
+				Edge edge = Edge(it->src, it->tgt, 1 /*width(it->type)*/, color(it->type));
+				edges.push_back(edge);
+			}       
+		}												
 	}		
 }

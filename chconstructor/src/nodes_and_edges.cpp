@@ -12,9 +12,11 @@ namespace chc
 	{
 		assert(edge1.tgt == edge2.src);
                 uint type=0;
+                /*
                 if (edge1.type == edge2.type) {
                     type = edge1.type;
-                }
+                }*/                
+                type = std::max(edge1.type, edge2.type); 
 		return OSMEdge(c::NO_EID, edge1.src, edge2.tgt, edge1.dist + edge2.dist, type, -1);
 	}
 

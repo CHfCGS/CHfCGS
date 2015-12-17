@@ -23,7 +23,7 @@ namespace chc {
     namespace {
         uint MAX_UINT(std::numeric_limits<uint>::max());
     }
-
+       
     template <typename NodeT, typename EdgeT>
     class CHConstructor {
     private:
@@ -47,6 +47,31 @@ namespace chc {
 
         uint _num_threads;
         ThreadData& _myThreadData();
+        
+        //template <typename NodeT, typename EdgeT>
+        struct SHTagInfo {
+            const Shortcut * shortcut_p; //(const) references can't be sorted
+            //Shortcut &shortcut;
+            double weight;
+            
+            SHTagInfo(const Shortcut * shortcut_p, const CHGraphT& _base_graph): shortcut_p(shortcut_p),
+                    weight(geo::getTriangleProportion(_base_graph.getNode(shortcut_p->src),
+                                                      _base_graph.getNode(shortcut_p->tgt),
+                                                      _base_graph.getNode(shortcut_p->center_node))) {}
+            
+            //double factor = sh_tag_info.weight * pow(10,5);
+            bool operator <(const SHTagInfo &rhs) const {
+                return this->weight < rhs.weight;
+            }
+        };
+        
+        struct sortNode {
+            NodeID node_id;
+            double weight;
+            bool operator <(const sortNode &rhs) const {
+                return this->weight < rhs.weight;
+            }
+        };
 
         std::vector<Shortcut> _new_shortcuts;
         std::vector<int> _edge_diffs;
@@ -61,14 +86,15 @@ namespace chc {
         void _quickContract(NodeID node);
         std::vector<Shortcut> _calcShortcuts(Shortcut const& start_edge, NodeID center_node,
                 EdgeType direction, ThreadData& td) const;
-        void _taggingLastRoundShortcuts(uint round);
+        
+        //tagging functions
+        const std::vector<SHTagInfo> _calcTagInfos(NodeID node_id, EdgeType edge_type, uint lastRoundLvl) const;
+        void _tagShortcutsOfNode(NodeID node_id, EdgeType edge_type, uint lastRoundLvl, ThreadData &td);       
+        void _taggingLastRoundShortcuts(uint round);        
         bool _otherPathExist(ThreadData& td, NodeID start_node, NodeID end_node, uint radius) const;
+                
         void _calcShortestDists(ThreadData& td, NodeID start_node, EdgeType direction,
                 uint radius) const;
-
-        
-        
-        
         
         Shortcut _createShortcut(Shortcut const& edge1, Shortcut const& edge2,
                 EdgeType direction = EdgeType::OUT) const;
@@ -91,16 +117,27 @@ namespace chc {
         void rebuildCompleteGraph();
 
         /* const functions that use algorithms from the CHConstructor */
+        std::vector<NodeID> calcIndependentSet(std::vector<sortNode> const& sorted_nodes,
+                uint max_degree = MAX_UINT) const;
         std::vector<NodeID> calcIndependentSet(std::vector<NodeID> const& nodes,
                 uint max_degree = MAX_UINT) const;
-        int calcEdgeDiff(NodeID node) const;
+        int calcEdgeDiff(NodeID node) const;            
         std::vector<int> calcEdgeDiffs(std::vector<NodeID> const& nodes) const;
+        std::vector<int> calcMaxStreetTypes(std::vector<NodeID> const& nodes) const;
+        
+        void calcNodeWeights(std::vector<NodeID> const& nodes, std::vector<double> &node_weights) const;
+        std::vector<sortNode> calcNodeWeights(std::vector<NodeID> const& nodes) const;
+        std::vector<int> calcWeightedEdgeDiffs(std::vector<NodeID> const& nodes) const;
+        std::vector<int> calcGeoImportance(std::vector<NodeID> const& nodes) const;
+        std::vector<NodeWeight> calcGeoImportance2(std::vector<NodeID> const& nodes) const;
         std::vector<Shortcut> getShortcutsOfContracting(NodeID node) const;
         std::vector<std::vector<Shortcut>> getShortcutsOfContracting(std::vector<NodeID> const& nodes) const;
         std::vector<Shortcut> getShortcutsOfQuickContracting(NodeID node) const;
         std::vector<std::vector<Shortcut>> getShortcutsOfQuickContracting(std::vector<NodeID> const& nodes) const;
 
-        friend void unit_tests::testCHConstructor();                
+        friend void unit_tests::testCHConstructor();   
+        
+        
     };
 
     /*
@@ -236,7 +273,32 @@ namespace chc {
                 }
 
                 return shortcuts;
+            }      
+    
+    template <typename NodeT, typename EdgeT>
+    const std::vector<typename CHConstructor<NodeT, EdgeT>::SHTagInfo> CHConstructor<NodeT, EdgeT>::_calcTagInfos(NodeID node_id, EdgeType edge_type, uint lastRoundLvl) const {
+        std::vector<CHConstructor<NodeT, EdgeT>::SHTagInfo> sh_tag_infos;
+        for (const Shortcut &shortcut: _base_graph.nodeEdges(node_id, EdgeType::OUT)) {
+            const Shortcut * shortcut_p = &shortcut;
+            if(_base_graph.isShortcutOfRound(shortcut, lastRoundLvl)) {
+                sh_tag_infos.push_back(SHTagInfo(shortcut_p, _base_graph));
             }
+        }
+        std::sort(sh_tag_infos.begin(), sh_tag_infos.end());            
+        return sh_tag_infos;
+    }
+    
+    template <typename NodeT, typename EdgeT>
+    void CHConstructor<NodeT, EdgeT>::_tagShortcutsOfNode(NodeID node_id, EdgeType edge_type, uint lastRoundLvl, ThreadData &td) {        
+        std::vector<SHTagInfo> sh_tag_infos = _calcTagInfos(node_id, edge_type, lastRoundLvl);                
+        for (CHConstructor<NodeT, EdgeT>::SHTagInfo sh_tag_info: sh_tag_infos) {                        
+            const Shortcut &shortcut = *sh_tag_info.shortcut_p;                        
+            if (!_otherPathExist(td, shortcut.src, shortcut.tgt, (1+sh_tag_info.weight)*shortcut.dist)) {
+                _base_graph.setEdgeFlag(shortcut.id, true);
+            }
+        }  
+    }
+    
     
     template <typename NodeT, typename EdgeT>
     void CHConstructor<NodeT, EdgeT>::_taggingLastRoundShortcuts(uint round) {
@@ -244,19 +306,24 @@ namespace chc {
         uint lastRound = round -1;        
         uint lastRoundLvl = lastRound-1;
         
-        //std::list<NodeID> lastRoundShortcuts;
+        //initialize thread data
         ThreadData td;
         uint nr_of_nodes = _base_graph.getNrOfNodes();
         td.dists.assign(nr_of_nodes, c::NO_DIST);
         td.reset_dists.reserve(nr_of_nodes);
-        //initialize all last shortcuts with unpleasing
         
+        //initialize all last shortcuts with unpleasing flag        
         for (const EdgeT &edge: _base_graph.getAllEdges()) {            
             if(_base_graph.isShortcutOfRound(edge.id, lastRoundLvl)) {
                 _base_graph.setEdgeFlag(edge.id, false);
             }
         }
         
+        for (int node_id = 0; node_id < _base_graph.getNrOfNodes(); node_id++) {             
+            _tagShortcutsOfNode(node_id, EdgeType::IN, lastRoundLvl, td);
+            _tagShortcutsOfNode(node_id, EdgeType::OUT, lastRoundLvl, td );
+        }
+        /*
         for (const EdgeT &edge: _base_graph.getAllEdges()) {   
             if(_base_graph.isShortcutOfRound(edge.id, lastRoundLvl)) {
                 auto shortcut = _base_graph.getEdge(edge.id);
@@ -271,7 +338,9 @@ namespace chc {
                     _base_graph.setEdgeFlag(edge.id, true);
                 }                
             }            
-        }
+        }*/
+        
+        
     }
     
     template <typename NodeT, typename EdgeT>
@@ -614,13 +683,31 @@ namespace chc {
         }
         return independent_set;
     }
+    
+    template <typename NodeT, typename EdgeT>
+    std::vector<NodeID> CHConstructor<NodeT, EdgeT>::calcIndependentSet(std::vector<sortNode> const& sorted_nodes,
+            uint max_degree) const {
+        std::vector<NodeID> independent_set;
+        std::vector<bool> marked(_base_graph.getNrOfNodes(), false);
+        independent_set.reserve(sorted_nodes.size());
+
+        for (const sortNode &sort_node : sorted_nodes) {
+            NodeID node = sort_node.node_id;
+            if (!marked[node] && max_degree >= _base_graph.getNrOfEdges(node)) {
+                marked[node] = true;
+                _markNeighbours(node, marked);
+                independent_set.push_back(node);
+            }
+        }
+        return independent_set;
+    }
 
     template <typename NodeT, typename EdgeT>
     int CHConstructor<NodeT, EdgeT>::calcEdgeDiff(NodeID node) const {
         auto shortcuts(getShortcutsOfContracting(node));
         return (int) shortcuts.size() - (int) _base_graph.getNrOfEdges(node);
     }
-
+       
     template <typename NodeT, typename EdgeT>
     std::vector<int> CHConstructor<NodeT, EdgeT>::calcEdgeDiffs(std::vector<NodeID> const& nodes) const {
         std::vector<int> edge_diffs(nodes.size());
@@ -634,6 +721,152 @@ namespace chc {
 
         return edge_diffs;
     }
+    
+    template <typename NodeT, typename EdgeT>
+    std::vector<int> CHConstructor<NodeT, EdgeT>::calcMaxStreetTypes(std::vector<NodeID> const& nodes) const {
+        std::vector<int> max_street_types(nodes.size());
+        //auto shortcuts(getShortcutsOfContracting(nodes));
+
+        uint size(nodes.size());
+#pragma omp parallel for num_threads(_num_threads) schedule(dynamic)
+        for (uint i = 0; i < size; i++) {
+            max_street_types[i] = (int) _base_graph.getMaxStreetType(nodes[i]);
+        }
+
+        return max_street_types;
+    }
+    
+    template <typename NodeT, typename EdgeT>
+    void CHConstructor<NodeT, EdgeT>::calcNodeWeights(std::vector<NodeID> const& nodes, std::vector<double> &node_weights) const {                        
+        auto shortcuts(getShortcutsOfContracting(nodes));
+        
+        uint size(nodes.size());
+#pragma omp parallel for num_threads(_num_threads) schedule(dynamic)
+        for (uint i = 0; i < size; i++) {
+            NodeID node_id = nodes[i];
+            node_weights[node_id] = (int) shortcuts[i].size() - (int) _base_graph.getNrOfEdges(node_id);            
+        }        
+    } 
+    
+    
+    template <typename NodeT, typename EdgeT>
+    std::vector<typename CHConstructor<NodeT, EdgeT>::sortNode> CHConstructor<NodeT, EdgeT>::calcNodeWeights(std::vector<NodeID> const& nodes) const {
+        std::vector<sortNode> node_weights(nodes.size());        
+        auto shortcuts(getShortcutsOfContracting(nodes));
+
+        uint size(nodes.size());
+#pragma omp parallel for num_threads(_num_threads) schedule(dynamic)
+        for (uint i = 0; i < size; i++) {
+            node_weights[i].node_id = i;
+            node_weights[i].weight = (int) shortcuts[i].size() - (int) _base_graph.getNrOfEdges(nodes[i]);
+        }
+
+        return node_weights;
+    }
+    
+    template <typename NodeT, typename EdgeT>
+    std::vector<int> CHConstructor<NodeT, EdgeT>::calcWeightedEdgeDiffs(std::vector<NodeID> const& nodes) const {
+        std::vector<int> edge_diffs(nodes.size());
+        auto shortcuts(getShortcutsOfContracting(nodes));
+
+        uint size(nodes.size());
+#pragma omp parallel for num_threads(_num_threads) schedule(dynamic)
+        for (uint i = 0; i < size; i++) {
+            /*
+            auto edges = _base_graph. nodeEdges(nodes[i]);
+            int old_weight = 0;            
+            for (Shortcut shortcut: shortcuts[i]) {
+                old_weight += pow(10, shortcut.type);               
+            }*/
+            
+            int sh_weight = 0;            
+            for (Shortcut shortcut: shortcuts[i]) {
+                sh_weight += pow(0.1, shortcut.type);               
+            }
+            edge_diffs[i] = sh_weight;// - (int) _base_graph.getNrOfEdges(nodes[i]);
+        }
+
+        return edge_diffs;
+    }
+    
+    template <typename NodeT, typename EdgeT>
+    std::vector<NodeWeight> CHConstructor<NodeT, EdgeT>::calcGeoImportance2(std::vector<NodeID> const& nodes) const {
+        std::vector<NodeWeight> node_weights(nodes.size());
+        auto shortcuts(getShortcutsOfContracting(nodes));
+
+        uint size(nodes.size());
+#pragma omp parallel for num_threads(_num_threads) schedule(dynamic)
+        for (uint i = 0; i < size; i++) {
+            //NodeID node_id = nodes[i];            
+            
+            double geo_importance = 0;
+            
+            for (auto const& edge : shortcuts[i]) {                
+                double geo_dist = geo::geoDist(_base_graph.getNode(edge.src), _base_graph.getNode(edge.tgt));
+                assert(edge.dist> 0);
+                //geo_importance += geo_dist * pow(geo_dist/edge.dist, 2);                            
+                geo_importance = std::max(geo_importance, geo_dist * pow(geo_dist/edge.dist, 1));                            
+            }            
+                        
+            NodeWeight node_weight;
+            /*
+            double divisor = shortcuts[i].size();
+            if(divisor != 0) {
+                //node_weight.geo_measure = geo_importance/_base_graph.getNrOfEdges(nodes[i]);
+                node_weight.geo_measure = geo_importance/divisor;
+            } else {
+                node_weight.geo_measure = 0;
+            }            */
+            node_weight.geo_measure = geo_importance;
+            node_weight.edge_diff = (int) shortcuts[i].size() - (int) _base_graph.getNrOfEdges(nodes[i]);
+            node_weights[i] = node_weight;
+        }
+
+        return node_weights;
+    }
+    
+    template <typename NodeT, typename EdgeT>
+    std::vector<int> CHConstructor<NodeT, EdgeT>::calcGeoImportance(std::vector<NodeID> const& nodes) const {
+        std::vector<int> edge_diffs(nodes.size());
+        auto shortcuts(getShortcutsOfContracting(nodes));
+
+        uint size(nodes.size());
+#pragma omp parallel for num_threads(_num_threads) schedule(dynamic)
+        for (uint i = 0; i < size; i++) {
+            NodeID node_id = nodes[i];
+            /*
+            auto edges = _base_graph. nodeEdges(nodes[i]);
+            int old_weight = 0;            
+            for (Shortcut shortcut: shortcuts[i]) {
+                old_weight += pow(10, shortcut.type);               
+            }*/
+            
+            double weight = 0;
+            uint assert_counter = 0;            
+            for (auto const& edge : _base_graph.nodeEdges(node_id, EdgeType::IN)) {
+                auto other_node = otherNode(edge, EdgeType::IN);
+                double geo_dist = geo::geoDist(_base_graph.getNode(node_id), _base_graph.getNode(other_node));
+                weight += geo_dist * geo_dist/edge.dist;
+                //double speed = geo_dist/edge.dist;
+                //double fraction = edge.speed/speed;
+                assert_counter++;
+                //30000000 Umrechnungsfaktor
+            }
+            for (auto const& edge : _base_graph.nodeEdges(node_id, EdgeType::OUT)) {
+                auto other_node = otherNode(edge, EdgeType::OUT);
+                double geo_dist = geo::geoDist(_base_graph.getNode(node_id), _base_graph.getNode(other_node));
+                weight += geo_dist * geo_dist/edge.dist;
+                assert_counter++;
+            }
+            assert(assert_counter == _base_graph.getNrOfEdges(nodes[i]));
+            
+            
+            edge_diffs[i] = weight;
+        }
+
+        return edge_diffs;
+    }
+    
        
     template <typename NodeT, typename EdgeT>
     auto CHConstructor<NodeT, EdgeT>::getShortcutsOfContracting(NodeID node) const -> std::vector<Shortcut> {

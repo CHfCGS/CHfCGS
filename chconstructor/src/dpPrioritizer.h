@@ -17,13 +17,11 @@
 #include "chains.h"
 #include "grid.h"
 #include "chainDetector.h"
-//#include "DouglasPeucker.h"
+
 #include "indexed_container.h"
-//#include "dpPrioritizer.h"
 #include "dead_end_detector.h"
 
 #include "4Dgrid.h"
-//#include "chainPairDP.h"
 
 #include "simplification/prio_nodes.h"
 #include "nodes_and_edges.h"
@@ -62,11 +60,54 @@ namespace chc {
 
                     return edge_product1 < edge_product2;
             }
+            
+            
         };
+        
+        struct CompWeight {
+            const std::vector<double> &comp_weights;
+
+            CompWeight(const std::vector<double> &comp_weights)
+                    : comp_weights(comp_weights) {}
+
+            bool operator()(NodeID node1, NodeID node2) const
+            {                    
+                    return comp_weights[node1] < comp_weights[node2];
+            }                        
+        }; 
+        
+        struct CompMST {
+            GraphT const& g;
+
+            CompMST(GraphT const& g)
+                    : g(g) {}
+
+            bool operator()(NodeID node1, NodeID node2) const
+            {               
+                return g.getMaxStreetType(node1) > g.getMaxStreetType(node1);                    
+            }                        
+        }; 
+        
+        
+        
+        /*
+        struct CompWithTable {
+            const std::vector<int> &table;
+            const std::vector<int> &map;
+
+            CompWithTable(const std::vector<int> &table, const std::vector<int> &map)
+                    : table(table), map(map) {}
+
+            bool operator()(NodeID node1, NodeID node2) const
+            {                    
+                    return table[map[node1]] < table[map[node2]];
+            }                        
+        };*/
 
 	GraphT const& _base_graph;
         CHConstructorT const& _chc;
         std::vector<NodeID> _prio_vec;
+        std::vector<double> weights;
                         
         State state;
         Grid<GraphT> grid;
@@ -77,8 +118,7 @@ namespace chc {
                 
         std::unique_ptr<ls::LineSimplifier> lineSimplifier;         
 
-        std::list<Chain> deadEnds;
-        
+        std::list<Chain> deadEnds;  
         
         //_prio_vec = chains + remainder        
         Chains_and_Remainder CaR;
@@ -110,91 +150,214 @@ namespace chc {
         
         void init(std::vector<NodeID>& node_ids) {
             _prio_vec = std::move(node_ids);
-        }
+        }        
         
-        void _remove(std::vector<NodeID> const& nodes) {
-            std::vector<bool> to_remove(_base_graph.getNrOfNodes(), false);
-            for (auto node : nodes) {
-                debug_assert(0 <= node && node < to_remove.size());
-                to_remove[node] = true;
-            }
-
-            size_t remaining_nodes(_prio_vec.size());
-            size_t i(0);
-            while (i < remaining_nodes) {
-                debug_assert(0 <= i && i < _prio_vec.size());
-                NodeID node(_prio_vec[i]);
-                if (to_remove[node]) {
-                    remaining_nodes--;
-                    debug_assert(0 <= remaining_nodes && remaining_nodes < _prio_vec.size());
-                    _prio_vec[i] = _prio_vec[remaining_nodes];
-                    _prio_vec[remaining_nodes] = node;
-                } else {
-                    i++;
-                }
-            }
-
-            _prio_vec.resize(remaining_nodes);
-        }
-        
-        void _removeFromRemainder(std::vector<NodeID> const& nodes) {
+        void _removeFrom(std::vector<NodeID> const& nodes, std::vector<NodeID> &from_nodes) {
             std::vector<bool> to_remove(this->_base_graph.getNrOfNodes(), false);
             for (auto node : nodes) {     
                 debug_assert(0 <= node && node < to_remove.size());
                 to_remove[node] = true;                
             }
 
-            size_t remaining_nodes(CaR.remainder.size());
+            size_t remaining_nodes(from_nodes.size());
             size_t i(0);
             while (i < remaining_nodes) {                
-                debug_assert(0 <= i && i < CaR.remainder.size());
-                NodeID node(CaR.remainder[i]);                
+                debug_assert(0 <= i && i < from_nodes.size());
+                NodeID node(from_nodes[i]);                
                 if (to_remove[node]) {
                     remaining_nodes--;
-                    debug_assert(0 <= remaining_nodes && remaining_nodes < CaR.remainder.size());
-                    CaR.remainder[i] = CaR.remainder[remaining_nodes];
-                    CaR.remainder[remaining_nodes] = node;
+                    debug_assert(0 <= remaining_nodes && remaining_nodes < from_nodes.size());
+                    from_nodes[i] = from_nodes[remaining_nodes];
+                    from_nodes[remaining_nodes] = node;
                 } else {
                     i++;
                 }
             }
 
-            CaR.remainder.resize(remaining_nodes);
+            from_nodes.resize(remaining_nodes);
         }
 
-        //TODO slowdown
-        std::vector<NodeID> _chooseIndependentSetFromRemainder() {
-            //CompInOutProduct ciop(this->_base_graph);            
-            if (CaR.remainder.empty()) {
-                std::vector<NodeID> empytList;
-                return empytList;
-            } else {
-                std::sort(CaR.remainder.begin(), CaR.remainder.end(), CompInOutProduct(_base_graph));
-                //auto independent_set(EdgeDiffPrioritizer<GraphT, CHConstructorT>::_chc.calcIndependentSet(CaR.remainder));
-                //auto edge_diffs(EdgeDiffPrioritizer<GraphT, CHConstructorT>::_chc.calcEdgeDiffs(independent_set));
+        std::vector<NodeID> _chooseIndependentSetFromRemainderWeights(std::vector<NodeID> &remainder) {
+            std::sort(remainder.begin(), remainder.end(), CompInOutProduct(_base_graph));        
+            auto independent_set(_chc.calcIndependentSet(remainder));
+            //auto edge_diffs(_chc.calcEdgeDiffs(independent_set));
+            //auto edge_diffs(_chc.calcWeightedEdgeDiffs(independent_set));
+            auto edge_diffs(_chc.calcGeoImportance(independent_set));
 
-                auto independent_set(_chc.calcIndependentSet(CaR.remainder));
-                Print("Calc EdgeDiffs");
-                auto edge_diffs(_chc.calcEdgeDiffs(independent_set));
-                double edge_diff_mean(0);
-                for (size_t i(0); i < edge_diffs.size(); i++) {                    
+            double edge_diff_mean(0);
+            for (size_t i(0); i<edge_diffs.size(); i++) {
                     edge_diff_mean += edge_diffs[i];
+            }
+            edge_diff_mean /= independent_set.size();
+
+            std::vector<NodeID> low_edge_diff_nodes;
+            for (size_t i(0); i<independent_set.size(); i++) {
+                    //if (edge_diffs[i] <= edge_diff_mean) {
+                if (edge_diffs[i] <= edge_diff_mean) {
+                            NodeID node(independent_set[i]);
+                            low_edge_diff_nodes.push_back(node);
+                    }
+            }
+            //low_edge_diff_nodes.resize((low_edge_diff_nodes.size()/4) +1);
+            return low_edge_diff_nodes;
+        }  
+        
+        std::vector<NodeID> _chooseIndependentSetFromRemainderEDTable(std::vector<NodeID> &remainder) {
+            std::sort(remainder.begin(), remainder.end(), CompInOutProduct(_base_graph));        
+            auto independent_set(_chc.calcIndependentSet(remainder));
+            //auto edge_diffs(_chc.calcEdgeDiffs(independent_set));
+            //auto edge_diffs(_chc.calcWeightedEdgeDiffs(independent_set));
+            auto edge_diffs(_chc.calcEdgeDiffs(independent_set));
+
+            double edge_diff_mean(0);
+            for (size_t i(0); i<edge_diffs.size(); i++) {
+                    edge_diff_mean += edge_diffs[i];
+            }
+            edge_diff_mean /= independent_set.size();
+
+            std::vector<NodeID> low_edge_diff_nodes;
+            for (size_t i(0); i<independent_set.size(); i++) {
+                    //if (edge_diffs[i] <= edge_diff_mean) {
+                if (edge_diffs[i] <= edge_diff_mean) {
+                    NodeID node(independent_set[i]);
+                    low_edge_diff_nodes.push_back(node);
+                }
+            }
+            
+            //std::sort(low_edge_diff_nodes.begin(), low_edge_diff_nodes.end(), CompWithTable(edge_diffs, map));
+            
+            low_edge_diff_nodes.resize((low_edge_diff_nodes.size()/4) +1);
+            return low_edge_diff_nodes;
+        }   
+        
+        std::vector<NodeID> _chooseIndependentSetFromRemainderED(std::vector<NodeID> &remainder) {
+            std::sort(remainder.begin(), remainder.end(), CompInOutProduct(_base_graph));        
+            auto independent_set(_chc.calcIndependentSet(remainder));
+            //auto edge_diffs(_chc.calcEdgeDiffs(independent_set));
+            //auto edge_diffs(_chc.calcWeightedEdgeDiffs(independent_set));
+            auto edge_diffs(_chc.calcEdgeDiffs(independent_set));
+
+            double edge_diff_mean(0);
+            for (size_t i(0); i<edge_diffs.size(); i++) {
+                    edge_diff_mean += edge_diffs[i];
+            }
+            edge_diff_mean /= independent_set.size();
+
+            std::vector<NodeID> low_edge_diff_nodes;
+            for (size_t i(0); i<independent_set.size(); i++) {
+                    //if (edge_diffs[i] <= edge_diff_mean) {
+                if (edge_diffs[i] <= edge_diff_mean) {
+                            NodeID node(independent_set[i]);
+                            low_edge_diff_nodes.push_back(node);
+                    }
+            }
+            //low_edge_diff_nodes.resize((low_edge_diff_nodes.size()/4) +1);
+            return low_edge_diff_nodes;
+        } 
+        
+        std::vector<NodeID> _chooseIndependentSetFromRemainder2(std::vector<NodeID> &remainder) {
+            //first step: sort after InOutProduct and get independent Set
+            std::sort(remainder.begin(), remainder.end(), CompInOutProduct(_base_graph));        
+            auto independent_set(_chc.calcIndependentSet(remainder));
+            
+            std::vector<NodeWeight> node_weights(_chc.calcGeoImportance2(independent_set));            
+
+            //second step: get geo-unimportant nodes from here
+            double geo_measure_mean = 0;
+            for (size_t i(0); i<node_weights.size(); i++) {
+                geo_measure_mean += node_weights[i].geo_measure;                    
+            }
+            geo_measure_mean /= independent_set.size();
+            
+            double edge_diff_mean = 0;
+            std::vector<uint> low_geo_measure_nodes; //saves index of independent set
+            for (size_t i(0); i<independent_set.size(); i++) {                    
+                if (node_weights[i].geo_measure <= geo_measure_mean) {                                        
+                    edge_diff_mean += node_weights[i].edge_diff;                   
+                    low_geo_measure_nodes.push_back(i);
+                }
+            }
+            edge_diff_mean /= low_geo_measure_nodes.size();
+            
+            //third step: get nodes with low edge difference
+            std::vector<NodeID> low_edge_diff_nodes;
+            for (size_t i(0); i<low_geo_measure_nodes.size(); i++) {                    
+                uint index = low_geo_measure_nodes[i];
+                if (node_weights[index].edge_diff <= edge_diff_mean) {
+                    NodeID node_id(independent_set[index]);
+                    low_edge_diff_nodes.push_back(node_id);
+                }
+            }
+            
+            //low_edge_diff_nodes.resize((low_edge_diff_nodes.size()/4) +1);
+            return low_edge_diff_nodes;
+        } 
+        
+        
+        //TODO slowdown
+        std::vector<NodeID> _chooseIndependentSetFromRemainder(std::vector<NodeID> &remainder) {
+            //CompInOutProduct ciop(this->_base_graph);            
+            if (remainder.empty()) {
+                std::vector<NodeID> emptyList;
+                return emptyList;
+            } else {
+                Print("Calc Weights");
+                _chc.calcNodeWeights(remainder, weights);
+                std::sort(remainder.begin(), remainder.end(), CompWeight(weights));                
+                //auto weightNodes(_chc.calcWeightNodes(CaR.remainder));                
+                auto independent_set(_chc.calcIndependentSet(remainder));
+                
+                //auto edge_diffs(_chc.calcEdgeDiffs(independent_set));
+                //auto edge_diffs(_chc.calcWeightedEdgeDiffs(independent_set));
+                double weight_mean(0);
+                for (NodeID node_id: independent_set) {                    
+                    weight_mean += weights[node_id];
                 }
                 debug_assert(independent_set.size() != 0);
-                edge_diff_mean /= independent_set.size();
+                weight_mean /= independent_set.size();
 
-                std::vector<NodeID> low_edge_diff_nodes;
-                for (size_t i(0); i < independent_set.size(); i++) {
-                    debug_assert(0 <= i && i < edge_diffs.size());
-                    if (edge_diffs[i] <= edge_diff_mean) {
-                        NodeID node(independent_set[i]);
-                        low_edge_diff_nodes.push_back(node);
+                std::vector<NodeID> low_weight_nodes;
+                for (NodeID node_id: independent_set) {                    
+                    if (weights[node_id] <= weight_mean) {                        
+                        low_weight_nodes.push_back(node_id);
                     }
                 }
 
-                return low_edge_diff_nodes;
+                return low_weight_nodes;
             }
-        }        
+        }   
+        
+        std::vector<NodeID> _chooseIndependentSetFromRemainderMST(std::vector<NodeID> &remainder) {
+            std::sort(remainder.begin(), remainder.end(), CompInOutProduct(_base_graph));        
+            auto independent_set(_chc.calcIndependentSet(remainder));
+            //auto edge_diffs(_chc.calcEdgeDiffs(independent_set));
+            //auto edge_diffs(_chc.calcWeightedEdgeDiffs(independent_set));
+            auto max_street_types(_chc.calcMaxStreetTypes(independent_set));
+
+            int highest_mst(-3);
+            for (size_t i(0); i<max_street_types.size(); i++) {
+                if (highest_mst <= max_street_types[i]) {
+                    highest_mst = max_street_types[i];
+                }
+                //highest_mst = std::max(max_street_types[i], highest_mst);
+            }
+            Print("independent_set.size(): " << independent_set.size());
+            Print("highest_mst: " << highest_mst);
+            //highest_mst /= independent_set.size();
+
+            std::vector<NodeID> high_mst_nodes;
+            for (size_t i(0); i<independent_set.size(); i++) {
+                    //if (edge_diffs[i] <= edge_diff_mean) {
+                if (max_street_types[i] >= highest_mst) {
+                    NodeID node(independent_set[i]);
+                    high_mst_nodes.push_back(node);
+                }
+            }
+            //low_edge_diff_nodes.resize((low_edge_diff_nodes.size()/4) +1);
+            return high_mst_nodes;
+        } 
+        
+        
         
         void FillChainsInPriolists(std::vector<ChainsOfType> &chainsaccordingToType) {
             for (ChainsOfType &chainsOfType: chainsaccordingToType) {                                                                
@@ -298,11 +461,12 @@ namespace chc {
         //, dp(this->_base_graph, grid), cpdp(this->_base_graph,
         
         DPPrioritizer(SOptions s_options, GraphT const& base_graph, CHConstructorT const& chc)
-                : _base_graph(base_graph), _chc(chc), state(State::start),
+                : _base_graph(base_graph), _chc(chc), weights(_base_graph.getNrOfNodes()), state(State::start),
                 grid(1000, base_graph), fourDGrid(1, base_graph), deadEndDetector(base_graph),
                 chaindetector(base_graph), epsilon(10000),        
                 s_options(s_options) {                        
                     
+//            node_weights.resize();
             lineSimplifier = createLineSimplifier(s_options, s_options.lineSimplifier_type, base_graph, grid);
             assert(lineSimplifier != nullptr);
         }        
@@ -320,11 +484,11 @@ namespace chc {
             switch (state) {
                 case State::start: {
                     //deadEnds = deadEndDetector.detectDeadEnds(_prio_vec);
-                    state = State::removingDeadEnds;
-                    //break;
+                    state = State::removingDeadEnds;                    
                 }
                 case State::removingDeadEnds: {
-                    if(deadEndPrioLists.empty()) {
+                    if(deadEndPrioLists.empty()) {                        
+                        Print("Detecting Dead Ends");
                         switch (s_options.deadEndDetect_type) {
                             case DeadEndDetectType::NONE: {
                                 break;
@@ -340,10 +504,10 @@ namespace chc {
                         }                        
                         deadEndPhaseCounter++;
                     }
-                    //calc independent set of nodes from priolists
-                    std::vector<bool> marked(this->_base_graph.getNrOfNodes(), false);    
-                    
+                                        
+                    Print("Removing Dead Ends");
                     if (!deadEndPrioLists.empty()) {
+                        std::vector<bool> marked(this->_base_graph.getNrOfNodes(), false);    
                         for (auto p_it = deadEndPrioLists.begin(); p_it != deadEndPrioLists.end();) {
                             PrioList &priolist = p_it->priolist;
                             if (!priolist.empty()) {
@@ -373,6 +537,16 @@ namespace chc {
                                 }
                             }                        
                         }
+                        //dont contract peanuts
+                        double threshold = log(_base_graph.getNrOfNodes()) / log (1.01);
+                        if(next_nodes.size() < threshold) {
+                            deadEndPrioLists.clear();
+                            deadEndPhaseCounter++;
+                            if (deadEndPhaseCounter > 5) {
+                                state = State::removingChains;  
+                            }
+
+                        }
                         break;
                     } else {
                         state = State::removingChains;                        
@@ -388,7 +562,8 @@ namespace chc {
                         break;
                     }*/    
                 }
-                case State::removingChains: {
+                case State::removingChains: {                    
+                    
                     if ((roundcounter - 1) % 5 == 0) {
                         if (epsilon < 100000) { //prevents epsilon overflow
                             epsilon *= 2.0;
@@ -396,7 +571,10 @@ namespace chc {
 
                         Print("Detecting chains");
                         
-                        CaR = chaindetector.detectChains(_prio_vec);
+                        //CaR = chaindetector.detectChains(_prio_vec);                        
+                        CaR.remainder = _prio_vec;
+                        
+                        
                         Print("Number of chains: " << CaR.getNrOfChains());
                         debug_assert(CaR.getNrOfNodesInChains() + CaR.remainder.size() == this->_prio_vec.size());
                         if (s_options.pairMatch_type != ls::PairMatchType::NONE) {
@@ -406,17 +584,25 @@ namespace chc {
                         
                         Print("Number of chain pairs: " << CaR.chainPairs.size());
 
+                        Print("FillPriolists");
                         FillPriolists();
                     }
 
                     Print("Getting Independent set from Remainder");
                     //independent set from remainder
-                    if (roundcounter > 20) {
-                        next_nodes = _chooseIndependentSetFromRemainder();
-                    }
+                    //if (roundcounter > 20) {
+                    //next_nodes = _chooseIndependentSetFromRemainderMST(CaR.remainder);
+                    
+                    //next_nodes = _chooseIndependentSetFromRemainderEDTable(CaR.remainder);
+                    next_nodes = _chooseIndependentSetFromRemainder2(CaR.remainder);
+                    //next_nodes = _chooseIndependentSetFromRemainderED(CaR.remainder);
+                    //}
                     //remove from remainder
-                    _removeFromRemainder(next_nodes);
-
+                    //_removeFromRemainder(next_nodes);
+                    
+                    _removeFrom(next_nodes, CaR.remainder);
+                    
+                    
                     Print("Getting Independent set from Chains");
                     //calc independent set of nodes from priolists
                     std::vector<bool> marked(this->_base_graph.getNrOfNodes(), false);                    
@@ -450,6 +636,7 @@ namespace chc {
                         }                        
                     }
                     roundcounter++;
+                    
                     break;
                 }
                 default: {
@@ -458,7 +645,8 @@ namespace chc {
                 }
             }
             
-        _remove(next_nodes); //remove from priovector               
+        _removeFrom(next_nodes, _prio_vec);        
+        //_remove(next_nodes); //remove from priovector               
 
         /*
         for (NodeID node_id: next_nodes) {

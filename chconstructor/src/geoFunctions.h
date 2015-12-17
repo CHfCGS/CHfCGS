@@ -47,7 +47,7 @@ namespace geo {
         double lon2 = node2.lon;
         double lat2 = node2.lat;
         return geoDist(lon1, lat1, lon2, lat2);
-    }
+    }        
 
     double calcPerpendicularLength(OSMNode source, OSMNode target, OSMNode outlier) {
         //calculate perpendicular length as height of a triangle
@@ -55,6 +55,11 @@ namespace geo {
         double baselength = geoDist(source, target);
         double positiveRectArea = std::abs(2.0 * area);
         return positiveRectArea / baselength;        
+    }
+    
+    //height divided by baselength
+    double getTriangleProportion(OSMNode source, OSMNode target, OSMNode outlier) {
+        return calcPerpendicularLength(source, target, outlier)/geoDist(source, target);
     }
     
     //used with calcArea for orientation tests

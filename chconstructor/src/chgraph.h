@@ -44,6 +44,7 @@ class CHGraph : public Graph<NodeT, CHEdge<EdgeT> >
 		void rebuildCompleteGraph();
 
 		bool isUp(Shortcut const& edge, EdgeType direction) const;
+                bool isShortcutOfRound(const Shortcut &shortcut, uint round) const;
                 bool isShortcutOfRound(EdgeID edge_id, uint round) const;
 
 		/* destroys internal data structures */
@@ -164,6 +165,17 @@ void CHGraph<NodeT, EdgeT>::rebuildCompleteGraph()
 	_edges_dump.clear();
 
 	BaseGraph::update();
+}
+
+template <typename NodeT, typename EdgeT>
+bool CHGraph<NodeT, EdgeT>::isShortcutOfRound(const Shortcut &shortcut, uint round) const
+{        
+    NodeID center_node_id = shortcut.center_node;
+    if (center_node_id != c::NO_NID) { 
+        return (_node_levels[center_node_id] == round);
+    } else {
+        return false;
+    }
 }
 
 template <typename NodeT, typename EdgeT>

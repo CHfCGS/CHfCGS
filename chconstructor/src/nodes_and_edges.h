@@ -471,6 +471,11 @@ struct OSMLine {
     chc::OSMNode tgt;
 };
 
+struct NodeWeight {
+    double geo_measure;
+    int edge_diff;    
+};
+
 /*
 namespace ls {
 

@@ -33,12 +33,7 @@
 
 namespace chm {
     
-    namespace unit_tests
-    {
-	void testLineSimplfication();
-        void testParallelLineSimplfication();    
-        void testCDTHCross();
-    }
+    
 
     class CHMeasurer {
     private:
@@ -300,7 +295,7 @@ namespace chm {
         void makeDijkstraMeasure() {            
             Print("make_dijkstra_measure");  
             //random Dijkstras
-            std::string queryFile = std::to_string(graph.getNrOfNodes()) + ".txt";
+            std::string queryFile = "query_nof_nodes_" + std::to_string(graph.getNrOfNodes()) + ".txt";
         
             std::string line;
             std::ifstream file;
@@ -331,7 +326,7 @@ namespace chm {
                 auto rand_node = std::bind (dist, gen);
                 ofstream outFileStream;
                 outFileStream.open(queryFile);
-                queryCount = (graph.getNrOfNodes()-1)/10000;
+                queryCount = graph.getNrOfNodes()/10;
                 outFileStream << queryCount << std::endl;
                 for (uint i = 0; i < queryCount; i++) {
                     NodeID src = rand_node();
@@ -344,21 +339,29 @@ namespace chm {
             }
             
             CHDijkstra<CHNode, CHEdge> chdij(graph);
-            TrackTime tt =VerboseTrackTime();
-            tt.track("Starting Dijkstras");
+            //TrackTime tt =VerboseTrackTime();
+            using namespace std::chrono;
+            steady_clock::time_point t1 =  steady_clock::now();
+            Print("nof Dijkstras:" << queryCount);
+            Print("Starting Dijkstras");            
             for (uint i = 0; i < queryCount; i++) {
                 std::vector<EdgeID> path;
                 chdij.calcShopa(srcList.at(i), tgtList.at(i), path);
             }
-            tt.track("Finished Dijkstras");
+            //tt.track("Finished Dijkstras");
             
+            duration<double> time_span =  duration_cast<duration<double>>(steady_clock::now() - t1);
+            Print("Dijkstras took " << time_span.count() << " seconds.\n");
+            Unused(time_span);
             
         }
         
         void makeEdgeMeasure() {
+            using namespace std::chrono;
+            steady_clock::time_point t1 =  steady_clock::now();
             Print("makeEdgeMeasure");
             Print("Accumulating Error and Crossings Counting");
-            CDTHPCross cdthpC(graph, grid, rangeTree);
+            CDTHPCross cdthpC(graph, grid);
             //Grid grid = Grid(1, graph);
             double getNofCrossings = 0;
             double accumulatedError = 0;
@@ -377,9 +380,13 @@ namespace chm {
                     accumulatedError += epsilon_error;                        
                 }
                 
-            }
+            }                        
             Print("number of Crossings: " << getNofCrossings);
             Print("accumulated error: " << accumulatedError);
+            
+            duration<double> time_span =  duration_cast<duration<double>>(steady_clock::now() - t1);
+            Print("makeEdgeMeasure took " << time_span.count() << " seconds.\n");
+            Unused(time_span);
         }
         
         
@@ -419,11 +426,12 @@ namespace chm {
             
             
             Print("Zooming ");
-            graph.zoom(50, false, 0);               
+            graph.zoom(50, true, 0.002);               
             
             //makeEdgeMeasure();
             
             make_chain_measure(CaR);
+            makeEdgeMeasure();
             
             if (m_options.dijkstra) {
                 makeDijkstraMeasure();

@@ -274,7 +274,7 @@ uint CHDijkstra<Node,Edge>::calcShopa(NodeID src, NodeID tgt,
 	}
 
 	if (center_node == c::NO_NID) {
-		Print("No path found from " << src << " to " << tgt << ".");
+		//Print("No path found from " << src << " to " << tgt << ".");
 		return c::NO_DIST;
 	}
 
