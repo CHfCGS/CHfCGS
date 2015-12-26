@@ -28,7 +28,7 @@ private:
 public:
     SelfIntersectionChecker(CHGraph<CHNode, CHEdge> &graph) : graph(graph) {        
     }    
-    bool isSelfIntersecting(Chain &chain) {
+    bool isSelfIntersecting(const Chain &chain) {
         /*
         std::vector<Segment_2> segments = {Segment_2 (Point_2 (1, 5), Point_2 (8, 5)),
                               Segment_2 (Point_2 (1.1, 1), Point_2 (8, 8)),

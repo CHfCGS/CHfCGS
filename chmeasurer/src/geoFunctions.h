@@ -8,7 +8,7 @@ using namespace chm;
 //utility functions for geometric calculations (in a plane)
 namespace geo {
     
-    static const double PI = 3.14159265;
+    //static const double PI = 3.14159265;
     //static double R = 6371.009; //Erdradius 
     
     double calcArea(CHNode aSource, CHNode bTarget, CHNode cOutlier) {
@@ -36,7 +36,13 @@ namespace geo {
     double geoDist(double lon1, double lat1, double lon2, double lat2) {        
         double deltaLon = lon1 - lon2;
         double deltaLat = lat1 - lat2;
-        return pythagoras(deltaLon, deltaLat);        
+        double avgLat = (lat1 + lat2)/2;
+        
+        double x = (deltaLon) * std::cos(avgLat * M_PI / 180.0);
+        double y = (deltaLat);
+        return sqrt(x*x + y*y); //*R only scaling
+        
+        //return pythagoras(deltaLon, deltaLat);        
     }
 
     double geoDist(CHNode node1, CHNode node2) {
@@ -101,7 +107,51 @@ namespace geo {
         if (toAcos < -1.0) toAcos = -1.0;
         else if (toAcos > 1.0) toAcos = 1.0;
         
-        double turnAngle = acos(toAcos) * 180.0 / PI;
+        double turnAngle = acos(toAcos) * 180.0 / M_PI;
         return turnAngle;                        
     }  
+    
+    struct twoDvec {
+        double x;
+        double y;
+        twoDvec getOrthogonal() {
+            twoDvec orthogonal;
+            orthogonal.x = -y;
+            orthogonal.y = x;
+            return orthogonal;
+        }
+    };
+    
+    twoDvec calculateDirectionVec(CHLine line) {
+        twoDvec tdv;
+        tdv.x = line.tgt.lon - line.src.lon;
+        tdv.y = line.tgt.lat - line.src.lat;
+        return tdv;
+    }    
+    
+    bool isBetween(const CHLine line, CHNode outlier) {
+        //calculate direction vector
+        twoDvec directionVector = calculateDirectionVec(line);
+                
+        //get orthogonal vector
+        twoDvec orthogonal = directionVector.getOrthogonal();
+        //create imaginary point for src
+        CHNode iSrc;
+        iSrc.lon = line.src.lon + orthogonal.x;
+        iSrc.lat = line.src.lat + orthogonal.y;
+        //create line through src and its imaginary point
+        CHLine line1(line.src, iSrc);
+        
+        //create imaginary point for tgt
+        CHNode iTgt;
+        iTgt.lon = line.tgt.lon + orthogonal.x;
+        iTgt.lat = line.tgt.lat + orthogonal.y;
+        //create line through tgt and its imaginary point
+        CHLine line2(line.tgt, iTgt);
+        //test if outlier lies between these lines
+        double line1area = geo::calcArea(line1.src, line1.tgt, outlier);
+        double line2area = geo::calcArea(line2.src, line2.tgt, outlier);
+        //cant happen: (line1area > 0 && line2area < 0)                     
+        return (line1area < 0 && line2area > 0);
+    }
 }

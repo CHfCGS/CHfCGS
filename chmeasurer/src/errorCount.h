@@ -9,7 +9,8 @@ struct ErrorCounts {
     uint epsilonerrorEqualszero = 0;
     uint epsilonerrorGreaterzero = 0;    
     uint selfIntersecting = 0;
-    uint addedDiffs = 0;
+    uint addedDiffs = 0; 
+    double weighted_eta = 0;
     
     uint chain_counter = 0;
     double chain_length_sum = 0;

@@ -4,19 +4,25 @@
 #include "nodes_and_edges.h"
 #include "chgraph.h"
 #include "geoFunctions.h"
-#include "rayCaster.h"
+//#include "rayCaster.h"
+
 #include "ILP/lineSimplificationILP.h"
 #include "ILP/parallelLineSimplficationILP.h"
+#include "ILP/calc_frechet.h"
+
 #include "chainDetector.h"
 #include "chains.h"
 #include "4Dgrid.h"
-#include "CGAL/self_intersection_checker.h"
+
 #include "dijkstra.h"
 #include "errorCount.h"
 #include "discreteFrechet.h"
 #include "dijkstra.h"
 #include "track_time.h"
-#include "CGAL/cdthp_cross.h"
+
+//#include "CGAL/cdthp_cross.h"
+//#include "CGAL/self_intersection_checker.h"
+
 #include "measure_options.h"
 #include "simple_measures/angular_change.h"
 #include "simple_measures/regularity.h"
@@ -38,11 +44,10 @@ namespace chm {
     class CHMeasurer {
     private:
         CHGraph<CHNode, CHEdge> &graph;
-        Grid<CHGraph<CHNode, CHEdge> > grid;        
-        RangeTree rangeTree;
+        Grid<CHGraph<CHNode, CHEdge> > grid;                
         ChainDetector<CHGraph<CHNode, CHEdge> > chaindetector;
         FourDGrid<CHGraph<CHNode, CHEdge> > fourDGrid;
-        SelfIntersectionChecker selfIntersectionChecker;
+        //SelfIntersectionChecker selfIntersectionChecker;
         
         
         void _make_chain_measure(Chain &chain, int streettype, ErrorCounts &error_counts) {
@@ -54,10 +59,10 @@ namespace chm {
 
                 RedetectedChain redetected_edge_chain = chaindetector.redetect(chain, streettype);
                 if (!redetected_edge_chain.remaining_chain.empty()) {
-                    Chain expandedChain = graph.expandEdgeChain(redetected_edge_chain);
+                    Chain expandedChain = chains::expandEdgeChain(redetected_edge_chain, graph);
                     
-                    if (chainsAreEqual(expandedChain, redetected_edge_chain.hull_chain)) {
-                        double chain_length = graph.calcChainLength(redetected_edge_chain.remaining_chain);
+                    if (chains::areEqual(expandedChain, redetected_edge_chain.hull_chain)) {
+                        double chain_length = chains::calcChainLength(redetected_edge_chain.remaining_chain, graph);
                         
                         //weight with length of redetected(visible) sum
                         error_counts.weighted_regularity_sum +=
@@ -93,203 +98,160 @@ namespace chm {
             error_counts.print();
         }
         
-        void _make_ilp_measure(Chain &chain, int streettype, ErrorCounts &errorcounts) {
-            lineSimplificationILP ilp(graph);
+        
+        void _make_ilp_measure(const Chain &chain, int streettype, ErrorCounts &errorcounts) {                       
             //only big chains are measured
-            if (chain.size() >= 3) {        
-                //get epsilon error by expanding the used edges
-                double epsilon_error = 0;
-                RedetectedChain redetected_edge_chain = chaindetector.redetect(chain, streettype);
-                if (!redetected_edge_chain.remaining_chain.empty()) {
-                    errorcounts.chainRedetectedCounter++;
-                    for (EdgeID edge_id: redetected_edge_chain.edges) {
-                        double error = graph.calcEdgeError(edge_id);
-                        if (error > epsilon_error) {
-                            epsilon_error = error;
-                        }
-                    }
+            if (chain.size() >= 3) {
+                //EdgeChain edge_chain = chaindetector.getChainEdges(chain);
+                EdgeChain edge_chain = chains::getChainEdges(chain, graph);
 
-                    //expandedChain should be equal to chain
-                    Chain expandedChain = graph.expandEdgeChain(redetected_edge_chain);
-
-                    if(chainsAreEqual(expandedChain, redetected_edge_chain.hull_chain)) {
-                        //neither the original chain, nor the simplfication may intersect to use the ilp
-                        if(!selfIntersectionChecker.isSelfIntersecting(expandedChain)
-                                && !selfIntersectionChecker.isSelfIntersecting(expandedChain) ) {
-                            if (epsilon_error > 0) {
-                                double ilpNeededNumberOfEdges
-                                    = ilp.solve(expandedChain, epsilon_error + std::numeric_limits<double>::epsilon());
-                                //assert(redetected_edge_chain.edges.size() >= ilpNeededNumberOfEdges);
-                                /*
-                                if (!(redetected_edge_chain.edges.size() >= ilpNeededNumberOfEdges)) {
-
-                                    for (NodeID node_id: expandedChain) {
-                                        Print(node_id);
-                                    }
-                                }*/
-
-                                assert(redetected_edge_chain.edges.size() >= ilpNeededNumberOfEdges);
-                                double diff = redetected_edge_chain.edges.size() - ilpNeededNumberOfEdges;
-                                //Debug("ilpNeededNumberOfEdges:" << ilpNeededNumberOfEdges);
-                                //Debug("diff:" << diff);
-                                errorcounts.addedDiffs += diff;                                    
-                                errorcounts.epsilonerrorGreaterzero++;
-                            }else {
-                                errorcounts.epsilonerrorEqualszero++;
+                for (EdgeChain split_edge_chain : chains::split(edge_chain, graph)) {
+                    if (split_edge_chain.size() >= 2) {        
+                        //get epsilon error by expanding the used edges
+                        double epsilon_error = 0;                                                    
+                        for (EdgeID edge_id: split_edge_chain) {
+                            double error = graph.calcEdgeError(edge_id);
+                            if (error > epsilon_error) {
+                                epsilon_error = error;
                             }
+                        }                    
+                        Chain split_chain = chains::toNodeChain(split_edge_chain, graph);
+                        Chain expanded_split_chain = chains::toExpandedNodeChain(split_edge_chain, graph);  
+                        Print("split_chain.size()" << split_chain.size());
+                        Print("expanded_split_chain.size()" << expanded_split_chain.size());
+
+                        /*
+                        SelfIntersectionChecker selfIntersectionChecker(graph);
+                        if(!selfIntersectionChecker.isSelfIntersecting(split_chain)
+                                && !selfIntersectionChecker.isSelfIntersecting(expanded_split_chain)) {                           
+                         * */
+                            lineSimplificationILP ilp(graph);
+                            double ilpNeededNumberOfEdges
+                                = ilp.solve(expanded_split_chain, epsilon_error + std::numeric_limits<double>::epsilon());                    
+
+                            int nof_edges = split_chain.size()-1;
+                            //assert(nof_edges >= ilpNeededNumberOfEdges);
+                            double diff = nof_edges - ilpNeededNumberOfEdges;
+                            //Debug("ilpNeededNumberOfEdges:" << ilpNeededNumberOfEdges);
+                            //Debug("diff:" << diff);
+                            errorcounts.chain_length_sum += chains::calcChainLength(expanded_split_chain, graph);                       
+                            errorcounts.addedDiffs += diff;                                                   
+                            /*
                         }else {
                             errorcounts.selfIntersecting++;
-                        }       
-                    }else {
-                        errorcounts.chainNotRedetectedCounter++;
-                    }        
-
-                } else {
-                    errorcounts.chainNotRedetectedCounter++;
-                }          
+                        }                           */
+                    }                    
+                }
             }
         }
         
+        
+        
         void make_ilp_measure(Chains_and_Remainder &CaR) {
-            Print("make_ilp_measure");  
-            
-            ErrorCounts errorcounts;                                    
-            
+            Print("make_ilp_measure");              
+            ErrorCounts errorcounts;                                                
             
             for (uint i = 0; i < CaR.oneWayChainsAccordingToType.size(); i++) {
-                ChainsOfType &chainsOfType = CaR.oneWayChainsAccordingToType.at(i);            
-                for (Chain &chain: chainsOfType) {                                                                
+                const ChainsOfType &chainsOfType = CaR.oneWayChainsAccordingToType.at(i);                            
+                for (const Chain &chain: chainsOfType) {                     
                     _make_ilp_measure(chain, i, errorcounts);                    
                 }
             }            
             for (uint i = 0; i < CaR.twoWayChainsAccordingToType.size(); i++) {
-                ChainsOfType &chainsOfType = CaR.twoWayChainsAccordingToType.at(i);            
-                for (Chain &chain: chainsOfType) {                                                                
-                    _make_ilp_measure(chain, i, errorcounts);                    
-                }
+                const ChainsOfType &chainsOfType = CaR.twoWayChainsAccordingToType.at(i);            
+                for (const Chain &chain: chainsOfType) {                                                                                    
+                    _make_ilp_measure(chain, i, errorcounts);                   
+                }              
             }
-
-            errorcounts.print();            
-                        
-        }
-        
+            errorcounts.print(); 
+            Print("length" << errorcounts.chain_length_sum);
+            assert(errorcounts.chain_length_sum != 0);
+            Print("diff/length ratio" << errorcounts.addedDiffs/errorcounts.chain_length_sum);
+        }                
         
         
         void make_p_ilp_measure(Chains_and_Remainder &CaR) {
-            Print("make_p_ilp_measure");  
-            //ParallelLineSimplificationILP p_ilp(graph);
-            ParallelLineSimplificationILP p_ilp(graph);
-            DiscreteFrechet dF(graph);
+            Print("make_p_ilp_measure");              
+            //CalcFrechetILP cf_ilp(graph);            
             
             ErrorCounts errorcounts;
-            
-                        
             
             //for (ChainsOfType &chainsOfType: CaR.oneWayChainsAccordingToType) {                                                                
             for (ChainPair chainpair: CaR.chainPairs) {
                 
                 //for (auto it = chainsOfType.begin(); it!=chainsOfType.end(); ++it) {                       
                 //for (Chain &chain: chainsOfType) {                                                                
-                
+                    
                     //only big chains are measured
-                    if (chainpair.chainTo.size() >= 3 && chainpair.chainFrom.size() >= 3) {     
-                       
-                        //get epsilon error by expanding the used edges
-                        double epsilon_error = 0;
-                        RedetectedChain redetected_chainTo = chaindetector.redetect(chainpair.chainTo);
-                        RedetectedChain redetected_chainFrom = chaindetector.redetect(chainpair.chainFrom);
-                        if (!redetected_chainTo.remaining_chain.empty() && !redetected_chainFrom.remaining_chain.empty()) {                            
-                            for (EdgeID edge_id: redetected_chainTo.edges) {
-                                double error = graph.calcEdgeError(edge_id);
-                                if (error > epsilon_error) {
-                                    epsilon_error = error;
+                    if (chainpair.chainTo.size() >= 3 && chainpair.chainFrom.size() >= 3) {
+                        
+                        DiscreteFrechet dF(graph);
+                        double eta_whole = dF.calc_dF(chainpair.chainTo, chainpair.chainFrom);
+                        double combined_whole_chain_length = chains::calcChainLength(chainpair.chainTo, graph) + chains::calcChainLength(chainpair.chainFrom, graph);                                    
+                        errorcounts.weighted_eta += eta_whole * combined_whole_chain_length;
+                        
+                        EdgeChainPair edge_chain_pair(chainpair, graph);                                                
+                        
+                        for (EdgeChainPair split_edge_chain_pair : chains::split(edge_chain_pair, graph)) {
+                            if (split_edge_chain_pair.chainTo.size() >= 2 && split_edge_chain_pair.chainFrom.size() >= 2) { 
+                                double epsilon_error = 0;
+                                for (EdgeID edge_id: split_edge_chain_pair.chainTo) {
+                                    double error = graph.calcEdgeError(edge_id);
+                                    if (error > epsilon_error) {
+                                        epsilon_error = error;
+                                    }
                                 }
-                            }
-                            for (EdgeID edge_id: redetected_chainFrom.edges) {
-                                double error = graph.calcEdgeError(edge_id);
-                                if (error > epsilon_error) {
-                                    epsilon_error = error;
+                                for (EdgeID edge_id: split_edge_chain_pair.chainFrom) {
+                                    double error = graph.calcEdgeError(edge_id);
+                                    if (error > epsilon_error) {
+                                        epsilon_error = error;
+                                    }
                                 }
-                            }
-                            
-                            
-                            //expandedChain should be equal to chain
-                            Chain expandedChainTo = graph.expandEdgeChain(redetected_chainTo);                            
-                            Chain expandedChainFrom = graph.expandEdgeChain(redetected_chainFrom);/*
-                            Chain testchain;
-                            testchain.push_back(1);
-                            testchain.push_back(2);
-                            testchain.push_back(3);
-                             * */   
-                            
-                            
-                            if(chainsAreEqual(expandedChainTo, redetected_chainTo.hull_chain)
-                                    && chainsAreEqual(expandedChainFrom, redetected_chainFrom.hull_chain)) {
-                                errorcounts.chainPairRedetectedCounter++;
-                                //neither the original chains, nor the simplfications may intersect to use the ilp
-                                if(!selfIntersectionChecker.isSelfIntersecting(expandedChainTo, expandedChainFrom)
-                                        && !selfIntersectionChecker.isSelfIntersecting(redetected_chainTo.remaining_chain,
-                                                                                        redetected_chainFrom.remaining_chain)) {
-                                    double eta1 = dF.calc_dF(chainpair.chainTo, chainpair.chainFrom);
-                                    double eta2 = dF.calc_dF(redetected_chainTo.remaining_chain, redetected_chainFrom.remaining_chain);
-                                    double eta = std::max(eta1, eta2);
+                                
+                                
+                                Chain chainTo = chains::toNodeChain(split_edge_chain_pair.chainTo, graph);
+                                Chain chainFrom = chains::toNodeChain(split_edge_chain_pair.chainFrom, graph);
+                                Chain expandedChainTo = chains::toExpandedNodeChain(split_edge_chain_pair.chainTo, graph);                            
+                                Chain expandedChainFrom = chains::toExpandedNodeChain(split_edge_chain_pair.chainFrom, graph);
+                                
+                                if(chains::uniqueElements(expandedChainTo, expandedChainFrom)) { //can happen by having same centernode
+                                
+                                    Print("split_chain.size()" << chainTo.size() + chainFrom.size());
+                                    Print("expanded_split_chain.size()" << expandedChainTo.size() + expandedChainFrom.size());                                                                
+
+                                    DiscreteFrechet dF(graph);
+                                    double eta = dF.calc_dF(chainTo, chainFrom);
+                                    //double eta2 = dF.calc_dF(redetected_chainTo.remaining_chain, redetected_chainFrom.remaining_chain);
+                                    //double eta = std::max(eta1, eta2);
+                                    Print("eta " << eta);                                                                                                
+
+
+                                    ParallelLineSimplificationILP p_ilp(graph);
                                     double p_ilpNeededNumberOfEdges
-                                        = p_ilp.solve(expandedChainTo, expandedChainFrom,
-                                            epsilon_error + std::numeric_limits<double>::epsilon(),
-                                            eta + std::numeric_limits<double>::epsilon());
-                                    size_t redetectedSize = redetected_chainTo.edges.size() + redetected_chainFrom.edges.size();
+                                            = p_ilp.solve(expandedChainTo, expandedChainFrom,
+                                                epsilon_error + std::numeric_limits<double>::epsilon(),
+                                                eta + std::numeric_limits<double>::epsilon());
 
-                                    /*
-                                    if (!(redetectedSize >= p_ilpNeededNumberOfEdges)) {
-                                        Print("difference for p_ilp" << redetectedSize -p_ilpNeededNumberOfEdges);
-                                        for (NodeID node_id: expandedChainTo) {
-                                            Print(node_id);
-                                        }
-                                        Print(" ");
-                                        for (NodeID node_id: expandedChainFrom) {
-                                            Print(node_id);
-                                        }
-                                        Print("----");
-                                        for (NodeID node_id: redetected_edge_chainTo.chain) {
-                                            Print(node_id);
-                                        }
-                                        Print(" ");
-                                        for (NodeID node_id: redetected_edge_chainFrom.chain) {
-                                            Print(node_id);
-                                        }
+                                    size_t preSize = split_edge_chain_pair.chainTo.size() + split_edge_chain_pair.chainFrom.size();
 
-                                        int i = 3;
-                                    }*/
-                                    assert(redetectedSize >= p_ilpNeededNumberOfEdges);
-                                    double diff = redetectedSize - p_ilpNeededNumberOfEdges;
+                                    //assert(preSize >= p_ilpNeededNumberOfEdges);
+                                    double diff = preSize - p_ilpNeededNumberOfEdges;
                                     //Debug("ilpNeededNumberOfEdges:" << ilpNeededNumberOfEdges);
                                     //Debug("diff:" << diff);
-                                    
-                                    errorcounts.addedDiffs += diff;                                    
-
-                                } else {
-                                    errorcounts.selfIntersecting++;
+                                    double combined_chain_length = chains::calcChainLength(chainTo, graph) + chains::calcChainLength(chainFrom, graph);                                    
+                                    errorcounts.weighted_eta += eta * combined_chain_length;
+                                    errorcounts.chain_length_sum += combined_chain_length;                      
+                                    errorcounts.addedDiffs += diff;     
                                 }
-                            } else {
-                                errorcounts.chainNotRedetectedCounter++;
                             }
-                        } else {
-                            errorcounts.chainNotRedetectedCounter++;
-                        }
+                        }                                                
                     }
-                //}
             }
-
-            errorcounts.print();
-            
-            //SelfIntersectionChecker selfIntersectionChecker;
-            
-            /*
-            lineSimplificationILP ilp(graph);
-            if (chain.size()>2 && epsilon_error > 0) {
-                        ilp.solve(chain, epsilon_error);
-            }
-             * */
+            errorcounts.print();   
+            Print("length" << errorcounts.chain_length_sum);
+            assert(errorcounts.chain_length_sum != 0);
+            Print("diff/length ratio" << errorcounts.addedDiffs/errorcounts.chain_length_sum);
+            Print("avg_eta" << errorcounts.weighted_eta/errorcounts.chain_length_sum);
         }
         
         void makeDijkstraMeasure() {            
@@ -326,7 +288,7 @@ namespace chm {
                 auto rand_node = std::bind (dist, gen);
                 ofstream outFileStream;
                 outFileStream.open(queryFile);
-                queryCount = graph.getNrOfNodes()/10;
+                queryCount = 50000;
                 outFileStream << queryCount << std::endl;
                 for (uint i = 0; i < queryCount; i++) {
                     NodeID src = rand_node();
@@ -356,6 +318,7 @@ namespace chm {
             
         }
         
+        /*
         void makeEdgeMeasure() {
             using namespace std::chrono;
             steady_clock::time_point t1 =  steady_clock::now();
@@ -387,13 +350,13 @@ namespace chm {
             duration<double> time_span =  duration_cast<duration<double>>(steady_clock::now() - t1);
             Print("makeEdgeMeasure took " << time_span.count() << " seconds.\n");
             Unused(time_span);
-        }
+        }*/
         
         
     public:
 
         CHMeasurer(CHGraph<CHNode, CHEdge> &graph):
-            graph(graph), grid(1000, graph), rangeTree(graph), chaindetector(graph), fourDGrid(10, graph), selfIntersectionChecker(graph) {
+            graph(graph), grid(1000, graph), chaindetector(graph), fourDGrid(10, graph) {
             
         }
             
@@ -407,38 +370,47 @@ namespace chm {
 
             Chains_and_Remainder CaR;
             
-            
+            //graph.zoom(50, false, 800);    
+            graph.zoom(0.02, true, 800);    
             Print("Detecting chains");            
             //CaR = chaindetector.detectChains(EdgeDiffPrioritizer<GraphT, CHConstructorT>::_prio_vec);  
+            /*
             std::vector<NodeID> activeNodeIDs;
             for (uint i = 0; i < graph.getNrOfNodes(); i++) {                
                 if(graph.isValidNode(i)) {
                     activeNodeIDs.push_back(i);                
                 }
-            }           
-
-            CaR = chaindetector.detectChains(activeNodeIDs);
+            }*/
+            
+            std::vector<NodeID> visibleNodeIDs;
+            for (uint i = 0; i < graph.getNrOfNodes(); i++) {                
+                if(graph.isVisibleNode(i)) {
+                    visibleNodeIDs.push_back(i);                
+                }
+            }
+            
+                        
+            CaR = chaindetector.detectChains(visibleNodeIDs);            
+            
+            //CaR = chaindetector.detectChains(activeNodeIDs);
             Print("Number of chains: " << CaR.getNrOfChains());
             
             Print("IdentifyingChainPairs ");                                      
             fourDGrid.identifyPairs(CaR);
             Print("Number of chain pairs: " << CaR.chainPairs.size());
+                        
+            //Print("Zooming ");                                               
             
-            
-            Print("Zooming ");
-            graph.zoom(50, true, 0.002);               
-            
+            //make_chain_measure(CaR);
             //makeEdgeMeasure();
-            
-            make_chain_measure(CaR);
-            makeEdgeMeasure();
             
             if (m_options.dijkstra) {
                 makeDijkstraMeasure();
             }
-            if (m_options.ilp) {
+            if (m_options.ilp) {                
                 make_ilp_measure(CaR);
             }
+            
             if (m_options.p_ilp) {
                 make_p_ilp_measure(CaR);
             }

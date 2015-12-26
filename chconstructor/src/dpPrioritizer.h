@@ -40,7 +40,7 @@ namespace chc {
     class DPPrioritizer : public Prioritizer  {// : public EdgeDiffPrioritizer<GraphT, CHConstructorT> {
 
         enum class State {
-            start, removingDeadEnds, removingChains//, removingRemaining, done
+            start, removingDeadEnds, removingChains, removingRemaining //, done
         };
 
     private:
@@ -121,7 +121,7 @@ namespace chc {
         std::list<Chain> deadEnds;  
         
         //_prio_vec = chains + remainder        
-        Chains_and_Remainder CaR;
+        Chains_and_Remainder _CaR;
         
         typedef std::list<ls::simplePrioNode> PrioList;
         struct ChainPriolist{
@@ -139,11 +139,11 @@ namespace chc {
             }
             ChainPriolist(std::list<NodeID> outer_nodes): outer_nodes(outer_nodes){}
         };
-        std::list<ChainPriolist> chain_prio_lists;
-        std::list<ChainPriolist> deadEndPrioLists;
+        std::list<ChainPriolist> _chain_prio_lists;
+        std::list<ChainPriolist> _deadEndPrioLists;
         //std::list<std::list<ls::simplePrioNode>> priolists;
 
-        double epsilon;
+        //double epsilon;
         int roundcounter = 1;
         uint deadEndPhaseCounter = 0;
         const SOptions s_options;
@@ -175,6 +175,40 @@ namespace chc {
             }
 
             from_nodes.resize(remaining_nodes);
+        }
+        
+        double simulateChainContract(const std::list<ChainPriolist> &chain_prio_lists) const {
+            std::vector<double> independent_set_errors;            
+            
+            //calc independent set of nodes from priolists
+            std::vector<bool> marked(this->_base_graph.getNrOfNodes(), false);                                
+            uint nof_nodes_in_chains = 0;
+            
+            for (const ChainPriolist& chainpriolist: chain_prio_lists) {       
+                const PrioList &priolist = chainpriolist.priolist;
+                nof_nodes_in_chains += priolist.size();
+                for (const ls::simplePrioNode& spn: priolist) {                        
+                    if (!marked[spn.node_id]) {                                   
+                        _chc._markNeighbours(spn.node_id, marked);
+                        independent_set_errors.push_back(priolist.size() * _chc.chainNodeShortcutWeight(spn.node_id));                          
+                    } else {
+                        break;
+                    }
+                }                    
+            }
+            
+            double weight = std::numeric_limits<double>::max();
+            for (double error: independent_set_errors) {
+                //weight = std::min(weight, error);
+                weight += error;
+            }
+            
+            if (nof_nodes_in_chains != 0) {
+                weight /= nof_nodes_in_chains;
+            } else {
+                weight = std::numeric_limits<double>::max();
+            }
+            return weight;                       
         }
 
         std::vector<NodeID> _chooseIndependentSetFromRemainderWeights(std::vector<NodeID> &remainder) {
@@ -255,12 +289,12 @@ namespace chc {
             return low_edge_diff_nodes;
         } 
         
-        std::vector<NodeID> _chooseIndependentSetFromRemainder2(std::vector<NodeID> &remainder) {
+        std::vector<NodeID> _chooseIndependentSetFromRemainder2(std::vector<NodeID> &remainder, ls::ErrorMeasureType errorMeasure_type) {
             //first step: sort after InOutProduct and get independent Set
             std::sort(remainder.begin(), remainder.end(), CompInOutProduct(_base_graph));        
             auto independent_set(_chc.calcIndependentSet(remainder));
             
-            std::vector<NodeWeight> node_weights(_chc.calcGeoImportance2(independent_set));            
+            std::vector<NodeWeight> node_weights(_chc.calcGeoImportance2(independent_set, errorMeasure_type));            
 
             //second step: get geo-unimportant nodes from here
             double geo_measure_mean = 0;
@@ -357,22 +391,57 @@ namespace chc {
             return high_mst_nodes;
         } 
         
+        std::list<Chain> splitChain(Chain& chain, uint critical_size) {
+            std::list<Chain> split_chains;
+            //n-th chain
+            int nof_segments = ceil( (double) chain.size()/(double) critical_size);
+            int segment_length = ceil( (double) chain.size()/(double) nof_segments);
+            for (uint i = 0; i < nof_segments-1; i++) {
+                Chain split_chain;
+                for (uint j = 0; j < segment_length; j++) {
+                    split_chain.push_back(chain.front()); //more efficient: splice
+                    chain.pop_front();
+                }
+                split_chains.push_back(split_chain);
+            }
+            //last part
+            Chain last_split_chain;
+            for (NodeID node_id: chain) {
+                last_split_chain.push_back(node_id);
+            }
+            split_chains.push_back(last_split_chain);
+            
+            return split_chains;
+        }
         
+        void splitChains(ChainsOfType &chains) {            
+            for (auto it = chains.begin(); it != chains.end(); it++) {   
+                Chain &chain = *it;
+                //split chains larger than a critical size
+                uint critical_size = 50;
+                if (chain.size() > critical_size) {
+                    
+                    std::list<Chain> split_chains = splitChain(chain, critical_size);
+                    //delete old chain and hang in split chains instead
+                    it = chains.erase(it);
+                    chains.splice(it, split_chains, split_chains.begin(), split_chains.end());                                        
+                }                                
+            }
+        }
         
         void FillChainsInPriolists(std::vector<ChainsOfType> &chainsaccordingToType) {
-            for (ChainsOfType &chainsOfType: chainsaccordingToType) {                                                                
+            for (ChainsOfType &chainsOfType: chainsaccordingToType) {                                                                                
+                //too big chains are splitted
+                //splitChains(chainsOfType);
                 
-                //for (auto it = chainsOfType.begin(); it!=chainsOfType.end(); ++it) {                       
-                for (Chain &chain: chainsOfType) {                                                                
-                    //big chains are generalized
+                for (Chain &chain: chainsOfType) {                                                                                    
+                    // chains are generalized
                     if (chain.size() >= 3) {                          
-                        chain_prio_lists.push_back(ChainPriolist(lineSimplifier->process(chain, Chain()), chain));
-                        //priolists.push_back(dp.process(chain));
-                        
-                    //small chains are assigned to the remainder
-                    } else {
+                        _chain_prio_lists.push_back(ChainPriolist(lineSimplifier->process(chain, Chain()), chain));                                                
+                    
+                    } else { //too small chains are assigned to the remainder
                         for (NodeID node_id: chain) {
-                            CaR.remainder.push_back(node_id);
+                            _CaR.remainder.push_back(node_id);
                         }                    
                     }   
                 }
@@ -380,36 +449,36 @@ namespace chc {
         }
         
         void FillPriolists() {
-            chain_prio_lists.clear();        
-            FillChainsInPriolists(CaR.oneWayChainsAccordingToType);
-            FillChainsInPriolists(CaR.twoWayChainsAccordingToType);                        
+            _chain_prio_lists.clear();        
+            FillChainsInPriolists(_CaR.oneWayChainsAccordingToType);
+            FillChainsInPriolists(_CaR.twoWayChainsAccordingToType);                        
                         
-            for (ChainPair &chainPair: CaR.chainPairs) {    
-                    if (chainPair.chainTo.size() + chainPair.chainFrom.size() >= 7
-                            && chainPair.chainTo.size() >=3 && chainPair.chainFrom.size() >= 3) {                        
-                        chain_prio_lists.push_back(ChainPriolist(lineSimplifier->process(chainPair.chainTo, chainPair.chainFrom), chainPair)); 
-                        //priolists.push_back(cpdp.process(chainPair));                        
-                        //Print("Length of Priolist: " << pl.size());                                        
-                    //small chains are assigned to the remainder
-                    } else {
-                        for (NodeID node_id: chainPair.chainTo) {
-                            CaR.remainder.push_back(node_id);
-                        }                    
-                        for (NodeID node_id: chainPair.chainFrom) {
-                            CaR.remainder.push_back(node_id);
-                        }                    
-                    }    
+            for (ChainPair &chainPair: _CaR.chainPairs) {    
+                if (chainPair.chainTo.size() + chainPair.chainFrom.size() >= 7
+                        && chainPair.chainTo.size() >=3 && chainPair.chainFrom.size() >= 3) {                        
+                    _chain_prio_lists.push_back(ChainPriolist(lineSimplifier->process(chainPair.chainTo, chainPair.chainFrom), chainPair)); 
+                    //priolists.push_back(cpdp.process(chainPair));                        
+                    //Print("Length of Priolist: " << pl.size());                                        
+                //small chains are assigned to the remainder
+                } else {
+                    for (NodeID node_id: chainPair.chainTo) {
+                        _CaR.remainder.push_back(node_id);
+                    }                    
+                    for (NodeID node_id: chainPair.chainFrom) {
+                        _CaR.remainder.push_back(node_id);
+                    }                    
+                }    
             }
         }
         
         void FillDeadEndPrioLists (std::list<Chain> deadEnds) {
-            deadEndPrioLists.clear();
+            _deadEndPrioLists.clear();
             for (Chain &chain: deadEnds) {
                 if (chain.size() >= 3) {
-                    deadEndPrioLists.push_back(ChainPriolist(lineSimplifier->process(chain, Chain()), chain));
+                    _deadEndPrioLists.push_back(ChainPriolist(lineSimplifier->process(chain, Chain()), chain));
                 } else {                    
                     //pseudo remainder
-                    deadEndPrioLists.push_back(ChainPriolist(chain));                    
+                    _deadEndPrioLists.push_back(ChainPriolist(chain));                    
                 }
             }
         }
@@ -463,7 +532,7 @@ namespace chc {
         DPPrioritizer(SOptions s_options, GraphT const& base_graph, CHConstructorT const& chc)
                 : _base_graph(base_graph), _chc(chc), weights(_base_graph.getNrOfNodes()), state(State::start),
                 grid(1000, base_graph), fourDGrid(1, base_graph), deadEndDetector(base_graph),
-                chaindetector(base_graph), epsilon(10000),        
+                chaindetector(base_graph),// epsilon(10000),        
                 s_options(s_options) {                        
                     
 //            node_weights.resize();
@@ -487,7 +556,7 @@ namespace chc {
                     state = State::removingDeadEnds;                    
                 }
                 case State::removingDeadEnds: {
-                    if(deadEndPrioLists.empty()) {                        
+                    if(_deadEndPrioLists.empty()) {                        
                         Print("Detecting Dead Ends");
                         switch (s_options.deadEndDetect_type) {
                             case DeadEndDetectType::NONE: {
@@ -506,9 +575,9 @@ namespace chc {
                     }
                                         
                     Print("Removing Dead Ends");
-                    if (!deadEndPrioLists.empty()) {
+                    if (!_deadEndPrioLists.empty()) {
                         std::vector<bool> marked(this->_base_graph.getNrOfNodes(), false);    
-                        for (auto p_it = deadEndPrioLists.begin(); p_it != deadEndPrioLists.end();) {
+                        for (auto p_it = _deadEndPrioLists.begin(); p_it != _deadEndPrioLists.end();) {
                             PrioList &priolist = p_it->priolist;
                             if (!priolist.empty()) {
                                 for (auto it = priolist.begin(); it != priolist.end();) {                                    
@@ -533,14 +602,15 @@ namespace chc {
                                     }
                                     p_it++;                                    
                                 } else {
-                                    p_it = deadEndPrioLists.erase(p_it);
+                                    p_it = _deadEndPrioLists.erase(p_it);
                                 }
                             }                        
                         }
                         //dont contract peanuts
-                        double threshold = log(_base_graph.getNrOfNodes()) / log (1.01);
+                        //double threshold = log(_base_graph.getNrOfNodes()) / log (1.01);
+                        double threshold = 1;
                         if(next_nodes.size() < threshold) {
-                            deadEndPrioLists.clear();
+                            _deadEndPrioLists.clear();
                             deadEndPhaseCounter++;
                             if (deadEndPhaseCounter > 5) {
                                 state = State::removingChains;  
@@ -564,43 +634,49 @@ namespace chc {
                 }
                 case State::removingChains: {                    
                     
-                    if ((roundcounter - 1) % 5 == 0) {
+                    //if ((roundcounter - 1) % 5 == 0) {
+                    if (roundcounter == 1) {
+                        /*
                         if (epsilon < 100000) { //prevents epsilon overflow
                             epsilon *= 2.0;
-                        }
+                        }*/
 
                         Print("Detecting chains");
                         
-                        //CaR = chaindetector.detectChains(_prio_vec);                        
-                        CaR.remainder = _prio_vec;
+                        _CaR = chaindetector.detectChains(_prio_vec);                        
+                        //CaR.remainder = _prio_vec;
                         
                         
-                        Print("Number of chains: " << CaR.getNrOfChains());
-                        debug_assert(CaR.getNrOfNodesInChains() + CaR.remainder.size() == this->_prio_vec.size());
+                        Print("Number of chains: " << _CaR.getNrOfChains());
+                        debug_assert(_CaR.getNrOfNodesInChains() + _CaR.remainder.size() == this->_prio_vec.size());
                         if (s_options.pairMatch_type != ls::PairMatchType::NONE) {
                             Print("IdentifyingChainPairs ");
-                            fourDGrid.identifyPairs(CaR);
+                            fourDGrid.identifyPairs(_CaR);
                         }
                         
-                        Print("Number of chain pairs: " << CaR.chainPairs.size());
+                        Print("Number of chain pairs: " << _CaR.chainPairs.size());
 
                         Print("FillPriolists");
                         FillPriolists();
                     }
 
-                    Print("Getting Independent set from Remainder");
+                    //long chains can be the slowest to contract, therefore the defining values are found there
+                    ////    Print("Simulate chain contract");
+                    ////    double epsilon = simulateChainContract(_chain_prio_lists);
+                    
+                    ////    Print("Getting Independent set from Remainder");
                     //independent set from remainder
                     //if (roundcounter > 20) {
                     //next_nodes = _chooseIndependentSetFromRemainderMST(CaR.remainder);
                     
                     //next_nodes = _chooseIndependentSetFromRemainderEDTable(CaR.remainder);
-                    next_nodes = _chooseIndependentSetFromRemainder2(CaR.remainder);
+                    ////    next_nodes = _chooseIndependentSetFromRemainder2(_CaR.remainder, s_options.errorMeasure_type);
                     //next_nodes = _chooseIndependentSetFromRemainderED(CaR.remainder);
                     //}
                     //remove from remainder
                     //_removeFromRemainder(next_nodes);
                     
-                    _removeFrom(next_nodes, CaR.remainder);
+                    ////     _removeFrom(next_nodes, _CaR.remainder);
                     
                     
                     Print("Getting Independent set from Chains");
@@ -608,37 +684,55 @@ namespace chc {
                     std::vector<bool> marked(this->_base_graph.getNrOfNodes(), false);                    
                     //extraction from chains
                     //for (std::list<ls::simplePrioNode> &priolist : priolists) {
-                    for (auto p_it = chain_prio_lists.begin(); p_it != chain_prio_lists.end();) {
+                    for (auto p_it = _chain_prio_lists.begin(); p_it != _chain_prio_lists.end();) {
                         PrioList &priolist = p_it->priolist;
                         if (!priolist.empty()) {
                             for (auto it = priolist.begin(); it != priolist.end();) {
-                                if (epsilon > it->perpendicularLength) {
+                                //if (epsilon > it->perpendicularLength) {
+                                //if (epsilon >= _chc.chainNodeShortcutWeight(it->node_id)) {                                
                                     NodeID node_id = it->node_id;
                                     if (!marked[node_id]) {                                   
                                         _chc._markNeighbours(node_id, marked);
                                         next_nodes.push_back(node_id);
                                         it = priolist.erase(it);
-                                        break; //DEBUG
+                                        //break; //DEBUG
                                     } else {
                                         break;
                                     }
-                                } else {
-                                    break;
-                                }
+                                //} else {
+                                //    break;
+                                //}
                             }
                             p_it++;
                         } else {
                             //outer nodes are free to be contracted now
                             for (NodeID outer_node: p_it->outer_nodes) {
-                                CaR.remainder.push_back(outer_node);
+                                _CaR.remainder.push_back(outer_node);
                             }
-                            p_it = chain_prio_lists.erase(p_it);
+                            p_it = _chain_prio_lists.erase(p_it);
                         }                        
                     }
                     roundcounter++;
                     
+                    if (next_nodes.size() == 0) {
+                        state = State::removingRemaining;
+                    } else {
+                        break;
+                    }
+                    
+                    
+                }
+                
+                case State::removingRemaining: { 
+                    Print("Getting Independent set from Remainder");
+                    next_nodes = _chooseIndependentSetFromRemainder2(_CaR.remainder, s_options.errorMeasure_type);
+                    next_nodes = _chooseIndependentSetFromRemainderED(_CaR.remainder);
+                    _removeFrom(next_nodes, _CaR.remainder);
                     break;
                 }
+                
+                ////    Print("Getting Independent set from Remainder");
+                
                 default: {
                     Print("DefaultCase");
                     break;

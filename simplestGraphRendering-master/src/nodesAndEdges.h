@@ -51,7 +51,7 @@ double geoDist(const CHNode &node1, const CHNode &node2) {
 struct CHEdge {
 	NodeID src;
     NodeID tgt;
-    //uint dist;
+    uint dist;
     uint type;
     int speed;
     EdgeID child_edge1;

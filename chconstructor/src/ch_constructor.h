@@ -6,6 +6,8 @@
 #include "chgraph.h"
 #include "prioritizer.h"
 #include "geoFunctions.h"
+#include "simplification/lineSimplifierType.h"
+#include "edgeWeight.h"
 
 #include <chrono>
 #include <queue>
@@ -129,12 +131,14 @@ namespace chc {
         std::vector<sortNode> calcNodeWeights(std::vector<NodeID> const& nodes) const;
         std::vector<int> calcWeightedEdgeDiffs(std::vector<NodeID> const& nodes) const;
         std::vector<int> calcGeoImportance(std::vector<NodeID> const& nodes) const;
-        std::vector<NodeWeight> calcGeoImportance2(std::vector<NodeID> const& nodes) const;
+        std::vector<NodeWeight> calcGeoImportance2(std::vector<NodeID> const& nodes, ls::ErrorMeasureType errorMeasure_type) const;
         std::vector<Shortcut> getShortcutsOfContracting(NodeID node) const;
         std::vector<std::vector<Shortcut>> getShortcutsOfContracting(std::vector<NodeID> const& nodes) const;
         std::vector<Shortcut> getShortcutsOfQuickContracting(NodeID node) const;
         std::vector<std::vector<Shortcut>> getShortcutsOfQuickContracting(std::vector<NodeID> const& nodes) const;
 
+        double chainNodeShortcutWeight(NodeID node_id) const;                
+        
         friend void unit_tests::testCHConstructor();   
         
         
@@ -322,25 +326,7 @@ namespace chc {
         for (int node_id = 0; node_id < _base_graph.getNrOfNodes(); node_id++) {             
             _tagShortcutsOfNode(node_id, EdgeType::IN, lastRoundLvl, td);
             _tagShortcutsOfNode(node_id, EdgeType::OUT, lastRoundLvl, td );
-        }
-        /*
-        for (const EdgeT &edge: _base_graph.getAllEdges()) {   
-            if(_base_graph.isShortcutOfRound(edge.id, lastRoundLvl)) {
-                auto shortcut = _base_graph.getEdge(edge.id);
-                //get a factor for radius
-                OSMNode src = _base_graph.getNode(shortcut.src);
-                OSMNode tgt = _base_graph.getNode(shortcut.tgt);
-                OSMNode outlier = _base_graph.getNode(shortcut.center_node);
-                double perpendicularLength = geo::calcPerpendicularLength(src, tgt, outlier);
-                double factor = perpendicularLength * pow(10,5);
-                
-                if (!_otherPathExist(td, shortcut.src, shortcut.tgt, (1+factor)*shortcut.dist)) {
-                    _base_graph.setEdgeFlag(edge.id, true);
-                }                
-            }            
-        }*/
-        
-        
+        }                        
     }
     
     template <typename NodeT, typename EdgeT>
@@ -790,25 +776,34 @@ namespace chc {
     }
     
     template <typename NodeT, typename EdgeT>
-    std::vector<NodeWeight> CHConstructor<NodeT, EdgeT>::calcGeoImportance2(std::vector<NodeID> const& nodes) const {
+    std::vector<NodeWeight> CHConstructor<NodeT, EdgeT>::calcGeoImportance2(std::vector<NodeID> const& nodes,
+            ls::ErrorMeasureType errorMeasure_type) const {
         std::vector<NodeWeight> node_weights(nodes.size());
         auto shortcuts(getShortcutsOfContracting(nodes));
 
+        std::unique_ptr<ls::ErrorMeasure> errorMeasure = ls::createErrorMeasure(errorMeasure_type);
         uint size(nodes.size());
 #pragma omp parallel for num_threads(_num_threads) schedule(dynamic)
         for (uint i = 0; i < size; i++) {
             //NodeID node_id = nodes[i];            
             
-            double geo_importance = 0;
+            NodeWeight node_weight(0, 0, 0);
             
-            for (auto const& edge : shortcuts[i]) {                
-                double geo_dist = geo::geoDist(_base_graph.getNode(edge.src), _base_graph.getNode(edge.tgt));
-                assert(edge.dist> 0);
+            for (const Shortcut& shortcut : shortcuts[i]) {                
+                const auto& src_node = _base_graph.getNode(shortcut.src);
+                const auto& tgt_node = _base_graph.getNode(shortcut.tgt);
+                const auto& center_node = _base_graph.getNode(shortcut.center_node);
+                
+                //double geo_dist = geo::geoDist(src_node, tgt_node);
+                assert(shortcut.dist> 0);
                 //geo_importance += geo_dist * pow(geo_dist/edge.dist, 2);                            
-                geo_importance = std::max(geo_importance, geo_dist * pow(geo_dist/edge.dist, 1));                            
+                //node_weight.geo_measure = std::max(node_weight.geo_measure, geo_dist * pow(geo_dist/shortcut.dist, 1));                            
+                node_weight.geo_measure = std::max(node_weight.geo_measure, ew::calcWeight(shortcut.dist, src_node, tgt_node));
+                
+                node_weight.error = std::max(node_weight.error, errorMeasure->calcError(src_node, tgt_node, center_node));                            
             }            
                         
-            NodeWeight node_weight;
+            
             /*
             double divisor = shortcuts[i].size();
             if(divisor != 0) {
@@ -817,8 +812,8 @@ namespace chc {
             } else {
                 node_weight.geo_measure = 0;
             }            */
-            node_weight.geo_measure = geo_importance;
-            node_weight.edge_diff = (int) shortcuts[i].size() - (int) _base_graph.getNrOfEdges(nodes[i]);
+            //node_weight.geo_measure = geo_importance;
+            node_weight.edge_diff = (int) shortcuts[i].size(); //- (int) _base_graph.getNrOfEdges(nodes[i]);
             node_weights[i] = node_weight;
         }
 
@@ -931,6 +926,42 @@ namespace chc {
         }
 
         return shortcuts;
+    }
+    
+    //get weight for shortcut of a chainnode
+    template <typename NodeT, typename EdgeT>
+    double CHConstructor<NodeT, EdgeT>::chainNodeShortcutWeight(NodeID node_id) const
+    {    
+        assert(_base_graph.nodeNeighbours(node_id).size() <= 2);
+
+        EdgeT in_edge;
+        bool in_edge_found= false;
+        NodeID in_edge_other_node = c::NO_NID;
+        EdgeT out_edge;
+        bool out_edge_found= false;
+        NodeID out_edge_other_node = c::NO_NID;
+        for (const EdgeT& edge: _base_graph.nodeEdges(node_id, EdgeType::IN)) {
+            in_edge_other_node = otherNode(edge, EdgeType::IN);
+            in_edge = edge;
+            in_edge_found = true;        
+            break;
+        }
+        if (in_edge_found) {
+            for (const EdgeT& edge: _base_graph.nodeEdges(node_id, EdgeType::OUT)) {
+                out_edge_other_node = otherNode(edge, EdgeType::OUT);
+                if (out_edge_other_node != in_edge_other_node) {
+                    out_edge = edge;
+                    out_edge_found = true;            
+                    break;
+                }            
+            }
+            if (out_edge_found) {
+                double shortcut_dist = in_edge.dist + out_edge.dist;
+                //double geo_dist = geo::geoDist(getNode(in_edge_other_node), getNode(out_edge_other_node));
+                return ew::calcWeight(shortcut_dist, _base_graph.getNode(in_edge_other_node), _base_graph.getNode(out_edge_other_node));
+            }
+        }
+        return 0;
     }
 
 }

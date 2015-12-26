@@ -946,7 +946,7 @@ int main(int argc, char*argv[])
 	
 	//Zoomer zoomer = Zoomer();
 	double start_percent_of_nodes = 0.02;
-	double expandSize = 0.002;
+	double expandSize = 800; //0.002;
 	Zoomer::zoom(state.ch_nodes, state.ch_edges, state.nodes, state.edges, start_percent_of_nodes , expandSize, false);
 
 	/////////////////////////////////////////////////////////////////////
@@ -1010,9 +1010,9 @@ int main(int argc, char*argv[])
     GtkWidget *labelPercent = gtk_label_new ("% of nodes");
     gtk_grid_attach (GTK_GRID(grid), labelPercent , 0, 0, 1, 1);    
         
-	GtkAdjustment *adjPercent = gtk_adjustment_new(start_percent_of_nodes, 0.0, 100.0, 0.01, 1.0, 1.0);	
+	GtkAdjustment *adjPercent = gtk_adjustment_new(start_percent_of_nodes, 0.0, 100.0, 0.001, 1.0, 1.0);	
 	GtkWidget *hscalePercent = gtk_scale_new(GtkOrientation::GTK_ORIENTATION_HORIZONTAL, adjPercent);	
-	gtk_scale_set_digits (GTK_SCALE(hscalePercent), 2);
+	gtk_scale_set_digits (GTK_SCALE(hscalePercent), 3);
 	gtk_scale_set_draw_value(GTK_SCALE(hscalePercent), true);
 	gtk_grid_attach (GTK_GRID(grid), hscalePercent, 0, 1, 1, 1);                 
 	state.hscalePercent = GTK_RANGE(hscalePercent);
@@ -1024,10 +1024,11 @@ int main(int argc, char*argv[])
 	state.checkButtonExpand = checkButtonExpand;  
 	
 	//Expand
-	GtkWidget *labelExpandSize = gtk_label_new ("expand all edges with size > :");
+	GtkWidget *labelExpandSize = gtk_label_new ("expand all edges with dist > :");
     gtk_grid_attach (GTK_GRID(grid), labelExpandSize , 0, 3, 1, 1);
 		
-	GtkAdjustment *adjExpandSize = gtk_adjustment_new(expandSize, 0.0, 0.01, 0.001, 0.001, 0.0005);	
+	//GtkAdjustment *adjExpandSize = gtk_adjustment_new(expandSize, 0.0, 0.01, 0.001, 0.001, 0.0005);	
+	GtkAdjustment *adjExpandSize = gtk_adjustment_new(expandSize, 0.0, 10000, 10, 0.001, 0.0005);	
 	GtkWidget *hscaleExpandSize = gtk_scale_new(GtkOrientation::GTK_ORIENTATION_HORIZONTAL, adjExpandSize);
 	gtk_scale_set_digits (GTK_SCALE(hscaleExpandSize), 4);
 	gtk_scale_set_draw_value(GTK_SCALE(hscaleExpandSize), true);

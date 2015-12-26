@@ -10,10 +10,10 @@
 
 class ParallelLineSimplificationILP {
     
-    CHGraph<CHNode, CHEdge> &graph;
+    const CHGraph<CHNode, CHEdge> &graph;
     glp_prob *lp;
     
-    const static size_t size = 40000;
+    const static size_t size = 4000000;
     size_t nofNonZeros = 0;
     
     //numbers of needed sizes beforehand 
@@ -24,8 +24,12 @@ class ParallelLineSimplificationILP {
     //whole ILP is invalid if size is not big enough
     bool enoughSpace;
     
-    int ia[1+size], ja[1+size];
-    double ar[1+size];        
+    std::vector<int> ia;
+    std::vector<int> ja;
+    std::vector<double> ar;
+    
+    //int ia[1+size], ja[1+size];
+    //double ar[1+size];        
     
     
     double objective_value = 0;    
@@ -51,12 +55,12 @@ class ParallelLineSimplificationILP {
         ar[index] = r;
     }            
     
-    void setAllDegreeCoefficients(ILP_data ilp_data) {
+    void setAllDegreeCoefficients(const ILP_data &ilp_data) {
         size_t nofNodes = ilp_data.ilp_chain1.size() + ilp_data.ilp_chain2.size();
         size_t chainPosOffset = ilp_data.ilp_chain1.size();
         const double INDEGREEMULTIPLIER = 1000.0;
         
-        for (Line &line : ilp_data.potEdges1) { 
+        for (const Line &line : ilp_data.potEdges1) { 
             assert(line.start.ch_node_id != line.end.ch_node_id);                                 
             setDegreeCoefficient(line.start.posInChain + 1, line.id + 1 , -1.0);           
             setDegreeCoefficient(line.end.posInChain + 1, line.id + 1 , 1.0);                                 
@@ -64,7 +68,7 @@ class ParallelLineSimplificationILP {
             setDegreeCoefficient(2*nofNodes + line.end.posInChain + 1, line.id + 1, INDEGREEMULTIPLIER);
         }
                 
-        for (Line &line : ilp_data.potEdges2) { 
+        for (const Line &line : ilp_data.potEdges2) { 
             assert(line.start.ch_node_id != line.end.ch_node_id);                                 
             setDegreeCoefficient(chainPosOffset + line.start.posInChain + 1, line.id + 1 , -1.0);           
             setDegreeCoefficient(chainPosOffset + line.end.posInChain + 1, line.id + 1 , 1.0);                                 
@@ -72,8 +76,8 @@ class ParallelLineSimplificationILP {
             setDegreeCoefficient(2*nofNodes + chainPosOffset + line.end.posInChain + 1, line.id + 1, INDEGREEMULTIPLIER);
         }
                 
-        for (Line &line : ilp_data.followerLines1) { 
-            assert(line.start.ch_node_id != line.end.ch_node_id);                                 
+        for (const Line &line : ilp_data.followerLines1) {             
+            assert(line.start.ch_node_id != line.end.ch_node_id); //can happen by having the same center nodes                                
             //out
             setDegreeCoefficient(nofNodes + line.start.posInChain + 1, line.id + 1 , 1.0);           
             //setDegreeCoefficient(nofNodes + chainPosOffset + line.end.posInChain + 1, line.id + 1 , 1.0);                                 
@@ -82,8 +86,8 @@ class ParallelLineSimplificationILP {
             //setDegreeCoefficient(2*nofNodes + chainPosOffset + line.end.posInChain + 1, line.id + 1, -1.0);
         }                
         
-        for (Line &line : ilp_data.followerLines2) { 
-            assert(line.start.ch_node_id != line.end.ch_node_id);                                 
+        for (const Line &line : ilp_data.followerLines2) { 
+            assert(line.start.ch_node_id != line.end.ch_node_id); //can happen by having the same center nodes                            
             //out
             setDegreeCoefficient(nofNodes + chainPosOffset + line.start.posInChain + 1, line.id + 1 , 1.0);           
             //setDegreeCoefficient(nofNodes + line.end.posInChain + 1, line.id + 1 , 1.0);                                 
@@ -93,7 +97,7 @@ class ParallelLineSimplificationILP {
         }   
         
     }    
-    void addInOutDegreeRows(ILP_Chain ilp_chain) {        
+    void addInOutDegreeRows(const ILP_Chain& ilp_chain) {        
         assert(ilp_chain.size() >1);
         //nodes 0 and n-1 should have degree 1        
         glp_add_rows(lp, 1);            
@@ -121,7 +125,7 @@ class ParallelLineSimplificationILP {
     
        
     //outdegrees has too be equal except for ends
-    void addOutDegreeRows(ILP_Chain ilp_chain) { 
+    void addOutDegreeRows(const ILP_Chain& ilp_chain) { 
         assert(ilp_chain.size() >1);
         //all other nodes should have edge_outdegree = follower_outdegree
         //for (uint node_id = 0; node_id < graph.nodes.size()-1; node_id++) {   
@@ -139,7 +143,7 @@ class ParallelLineSimplificationILP {
         //setOutDegreeCoefficients(potEdges, followerLines, ilp_chain.back().ch_node_id); 
     }        
         
-    void addInDegreeRows(ILP_Chain ilp_chain) {   
+    void addInDegreeRows(const ILP_Chain& ilp_chain) {   
         assert(ilp_chain.size() >1);
         //first node is always in the simplfication so follower_indegree is unconstrained        
         glp_add_rows(lp, 1);            
@@ -159,7 +163,7 @@ class ParallelLineSimplificationILP {
         }                         
     }
 
-    void addAllDegreeRows(ILP_data &ilp_data) {
+    void addAllDegreeRows(const ILP_data &ilp_data) {
         addInOutDegreeRows(ilp_data.ilp_chain1);
         addInOutDegreeRows(ilp_data.ilp_chain2);
         addOutDegreeRows(ilp_data.ilp_chain1);
@@ -199,18 +203,18 @@ class ParallelLineSimplificationILP {
         }
     }
     
-    void addAllIntersectionRows(ILP_data &ilp_data) {        
+    void addAllIntersectionRows(const ILP_data &ilp_data) {        
 
         addIntersectionRows(ilp_data.edgeIntersections);
         addIntersectionRows(ilp_data.followerLinesUnorderings);
     }  
               
         
-    void addColumns(std::vector<Line> &lines, double obj_coef) {
+    void addColumns(const std::vector<Line> &lines, double obj_coef) {
         debug_assert(lines.size() > 0);        
         glp_add_cols(lp, lines.size());        
         for (uint i = 0; i < lines.size(); i++) {            
-            Line &line = lines.at(i);
+            const Line &line = lines.at(i);
             uint col_id = line.id + 1;
             std::string colType = obj_coef == 1 ? "Edge" : "followerLine";            
             std::stringstream ss("");           
@@ -223,7 +227,7 @@ class ParallelLineSimplificationILP {
         }
     }
     
-    void setAllColumns(ILP_data &ilp_data) {
+    void setAllColumns(const ILP_data &ilp_data) {
         addColumns(ilp_data.potEdges1, 1.0);
         addColumns(ilp_data.potEdges2, 1.0);
         addColumns(ilp_data.followerLines1, 0);
@@ -245,28 +249,32 @@ class ParallelLineSimplificationILP {
                 + 2*ilp_data.edgeIntersections.size()
                 + 2*ilp_data.followerLinesUnorderings.size(); 
         nofNonZeros = 0;
-        enoughSpace =  preNofNonZeros < (int) size;                     
+        Print("preNofNonZeros" << preNofNonZeros);
+        enoughSpace =  preNofNonZeros < (int) size;              
+        assert(enoughSpace);
     }
     
    
 public:
     
-    ParallelLineSimplificationILP(CHGraph<CHNode, CHEdge> &graph): graph(graph) {
-        
+    ParallelLineSimplificationILP(const CHGraph<CHNode, CHEdge> &graph): graph(graph) {
+        ia.resize(size+1);
+        ja.resize(size+1);
+        ar.resize(size+1);
     }
     
     ~ParallelLineSimplificationILP() {
         
     }
     
-    double solve(Chain chain1, Chain chain2, double epsilon, double eta) {
+    double solve(const Chain& chain1, const Chain& chain2, double epsilon, double eta) {
         
         ILP_data ilp_data = ILP_data(graph, chain1, chain2, epsilon, eta, true); 
         prepareArray(ilp_data);
         lp = glp_create_prob();
         glp_term_out(GLP_OFF); //make glp not verbose
         
-        glp_set_prob_name(lp, "parallellineGeneralization");
+        glp_set_prob_name(lp, "parallel line generalization");
         
         glp_set_obj_dir(lp, GLP_MIN); //minimize number of used edges
         
@@ -279,12 +287,13 @@ public:
         assert(preNofRows == glp_get_num_rows(lp));
         assert(preNofNonZeros == (int) nofNonZeros);        
         
-        
-        glp_load_matrix(lp, nofNonZeros, ia, ja, ar);         
+        glp_load_matrix(lp, nofNonZeros, &ia[0], &ja[0], &ar[0]);        
+        //glp_load_matrix(lp, nofNonZeros, ia, ja, ar);         
         //glp_write_lp(lp, NULL, "lp.txt");
         
         
         /* solve problem */        
+        Print("solving");
         glp_simplex(lp, NULL);
         
         glp_iocp parm;

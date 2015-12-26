@@ -25,7 +25,7 @@ class CH_Parser {
         ss >> buffer; //elev
 
         ss >> buffer;
-        r_node.lvl = atof(buffer.c_str());
+        r_node.lvl = atoi(buffer.c_str());
     }
 
     void createCHEdge(std::string input_string, CHEdge& r_edge) {
@@ -42,16 +42,18 @@ class CH_Parser {
         r_edge.dist = atoi(buffer.c_str());
 
         ss >> buffer;
+        //int myInt = atoi(buffer.c_str());
+        //assert(myInt >= 0 && myInt < 20);
         r_edge.type = atoi(buffer.c_str());
 
         ss >> buffer;
         r_edge.speed = atoi(buffer.c_str());
 
         ss >> buffer;
-        r_edge.child_edge1 = atof(buffer.c_str());
+        r_edge.child_edge1 = atoi(buffer.c_str());
 
         ss >> buffer;
-        r_edge.child_edge2 = atof(buffer.c_str());
+        r_edge.child_edge2 = atoi(buffer.c_str());
         /*
         is >> src;
 is >> tgt;

@@ -50,27 +50,30 @@ struct FaceInfo2
   }
 };
 
-typedef CGAL::Quotient<CGAL::MP_Float>                  NT;
-typedef CGAL::Cartesian<NT> K;
-//typedef CGAL::Exact_predicates_inexact_constructions_kernel                       K;
-//typedef CGAL::Simple_cartesian<double> K;
-//typedef CGAL::Exact_predicates_inexact_constructions_kernel       K;
-typedef CGAL::Triangulation_vertex_base_with_info_2<VertexInfo2, K>                      Vb;
-typedef CGAL::Triangulation_face_base_with_info_2<FaceInfo2, K>    Fbb;
-typedef CGAL::Constrained_triangulation_face_base_2<K,Fbb>        Fb;
-typedef CGAL::Triangulation_data_structure_2<Vb,Fb>               TDS;
-typedef CGAL::Exact_intersections_tag                                Itag;
-typedef CGAL::Constrained_Delaunay_triangulation_2<K, TDS, Itag>  CDT;
-typedef CDT::Point                                                Point;
-//typedef CGAL::Polygon_2<K>                                        Polygon_2;
-//typedef CGAL::Polygon_2<K>                                        Polygon_2;
-//typedef K::Point_2                                 Point_2;
+
 
 
 
 template <class GraphT>
 class CDTMatching2 {
 private:
+    
+    typedef CGAL::Quotient<CGAL::MP_Float>                  NT;
+    typedef CGAL::Cartesian<NT> K;
+    //typedef CGAL::Exact_predicates_inexact_constructions_kernel                       K;
+    //typedef CGAL::Simple_cartesian<double> K;
+    //typedef CGAL::Exact_predicates_inexact_constructions_kernel       K;
+    typedef CGAL::Triangulation_vertex_base_with_info_2<VertexInfo2, K>                      Vb;
+    typedef CGAL::Triangulation_face_base_with_info_2<FaceInfo2, K>    Fbb;
+    typedef CGAL::Constrained_triangulation_face_base_2<K,Fbb>        Fb;
+    typedef CGAL::Triangulation_data_structure_2<Vb,Fb>               TDS;
+    typedef CGAL::Exact_intersections_tag                                Itag;
+    typedef CGAL::Constrained_Delaunay_triangulation_2<K, TDS, Itag>  CDT;
+    typedef CDT::Point                                                Point;
+    //typedef CGAL::Polygon_2<K>                                        Polygon_2;
+    //typedef CGAL::Polygon_2<K>                                        Polygon_2;
+    //typedef K::Point_2                                 Point_2;
+    
     const GraphT &graph;
     
     void mark_domains(CDT& ct,

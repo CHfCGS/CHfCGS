@@ -6,7 +6,7 @@
 
 struct ILP_data {
     
-    CHGraph<CHNode, CHEdge> &graph;
+    const CHGraph<CHNode, CHEdge> &graph;
     const Chain &chain1;
     const Chain &chain2;
         
@@ -22,7 +22,7 @@ struct ILP_data {
     std::vector<Intersection> edgeIntersections;
     std::vector<Intersection> followerLinesUnorderings;
     
-    bool followerIsPartial = true; //if this is false, the structure is invalid
+    //bool followerIsPartial = true; //if this is false, the structure is invalid
 
     
     static bool testIntersection(const Line line1, const Line line2) {
@@ -87,6 +87,7 @@ struct ILP_data {
     
     static std::vector<Intersection> calculate_p_followerUnorderings(const std::vector<Line> &allFollowerLines) {
         std::vector<Intersection> followerLinesUnorderings;       
+        
         assert(allFollowerLines.size() > 0);
         for (uint i = 0; i < allFollowerLines.size() - 1; i++) {
             for (uint j = i + 1; j < allFollowerLines.size(); j++) {
@@ -103,7 +104,7 @@ struct ILP_data {
 
     
 
-    static double computeLineError(const Line &line, const ILP_Chain &ilp_chain, ILP_Chain::iterator srcIt, ILP_Chain::iterator tgtIt) {
+    static double computeLineError(const Line &line, const ILP_Chain &ilp_chain, ILP_Chain::const_iterator srcIt, ILP_Chain::const_iterator tgtIt) {
         assert(srcIt != tgtIt);
         assert(line.start.posInChain < line.end.posInChain);
         assert(ilp_chain.size() >= 2);
@@ -119,7 +120,7 @@ struct ILP_data {
         return maxError;
     }
 
-    std::vector<Line> createPotentialEdges(ILP_Chain &ilp_chain, double epsilon) {
+    std::vector<Line> createPotentialEdges(const ILP_Chain &ilp_chain, double epsilon) {
         std::vector<Line> lines;
 
         assert(ilp_chain.size() >= 2);
@@ -137,19 +138,20 @@ struct ILP_data {
         return lines;
     }
 
-    std::vector<Line> createFollowerLines(ILP_Chain &ilp_chainSrc, ILP_Chain& ilp_chainTgt, double eta) {
+    std::vector<Line> createFollowerLines(const ILP_Chain &ilp_chainSrc, const ILP_Chain& ilp_chainTgt, double eta) {
         std::vector<Line> followerLines;
         for (ILP_Node src : ilp_chainSrc) {
-            bool isFollowing = false; //every node must have at least one other node which it could follow
+            //bool isFollowing = false; //every node must have at least one other node which it could follow
+            // but we already have an eta 
             for (ILP_Node tgt : ilp_chainTgt) {                                
                 if (geo::geoDist(src.ch_node, tgt.ch_node) < eta) {
                     Line line(src, tgt, nextLineID);
                     followerLines.push_back(line);
                     nextLineID++;
-                    isFollowing = true;
+//                    isFollowing = true;
                 }
             }            
-            assert(isFollowing);
+            //assert(isFollowing);
             //followerIsPartial = !isFollowing;            
         }
         return followerLines;
@@ -177,18 +179,18 @@ struct ILP_data {
 
     }
     
-    static std::vector<Line> concatLines(const std::vector<Line> &line1, const std::vector<Line> &line2)  {
+    static std::vector<Line> concatLines(const std::vector<Line> &lines1, const std::vector<Line> &lines2)  {
         std::vector<Line> concatenatedLines;        
-        for (Line line: line1) {
+        for (Line line: lines1) {
             concatenatedLines.push_back(line);
         }
-        for (Line line: line2) {
+        for (Line line: lines2) {
             concatenatedLines.push_back(line);
         }
         return concatenatedLines;
     }
     
-    ILP_data(CHGraph<CHNode, CHEdge> &graph, const Chain &chain1, const Chain &chain2, double epsilon, double eta, bool parallel):
+    ILP_data(const CHGraph<CHNode, CHEdge> &graph, const Chain &chain1, const Chain &chain2, double epsilon, double eta, bool parallel):
         graph(graph), chain1(chain1), chain2(chain2) {
         
         ilp_chain1 = ChainToILP_Chain(chain1, true);                

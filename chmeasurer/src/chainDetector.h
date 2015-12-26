@@ -54,7 +54,7 @@ public:
             if (marked[node_id] == false) {
                 CaR.remainder.push_back(node_id);
             }
-        }
+        }        
         return CaR;
     }        
 
@@ -273,6 +273,42 @@ public:
             //Chain emptyChain;
            return RedetectedChain();
         }
+    }
+    
+    
+    
+    Chain expandChain (const Chain& chain) {
+        Chain expanded_chain;
+        assert(!chain.empty());
+        assert(chain.size() >= 3);
+        expanded_chain.push_back(chain.front());
+        for (auto it = chain.begin(); it != --chain.end(); it++) {
+            auto next_it = it;
+            next_it++;
+            NodeID next_node_id = *next_it;
+            bool edge_found = false;            
+            for (const CHEdge& edge: graph.valid_nodeEdges(*it, EdgeType::OUT)) {                
+                //assumption: no loops
+                if (edge.tgt == next_node_id) {// ||edge.src == next_node_id) {
+                    Chain center_nodes = graph.getCenterNodes(edge.id);
+                    for (NodeID node_id: center_nodes) {
+                        expanded_chain.push_back(node_id);
+                    }
+                    //expanded_chain.splice(expanded_chain.end(), center_nodes, center_nodes.begin(), center_nodes.end());
+                    edge_found = true;
+                    break;
+                }                
+            }            
+            assert(edge_found);
+            expanded_chain.push_back(next_node_id);            
+        } 
+        /*
+        expanded_chain.sort();
+        uint sizeBefore = expanded_chain.size();
+        expanded_chain.unique();
+        assert(sizeBefore == expanded_chain.size());
+        */
+        return expanded_chain;
     }
     
 private:

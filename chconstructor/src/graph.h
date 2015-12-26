@@ -3,6 +3,7 @@
 #include "defs.h"
 #include "nodes_and_edges.h"
 #include "indexed_container.h"
+//#include "geoFunctions.h"
 
 #include <limits>
 #include <vector>
@@ -56,7 +57,7 @@ class Graph
 		void printInfo() const;
 		template<typename Range>
 		void printInfo(Range&& nodes) const;
-
+                
                 void setEdgeFlag(EdgeID edge_id, bool tag);
 		uint getNrOfNodes() const { return _nodes.size(); }
 		uint getNrOfEdges() const { return _out_edges.size(); }
@@ -66,7 +67,7 @@ class Graph
 		Metadata const& getMetadata() const { return _meta_data; }
                 
 		uint getNrOfEdges(NodeID node_id) const;
-		uint getNrOfEdges(NodeID node_id, EdgeType type) const;
+		uint getNrOfEdges(NodeID node_id, EdgeType type) const;                                
                 double getLat(NodeID node_id) const;
                 double getLon(NodeID node_id) const;
                 std::list<NodeID> nodeNeighbours(NodeID node_id) const;                

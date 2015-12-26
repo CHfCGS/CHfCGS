@@ -4,7 +4,8 @@
 #include "indexed_container.h"
 #include "geoFunctions.h"
 #include "nodes_and_edges.h"
-#include "chains.h"
+//#include "chains.h"
+#include "edgeWeight.h"
 
 #include <vector>
 #include <list>
@@ -26,15 +27,18 @@ class CHGraph
 		std::vector<EdgeT> _out_edges;
 		std::vector<EdgeT> _in_edges;
                 
-                //marks all valid elements right now
+                //marks all valid elements at current zoom
                 std::vector<bool> _validNodes;
                 std::vector<bool> _validEdges;
+                std::vector<bool> _expandedNodes;
 
 		/* Maps edge id to index in the _out_edge vector. */
 		//std::vector<uint> _id_to_index;
 
 		EdgeID edge_count = 0;
 
+                double min_geo_importance = std::numeric_limits<double>::max(); 
+                
 		void sortInEdges();
 		void sortOutEdges();
 		void initOffsets();
@@ -45,13 +49,15 @@ class CHGraph
                 void setCenterNodesLists();
                 
                 //zoom helper functions
-                bool isRemaining(EdgeID edge_id) const;
-                void invalidateShortcut(const EdgeID edge_id);
+                //bool isRemaining(EdgeID edge_id) const;
+                void invalidateHigherShortcut(const EdgeID edge_id);
                 void expandEdge(const EdgeID edgeID, double expandSize);  
                 void markValidNodes(double percent_of_valid_nodes);
                 ValidLevelInfo calcValidLevel(size_t numberOfValidNodes);
                 //void removeShortcut(const EdgeID edgeID);
                 //void expandEdge(const EdgeID edgeID, double expandSize);
+
+                void calcMinGeoImportance();
                 
 
 	public:
@@ -75,19 +81,23 @@ class CHGraph
                 
 		uint getNrOfNodes() const { return _nodes.size(); }
 		uint getNrOfEdges() const { return _out_edges.size(); }
+                uint getNrOfValidNodes() const;
+                uint getNrOfValidEdges() const;
 		//EdgeT const& getEdge(EdgeID edge_id) const { return _out_edges[_id_to_index[edge_id]]; }
                 EdgeT const& getEdge(EdgeID edge_id) const { return _out_edges[edge_id]; }
 		NodeT const& getNode(NodeID node_id) const { return _nodes[node_id]; }
 		Metadata const& getMetadata() const { return _meta_data; }
                                                                 
-		uint getNrOfEdges(NodeID node_id) const;
+		uint getNrOfEdges(NodeID node_id) const;                
 		uint getNrOfEdges(NodeID node_id, EdgeType type) const;
-                double getEdgeDist(EdgeID edge_id) const;
+                double getEdgeDist(EdgeID edge_id) const;                
                 bool isValidNode(NodeID node_id) const;
+                bool isVisibleNode(NodeID node_id) const;                
                 bool isValidEdge(EdgeID edge_id) const;
                 bool isShortcut(EdgeID edge_id) const;                
                 bool isHigh(EdgeID edge_id) const;
                 
+                double get_minGeoImportance() const {return min_geo_importance;}
                 
                 double getLat(NodeID node_id) const;
                 double getLon(NodeID node_id) const;
@@ -101,11 +111,11 @@ class CHGraph
 		typedef range<typename std::vector<EdgeT>::const_iterator> node_edges_range;
 		node_edges_range _nodeEdges(NodeID node_id, EdgeType type) const;
                 std::vector<EdgeT> nodeEdges(NodeID node_id) const;
-                std::vector<EdgeT> nodeEdges(NodeID node_id, EdgeType type) const;
+                std::vector<EdgeT> valid_nodeEdges(NodeID node_id, EdgeType type) const;
                 std::vector<EdgeT> nodeEdges(NodeID node_id, StreetType streetType) const;
                 
 		
-        std::list<NodeID> getCenterNodes(const EdgeID edge_id) {
+        std::list<NodeID> getCenterNodes(const EdgeID edge_id) const {
             std::list<NodeID> centerNodes;
             const CHEdge &edge = getEdge(edge_id);
             if (isShortcut(edge_id)) {
@@ -120,7 +130,7 @@ class CHGraph
             return centerNodes;
         }
         
-        double calcEdgeError(EdgeID edge_id) {
+        double calcEdgeError(EdgeID edge_id) const {
             std::list<NodeID> centerNodes = getCenterNodes(edge_id);
             double maxError = 0;
             const CHEdge &edge = getEdge(edge_id);
@@ -131,39 +141,7 @@ class CHGraph
             return maxError;
         }
         
-        //fill up an edge chain with the nodes in between (the center nodes of the connecting edges)
-        Chain expandEdgeChain(const RedetectedChain &redetected_edge_chain) {
-            assert(redetected_edge_chain.remaining_chain.size()>=2 &&redetected_edge_chain.edges.size()>=1);
-            assert(redetected_edge_chain.remaining_chain.size() == redetected_edge_chain.edges.size()+1);
-            Chain expandedChain;
-            
-            auto nodeIt = redetected_edge_chain.remaining_chain.begin();
-            expandedChain.push_back(*nodeIt);
-            nodeIt++;
-            for (auto edgeIt = redetected_edge_chain.edges.begin(); edgeIt!= redetected_edge_chain.edges.end(); edgeIt++) {
-                std::list<NodeID> centerNodes = getCenterNodes(*edgeIt);
-                for (NodeID node_id: centerNodes) {
-                    expandedChain.push_back(node_id);
-                }                
-                expandedChain.push_back(*nodeIt);
-                nodeIt++;
-            }
-            assert(nodeIt == redetected_edge_chain.remaining_chain.end());
-
-            return expandedChain;
-        }
-                
-        double calcChainLength(const Chain &chain)  {
-            assert(chain.size() >= 2);                            
-            double chain_length = 0;
-
-            for (auto it = chain.begin(); it!= --chain.end(); it++) {
-                auto next = it;
-                next++;
-                chain_length += geo::geoDist(getNode(*it), getNode(*next));            
-            }
-            return chain_length;            
-        }
+        
                 
 };
 
@@ -373,7 +351,7 @@ void CHGraph<NodeT, EdgeT>::markValidNodes(double percent_of_valid_nodes) {
     _validNodes.resize(_nodes.size());
     size_t nofValidatedNodesOnCriticalLevel = 0;
     for (NodeID nodeID = 0; nodeID < (int) _validNodes.size(); nodeID++) {
-        NodeT &node = _nodes[nodeID];
+        const NodeT &node = _nodes[nodeID];
         if (node.lvl > vli.allValidUntilLevel) {
             _validNodes[nodeID] = true;
         }else if(node.lvl == vli.allValidUntilLevel) {
@@ -381,13 +359,29 @@ void CHGraph<NodeT, EdgeT>::markValidNodes(double percent_of_valid_nodes) {
                 nofValidatedNodesOnCriticalLevel++;
                 _validNodes[nodeID] = true;
             }else {
-                _validNodes[nodeID] = false;
+                _validNodes.at(nodeID) = false;                
             }        
         }else {
-            _validNodes[nodeID] = false;
+            _validNodes.at(nodeID) = false;
         }
     }
+    assert(numberOfValidNodes == getNrOfValidNodes());    
     assert(nofValidatedNodesOnCriticalLevel == vli.validNofNodesOnThatLevel);    
+}
+
+template <typename NodeT, typename EdgeT>
+void CHGraph<NodeT, EdgeT>::calcMinGeoImportance()
+{
+    double min = std::numeric_limits<double>::max();
+    for (EdgeID edgeID = 0; edgeID < (int) _validEdges.size(); edgeID++) {
+        if (_validEdges[edgeID]) {
+            CHEdge edge = getEdge(edgeID);
+            double value = ew::calcWeight(edge.dist, getNode(edge.src), getNode(edge.tgt));
+            min = std::min(min, value);
+        }        
+            //Object elem = array[i];
+    }
+
 }
 
 template <typename NodeT, typename EdgeT>
@@ -395,7 +389,7 @@ void CHGraph<NodeT, EdgeT>::zoom(double percent_of_valid_nodes, bool expand, dou
 {
     markValidNodes(percent_of_valid_nodes);
 
-    //mark valid edges
+    //mark valid edges    
     _validEdges.resize(edge_count);
     for (EdgeID edgeID = 0; edgeID < (int) _validEdges.size(); edgeID++) {
         _validEdges[edgeID] = isHigh(edgeID);
@@ -403,19 +397,21 @@ void CHGraph<NodeT, EdgeT>::zoom(double percent_of_valid_nodes, bool expand, dou
     
     //remove too high-level shortcuts    
     for (EdgeID edgeID = 0; edgeID < (int) edge_count; edgeID++) {
-        invalidateShortcut(edgeID);
+        invalidateHigherShortcut(edgeID);
     }
     
-    
+    calcMinGeoImportance();
+
     if (expand) {
         Debug("Processing expandSize");
+        _expandedNodes.resize(_nodes.size()); //nodes which come into the graph if they are a center node        
         //process expandSize
         for (uint edgeID = 0; edgeID < _validEdges.size(); edgeID++) {
-            if (_validEdges[edgeID]) {
+            //if (_validEdges[edgeID]) {
                 expandEdge(edgeID, expandSize);
-            }
+            //}
         }
-    }
+    }    
 
     #ifndef NDEBUG
     if (percent_of_valid_nodes==100) {
@@ -430,41 +426,54 @@ void CHGraph<NodeT, EdgeT>::zoom(double percent_of_valid_nodes, bool expand, dou
 }
 
     template <typename NodeT, typename EdgeT>
-    void CHGraph<NodeT, EdgeT>::invalidateShortcut(const EdgeID edge_id) {
+    void CHGraph<NodeT, EdgeT>::invalidateHigherShortcut(const EdgeID edge_id) {
         //CHEdge &edge = _out_edges[edgeID];
-        if (isValidEdge(edge_id) && isShortcut(edge_id)) {
+        if (isShortcut(edge_id)) {
+            if (isValidEdge(edge_id) && isShortcut(edge_id)) {
             
-            if (isHigh(_out_edges[edge_id].child_edge1)) {
-                _validEdges[edge_id] = false;
-                invalidateShortcut(_out_edges[edge_id].child_edge1);
-                debug_assert(isHigh(_out_edges[edge_id].child_edge2));
-                invalidateShortcut(_out_edges[edge_id].child_edge2);
+                if (isHigh(_out_edges[edge_id].child_edge1)) {            
+                    _validEdges[edge_id] = false;
+
+                    invalidateHigherShortcut(_out_edges[edge_id].child_edge1);
+                    debug_assert(isHigh(_out_edges[edge_id].child_edge2));
+
+                    invalidateHigherShortcut(_out_edges[edge_id].child_edge2);
+                }
+                /*
+                if (isHigh(_out_edges[edge_id].childedge2)) {
+                    _validEdges[edge_id] = false;
+                    invalidateShortcut(_out_edges[edge_id].childedge2);
+                }
+                 * */
             }
-            /*
-            if (isHigh(_out_edges[edge_id].childedge2)) {
-                _validEdges[edge_id] = false;
-                invalidateShortcut(_out_edges[edge_id].childedge2);
-            }
-             * */
         }
+        
     }
     
     template <typename NodeT, typename EdgeT>
     void CHGraph<NodeT, EdgeT>::expandEdge(const EdgeID edge_id, double expandSize) {
         //
-        if (isShortcut(edge_id)) {
-            if (getEdgeDist(edge_id) > expandSize) {
+        
+        if (isShortcut(edge_id) && _validEdges[edge_id]) {
+            //if (getEdgeDist(edge_id) > expandSize) {
+            if (_out_edges[edge_id].dist > expandSize) {
                 //double BendingRatio = calcBendingRatio(nodes [edge.src], nodes[edge.getCenterPoint(edges)], nodes[edge.tgt]);
                 //if (BendingRatio > expandSize) {
                 
                 _validEdges[edge_id] = false;
                 
-                EdgeID child_edge1_id = _out_edges[edge_id].child_edge1;
-                EdgeID child_edge2_id = _out_edges[edge_id].child_edge2;
-                _validEdges[child_edge1_id] = true;
-                _validEdges[child_edge2_id] = true;
-                expandEdge(child_edge1_id, expandSize);
-                expandEdge(child_edge2_id, expandSize);
+                const EdgeT& edge = _out_edges[edge_id];
+                //EdgeID child_edge1_id = edge.child_edge1;
+                //EdgeID child_edge2_id = edge.child_edge2;
+                _validEdges[edge.child_edge1] = true;
+                _validEdges[edge.child_edge2] = true;
+                
+                assert(getEdge(edge.child_edge1).tgt == getEdge(edge.child_edge2).src);
+                const NodeID centerNode_id = getEdge(edge.child_edge1).tgt;                
+                _expandedNodes[centerNode_id] = true;
+                
+                expandEdge(edge.child_edge1, expandSize);
+                expandEdge(edge.child_edge2, expandSize);
             }
         }
     }
@@ -475,6 +484,31 @@ uint CHGraph<NodeT, EdgeT>::getNrOfEdges(NodeID node_id) const
 {
 	return getNrOfEdges(node_id, EdgeType::OUT) + getNrOfEdges(node_id, EdgeType::IN);
 }
+
+template <typename NodeT, typename EdgeT>
+uint CHGraph<NodeT, EdgeT>::getNrOfValidNodes() const
+{
+    uint counter = 0;
+    for(bool valid_mark: _validNodes) {
+        if (valid_mark) {
+            counter++;
+        }
+    }
+    return counter;
+}
+
+template <typename NodeT, typename EdgeT>
+uint CHGraph<NodeT, EdgeT>::getNrOfValidEdges() const
+{
+    uint counter = 0;
+    for(bool valid_mark: _validEdges) {
+        if (valid_mark) {
+            counter++;
+        }
+    }
+    return counter;
+}
+
 
 template <typename NodeT, typename EdgeT>
 uint CHGraph<NodeT, EdgeT>::getNrOfEdges(NodeID node_id, EdgeType type) const
@@ -493,14 +527,15 @@ double CHGraph<NodeT, EdgeT>:: getEdgeDist(EdgeID edge_id) const
     return geo::geoDist(_nodes[_out_edges[edge_id].src], _nodes[_out_edges[edge_id].tgt]);
 }
 
+
 template <typename NodeT, typename EdgeT>
 std::list<NodeID> CHGraph<NodeT, EdgeT>::nodeNeighbours(NodeID node_id) const
 {
         std::list<NodeID> neighbors;
-        for (auto const& edge : nodeEdges(node_id, EdgeType::IN)) {
+        for (auto const& edge : valid_nodeEdges(node_id, EdgeType::IN)) {
             neighbors.emplace_back(edge.src);
         }
-        for (auto const& edge : nodeEdges(node_id, EdgeType::OUT)) {
+        for (auto const& edge : valid_nodeEdges(node_id, EdgeType::OUT)) {
             neighbors.emplace_back(edge.tgt);
         }
         neighbors.sort();
@@ -512,12 +547,12 @@ template <typename NodeT, typename EdgeT>
 std::list<NodeID> CHGraph<NodeT, EdgeT>::nodeNeighbours(NodeID node_id, StreetType type) const
 {
         std::list<NodeID> neighbors;
-        for (auto const& edge : nodeEdges(node_id, EdgeType::IN)) {
+        for (auto const& edge : valid_nodeEdges(node_id, EdgeType::IN)) {
             if (edge.type == type) {
                 neighbors.emplace_back(edge.src);
             }            
         }
-        for (auto const& edge : nodeEdges(node_id, EdgeType::OUT)) {
+        for (auto const& edge : valid_nodeEdges(node_id, EdgeType::OUT)) {
             if (edge.type == type) {
                 neighbors.emplace_back(edge.tgt);
             }
@@ -531,7 +566,7 @@ template <typename NodeT, typename EdgeT>
 std::list<NodeID> CHGraph<NodeT, EdgeT>::nodeNeighbours(NodeID node_id, StreetType streetType, EdgeType edgeDirection) const
 {
         std::list<NodeID> neighbors;
-        for (auto const& edge : nodeEdges(node_id, edgeDirection)) {
+        for (auto const& edge : valid_nodeEdges(node_id, edgeDirection)) {
             if (edge.type == streetType) {
                 if (edgeDirection ==  EdgeType::IN) {
                     neighbors.emplace_back(edge.src);
@@ -551,12 +586,12 @@ template <typename NodeT, typename EdgeT>
 StreetType CHGraph<NodeT, EdgeT>::getMaxStreetType(NodeID node_id) const
 {
         StreetType MaxStreetType = 0;
-        for (auto const& edge : nodeEdges(node_id, EdgeType::IN)) {
+        for (auto const& edge : valid_nodeEdges(node_id, EdgeType::IN)) {
             if (edge.type > MaxStreetType) {
                 MaxStreetType = edge.type;
             }
         }
-        for (auto const& edge : nodeEdges(node_id, EdgeType::OUT)) {
+        for (auto const& edge : valid_nodeEdges(node_id, EdgeType::OUT)) {
             if (edge.type > MaxStreetType) {
                 MaxStreetType = edge.type;
             }
@@ -567,6 +602,8 @@ StreetType CHGraph<NodeT, EdgeT>::getMaxStreetType(NodeID node_id) const
 template <typename NodeT, typename EdgeT>
 bool CHGraph<NodeT, EdgeT>::degree_leq_two(NodeID node_id) const
 {
+    return (nodeNeighbours(node_id).size()<=2);
+    /*
     if (getNrOfEdges(node_id, EdgeType::OUT)<=2 
             && getNrOfEdges(node_id, EdgeType::IN)<=2) { //condition optional but should increase performance       
         if (nodeNeighbours(node_id).size()<=2) {
@@ -574,16 +611,17 @@ bool CHGraph<NodeT, EdgeT>::degree_leq_two(NodeID node_id) const
         }
     }
     return false;
+     * */
 }
 
 template <typename NodeT, typename EdgeT>
 bool CHGraph<NodeT, EdgeT>::isOneway(NodeID node_id) const
 {
     std::list<NodeID> neighbors;
-    for (auto const& edge : nodeEdges(node_id, EdgeType::IN)) {        
+    for (auto const& edge : valid_nodeEdges(node_id, EdgeType::IN)) {        
         neighbors.emplace_back(edge.src);
     }
-    for (auto const& edge : nodeEdges(node_id, EdgeType::OUT)) {        
+    for (auto const& edge : valid_nodeEdges(node_id, EdgeType::OUT)) {        
         neighbors.emplace_back(edge.tgt);        
     }
     neighbors.sort();
@@ -599,6 +637,13 @@ bool CHGraph<NodeT, EdgeT>::isValidNode(NodeID node_id) const
 {
     debug_assert(0 <= node_id && node_id < (int) _validNodes.size());
     return _validNodes[node_id];
+}
+
+template <typename NodeT, typename EdgeT>
+bool CHGraph<NodeT, EdgeT>::isVisibleNode(NodeID node_id) const
+{
+    debug_assert(0 <= node_id && node_id < (int) _validNodes.size());
+    return _validNodes[node_id] || _expandedNodes[node_id];
 }
 
 template <typename NodeT, typename EdgeT>
@@ -629,20 +674,24 @@ bool CHGraph<NodeT, EdgeT>::isUp(EdgeT const& edge, EdgeType direction) const
 template <typename NodeT, typename EdgeT>
 bool CHGraph<NodeT, EdgeT>::isShortcut(EdgeID edge_id) const
 {
+    debug_assert(0 <= edge_id && edge_id < _out_edges.size());    
     return (_out_edges[edge_id].child_edge1 != -1 && _out_edges[edge_id].child_edge2 != -1);
 }
 
 template <typename NodeT, typename EdgeT>
 bool CHGraph<NodeT, EdgeT>::isHigh(EdgeID edge_id) const {
+    debug_assert(0 <= edge_id && edge_id < _out_edges.size());    
     return isValidNode(_out_edges[edge_id].src) && isValidNode(_out_edges[edge_id].tgt);
 }
 
+/*
 template <typename NodeT, typename EdgeT>
 bool CHGraph<NodeT, EdgeT>::isRemaining(EdgeID edge_id) const
 {
     debug_assert(0 <= edge_id && edge_id < _out_edges.size());    
     return isValidNode(_out_edges[edge_id].src) && isValidNode(_out_edges[edge_id].tgt);
 }
+ * */
 
 template <typename NodeT, typename EdgeT>
 double CHGraph<NodeT, EdgeT>::getLat(NodeID node_id) const
@@ -670,17 +719,17 @@ auto CHGraph<NodeT, EdgeT>::_nodeEdges(NodeID node_id, EdgeType type) const -> n
 template <typename NodeT, typename EdgeT>
 std::vector<EdgeT> CHGraph<NodeT, EdgeT>::nodeEdges(NodeID node_id) const  {       
         std::vector<EdgeT> edges;
-        for (auto const edge : nodeEdges(node_id, EdgeType::IN)) {            
+        for (auto const edge : valid_nodeEdges(node_id, EdgeType::IN)) {            
             edges.push_back(edge);                            
         }        
-        for (auto const edge : nodeEdges(node_id, EdgeType::OUT)) {
+        for (auto const edge : valid_nodeEdges(node_id, EdgeType::OUT)) {
             edges.push_back(edge);           
         }                
         return edges;        
 }
 
 template <typename NodeT, typename EdgeT>
-std::vector<EdgeT> CHGraph<NodeT, EdgeT>::nodeEdges(NodeID node_id, EdgeType type) const  {
+std::vector<EdgeT> CHGraph<NodeT, EdgeT>::valid_nodeEdges(NodeID node_id, EdgeType type) const  {
         std::vector<EdgeT> nodeEdges;
         for (auto const edge : _nodeEdges(node_id, type)) {
             if (isValidEdge(edge.id)) {
@@ -696,12 +745,12 @@ std::vector<EdgeT> CHGraph<NodeT, EdgeT>::nodeEdges(NodeID node_id, EdgeType typ
 template <typename NodeT, typename EdgeT>
 std::vector<EdgeT> CHGraph<NodeT, EdgeT>::nodeEdges(NodeID node_id, StreetType streetType) const  {       
         std::vector<EdgeT> edges;
-        for (auto const edge : nodeEdges(node_id, EdgeType::IN)) {
+        for (auto const edge : valid_nodeEdges(node_id, EdgeType::IN)) {
             if (edge.type == streetType) {
                 edges.push_back(edge);                
             }            
         }        
-        for (auto const edge : nodeEdges(node_id, EdgeType::OUT)) {
+        for (auto const edge : valid_nodeEdges(node_id, EdgeType::OUT)) {
             if (edge.type == streetType) {
                 edges.push_back(edge);                
             }            

@@ -45,9 +45,10 @@ private:
     std::vector<int> NextNodeInSameCell;
     //vector<int> gridtest;
 
+    /*
     double pythagoras(double a, double b) {
         return sqrt(pow(a, 2) + pow(b, 2));
-    }
+    }*/
 
     void calculateBorders() {
         for (u_int32_t k = 0; k < base_graph.getNrOfNodes(); k++) {
@@ -70,6 +71,7 @@ private:
         return (i + d >= 0 && i + d < gridsidesize);
     }
 
+    /*
     double geoDistComparison(double lon1, double lat1, double lon2, double lat2) {
         double latmed, rdlon, rdlat;
         latmed = (lat1 - lat2) / 2;
@@ -77,7 +79,7 @@ private:
         rdlat = (lat1 - lat2) * M_PI / 180;
         return R * sqrt((pow(rdlat, 2) + pow(cos(latmed) * rdlon, 2)));
         //return R * (pow(rdlat, 2) + pow(cos(latmed) * rdlon, 2)); //Vergleich ist ok ohne sqrt
-    }
+    }*/
 
 public:
 

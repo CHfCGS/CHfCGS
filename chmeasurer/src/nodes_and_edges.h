@@ -52,17 +52,17 @@ struct Edge {
 };
 
 struct CHNode {
-    CHNode(): lat(0), lon(0), lvl(0), remaining(false) {}
+    CHNode(): lat(0), lon(0), lvl(0) {}
     
     //care: lat and lon parameter is switched 
-    CHNode(double lon, double lat): lat(lat), lon(lon), lvl(0), remaining(false), shortcuts(std::list<EdgeID>()) {} 
+    CHNode(double lon, double lat): lat(lat), lon(lon), lvl(0), shortcuts(std::list<EdgeID>()) {} 
     //NodeID ID;
     //OSMID osmID;
     double lat;
     double lon;
     //int elev;
     Level lvl;
-    bool remaining;
+    //bool remaining;
     std::list<EdgeID> shortcuts; //all shortcuts edges which use this node as centerNode
 };
 /*
@@ -86,7 +86,7 @@ struct CHEdge {
     int speed;
     EdgeID child_edge1;
     EdgeID child_edge2;
-    bool remaining;
+    //bool remaining;
     
     uint distance() const { return dist; }
 /*
@@ -173,13 +173,6 @@ struct EdgeSortSrcTgtDist
 typedef std::list<NodeID> Chain;
 
 
-//similar to CHEdge, but can be handled easier for geometric calculations
-struct CHLine {
-    CHLine(CHNode src, CHNode tgt):
-        src(src), tgt(tgt) {}
-    CHNode src;
-    CHNode tgt;
-};
 
 //ILP data structures
 
@@ -195,7 +188,7 @@ struct ILP_Node {
     bool side; //true == to, false == from     
 };
 
-typedef std::list<ILP_Node> ILP_Chain;
+typedef std::vector<ILP_Node> ILP_Chain;
 
 //potential edges
 struct Line {
@@ -206,11 +199,41 @@ struct Line {
     LineID id;    
 };
 
+//similar to CHEdge, but can be handled easier for geometric calculations
+struct CHLine {
+    CHLine(CHNode src, CHNode tgt):
+        src(src), tgt(tgt) {}
+    CHNode src;
+    CHNode tgt;
+        
+    explicit CHLine(Line line): src(line.start.ch_node), tgt(line.end.ch_node) {}
+};
+
 struct Intersection {
     Intersection(const Line line1, const Line line2):
         line1(line1), line2(line2) {}    
     const Line line1;
     const Line line2;
+};
+
+//for frechet distance
+typedef uint CrossLinkID;
+
+struct CrossLink {
+    CrossLink(const ILP_Node start, const Line line, double fraction, const double length, CrossLinkID id):
+        src(start), line(line), fraction(fraction), length(length), id(id) {}    
+    const ILP_Node src;
+    const Line line;
+    double fraction;
+    double length;
+    CrossLinkID id;
+};
+
+struct CrossLinkUnordering {
+    CrossLinkUnordering(const CrossLink link1, const CrossLink link2):
+        link1(link1), link2(link2) {}    
+    const CrossLink link1;
+    const CrossLink link2;
 };
 
 

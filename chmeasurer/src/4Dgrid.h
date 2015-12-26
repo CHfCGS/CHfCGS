@@ -68,9 +68,10 @@ private:
     //vector<int> NextChainInSameCell;
     //vector<int> gridtest;
 
+    /*
     double pythagoras(double a, double b) {
         return sqrt(pow(a, 2) + pow(b, 2));
-    }
+    }*/
 
     void calculateBorders() {
         for (u_int32_t k = 0; k < base_graph.getNrOfNodes(); k++) {
@@ -89,10 +90,42 @@ private:
         }
     }
 
+    bool indexInRange(const int index) const {
+        return (0 <= index && index < gridsidesize);
+    }
+    
     bool indexInRange(int i, int d) {
         return (i + d >= 0 && i + d < gridsidesize);
     }
+    
+    int xCoordinate (double lon) const {
+        int x = (int) ((lon - MINLONGITUDE) / cellsizex);
+        if (!indexInRange(x)) {
+            if (x == -1) {
+                x = 0;
+            } else if (x == gridsidesize) {
+                x = gridsidesize - 1;
+            } else {
+                assert(false);
+            }
+        }
+        return x;
+    }
+    int yCoordinate (double lat) const {
+        int y = (int) ((lat - MINLATITUDE) / cellsizey);
+        if (!indexInRange(y)) {
+            if (y == -1) {
+                y = 0;
+            } else if (y == gridsidesize) {
+                y = gridsidesize - 1;
+            } else {
+                assert(false);
+            }
+        }
+        return y;
+    }
 
+    /*
     double geoDistComparison(double lon1, double lat1, double lon2, double lat2) {
         double latmed, rdlon, rdlat;
         latmed = (lat1 - lat2) / 2;
@@ -108,7 +141,7 @@ private:
         double lon2 = base_graph.getLon(nodeID2);
         double lat2 = base_graph.getLat(nodeID2);
         return geoDistComparison(lon1, lat1, lon2, lat2);
-    }
+    }*/
     
     void clearGrid() {
         
@@ -238,11 +271,18 @@ public:
         for (auto it = chains.begin(); it != chains.end(); ++it) {
             const NodeID nodeIdFront = it->front();
             const NodeID nodeIdBack = it->back();
+            
+            x1 = xCoordinate(base_graph.getLon(nodeIdFront));
+            y1 = yCoordinate(base_graph.getLat(nodeIdFront));
+            x2 = xCoordinate(base_graph.getLon(nodeIdBack));
+            y2 = yCoordinate(base_graph.getLat(nodeIdBack));
+            
+            /*
             x1 = (int) ((base_graph.getLon(nodeIdFront) - MINLONGITUDE) / cellsizex);
             y1 = (int) ((base_graph.getLat(nodeIdFront) - MINLATITUDE) / cellsizey);
             x2 = (int) ((base_graph.getLon(nodeIdBack) - MINLONGITUDE) / cellsizex);
             y2 = (int) ((base_graph.getLat(nodeIdBack) - MINLATITUDE) / cellsizey);
-
+            */
             Grid[x1][y1][x2][y2].push_back(Gridpoint(it, nullptr, false));
         }
     }
@@ -253,11 +293,18 @@ public:
 
         NodeID nodeIdFront = chainToMatch.front();
         NodeID nodeIdBack = chainToMatch.back();
+        
+        x1 = xCoordinate(base_graph.getLon(nodeIdFront));
+        y1 = yCoordinate(base_graph.getLat(nodeIdFront));
+        x2 = xCoordinate(base_graph.getLon(nodeIdBack));
+        y2 = yCoordinate(base_graph.getLat(nodeIdBack));
+        
+        /*
         x1 = (int) ((base_graph.getLon(nodeIdFront) - MINLONGITUDE) / cellsizex);
         y1 = (int) ((base_graph.getLat(nodeIdFront) - MINLATITUDE) / cellsizey);
         x2 = (int) ((base_graph.getLon(nodeIdBack) - MINLONGITUDE) / cellsizex);
         y2 = (int) ((base_graph.getLat(nodeIdBack) - MINLATITUDE) / cellsizey);
-
+        */
 
 
         //Suche in 3*3*3*3 Feld        
@@ -280,9 +327,11 @@ public:
                                         for (Gridpoint &current : Grid[x1 + dx1][y1 + dy1][x2 + dx2][y2 + dy2]) {
                                             NodeID currentNodeIdFront = current.chain->front();
                                             NodeID currentNodeIdBack = current.chain->back();
-                                            dist1 = geoDistComparison(nodeIdFront, currentNodeIdBack);
-                                            dist2 = geoDistComparison(nodeIdBack, currentNodeIdFront);
-                                            dist = pythagoras(dist1, dist2);
+                                            dist1 = geo::geoDist(base_graph.getNode(nodeIdFront),
+                                                    base_graph.getNode(currentNodeIdBack));
+                                            dist2 = geo::geoDist(base_graph.getNode(nodeIdBack),
+                                                    base_graph.getNode(currentNodeIdFront));
+                                            dist = geo::pythagoras(dist1, dist2);
                                             if (dist < closestDistance) {
                                                 closestDistance = dist;
                                                 closestChain = &current;

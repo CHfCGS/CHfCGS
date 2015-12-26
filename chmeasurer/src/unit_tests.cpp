@@ -15,8 +15,12 @@
 
 
 #include "ch_measurer.h"
+
 #include "ILP/lineSimplificationILP.h"
 #include "ILP/parallelLineSimplficationILP.h"
+#include "ILP/frechet_test_data.h"
+#include "ILP/calc_frechet.h"
+
 #include "dijkstra.h"
 #include "discreteFrechet.h"
 
@@ -36,6 +40,8 @@ namespace chm
 	void testLineSimplfication();
         void testParallelLineSimplfication();    
         void testCDTHCross();
+        void testCrossLinks();
+        void testFrechetDistance();
     }
     
 void unit_tests::testAll()
@@ -50,6 +56,8 @@ void unit_tests::testAll()
      
     unit_tests::testdiscreteFrechet();
     unit_tests::testCDTHCross();
+    unit_tests::testCrossLinks();
+    unit_tests::testFrechetDistance();    
 }
 
 void unit_tests::testLineSimplfication()
@@ -244,15 +252,19 @@ void unit_tests::testIsBetween()
                 
         CHNode in1(1, 9);        
         Test(raycaster.isBetween(chline, in1));        
+        Test(geo::isBetween(chline, in1));        
         
         CHNode in2(8, 0);        
         Test(raycaster.isBetween(chline, in2));
+        Test(geo::isBetween(chline, in2));        
         
         CHNode out1(4, 1);        
         Test(!raycaster.isBetween(chline, out1));
+        Test(!geo::isBetween(chline, out1));        
         
         CHNode out2(10, 5);        
-        Test(!raycaster.isBetween(chline, out2));                                
+        Test(!raycaster.isBetween(chline, out2)); 
+        Test(!geo::isBetween(chline, out2));        
 
 	Print("\n=================================");
 	Print("TEST: IsBetween test successful.");
@@ -344,16 +356,117 @@ void unit_tests::testCDTHCross()
         Grid<CHGraph<CHNode, CHEdge> > grid(1, graph);
         
         
-        //RangeTree rangeTree(graph);
+        //RangeTree rangeTree(graph);        
         CDTHPCross cdthpC(graph, grid);
+        /*
         for (uint i= 0; i< 100; i++) {
             Print("cdthpC.getNofCrossings(chain)" << cdthpC.getNofCrossings(chain));
-        }
+        }*/
                 
         Test(cdthpC.getNofCrossings(chain) == 4);
                    
 	Print("\n=================================");
 	Print("TEST: CDTHCross test successful.");
+	Print("=================================\n");
+}
+
+void unit_tests::testCrossLinks()
+{
+	Print("\n============================");
+	Print("TEST: Start CrossLinks test.");
+	Print("============================\n");
+        
+        
+        CHGraph<CHNode, CHEdge> graph;
+        GraphInData<CHNode, CHEdge> graphInData;
+        
+        Chain chain1;
+        for (int i = 0; i < 8; i++) {
+            graphInData.nodes.push_back(CHNode(i, 0));
+            chain1.push_back(i);
+        }                                
+        
+        Chain chain2;
+        for (int i = 8; i < 16; i++) {
+            graphInData.nodes.push_back(CHNode(i-4, 1));
+            chain2.push_front(i);
+        }
+
+        graph.init(std::move(graphInData));
+        
+        
+        
+        FrechetTest_data ilp_data = FrechetTest_data(graph, chain1, chain2, 0, 10000, false); 
+        ILP_Chain ilp_chain1 = ilp_data.ChainToILP_Chain(chain1, true);                
+        ILP_Chain ilp_chain2 = ilp_data.ChainToILP_Chain(chain2, false);
+        CrossLink cross_link1(ilp_chain1.at(0), Line(ilp_chain2.at(1), ilp_chain2.at(2), 0), 1.0, 0, 0);
+        CrossLink cross_link2(ilp_chain1.at(1), Line(ilp_chain2.at(2), ilp_chain2.at(3), 0), 0.5, 0, 0);
+        CrossLink cross_link3(ilp_chain1.at(3), Line(ilp_chain2.at(0), ilp_chain2.at(1), 0), 0.5, 0, 0);
+        CrossLink cross_link4(ilp_chain2.at(3), Line(ilp_chain1.at(2), ilp_chain1.at(3), 0), 0, 0, 0);
+        
+        CrossLink cross_link5(ilp_chain1.at(3), Line(ilp_chain2.at(3), ilp_chain2.at(4), 0), 0, 0, 0);
+        CrossLink cross_link6(ilp_chain1.at(1), Line(ilp_chain2.at(0), ilp_chain2.at(1), 0), 0.75, 0, 0);
+        
+        CrossLink cross_link7(ilp_chain2.at(4), Line(ilp_chain1.at(4), ilp_chain1.at(5), 0), 0, 0, 0);
+        CrossLink cross_link8(ilp_chain2.at(5), Line(ilp_chain1.at(3), ilp_chain1.at(4), 0), 1.0, 0, 0);
+        
+        Print("test unorderings are called");
+        Test(!FrechetTest_data::testUnordering(cross_link1, cross_link2));
+        Test(FrechetTest_data::testUnordering(cross_link1, cross_link3));
+        Test(!FrechetTest_data::testUnordering(cross_link1, cross_link4));
+        Test(FrechetTest_data::testUnordering(cross_link2, cross_link3));
+        Test(!FrechetTest_data::testUnordering(cross_link4, cross_link2));
+        Test(!FrechetTest_data::testUnordering(cross_link2, cross_link4));
+        Test(FrechetTest_data::testUnordering(cross_link3, cross_link4)); 
+        
+        Test(!FrechetTest_data::testUnordering(cross_link3, cross_link5));   
+        Test(!FrechetTest_data::testUnordering(cross_link4, cross_link5));  
+        
+        Test(FrechetTest_data::testUnordering(cross_link6, cross_link3)); 
+        Test(!FrechetTest_data::testUnordering(cross_link6, cross_link2)); 
+        
+        Test(!FrechetTest_data::testUnordering(cross_link7, cross_link8));
+                        
+                   
+	Print("\n=================================");
+	Print("TEST: CrossLinks test successful.");
+	Print("=================================\n");
+}
+
+void unit_tests::testFrechetDistance()
+{
+	Print("\n============================");
+	Print("TEST: Start FrechetDistance test.");
+	Print("============================\n");
+        
+        
+        CHGraph<CHNode, CHEdge> graph;
+        GraphInData<CHNode, CHEdge> graphInData;
+        
+        Chain chain1;
+        for (int i = 0; i < 4; i++) {
+            graphInData.nodes.push_back(CHNode(i, 0));
+            chain1.push_back(i);
+        }                                
+        
+        Chain chain2;
+        for (int i = 4; i < 8; i++) {
+            graphInData.nodes.push_back(CHNode(i-4, 1));
+            chain2.push_front(i);
+        }
+
+        graph.init(std::move(graphInData));
+        
+        
+        CalcFrechetILP cf_ilp(graph);
+        
+        Print(cf_ilp.solve(chain1, chain2, 0 , 2));
+        Test(cf_ilp.solve(chain1, chain2, 0 , 2) == 1);        
+        
+                        
+                   
+	Print("\n=================================");
+	Print("TEST: FrechetDistance test successful.");
 	Print("=================================\n");
 }
 

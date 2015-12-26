@@ -105,7 +105,7 @@ int main(int argc, char* argv[]) {
         {"outformat", required_argument, 0, 'g'},
         {"threads", required_argument, 0, 't'},
         {"prioritizer", required_argument, 0, 'p'},
-        {"linesimplfier", required_argument, 0, 's'},
+        {"linesimplifier", required_argument, 0, 's'},
         {"errormeasure", required_argument, 0, 'e'},
         {"pairmatch", required_argument, 0, 'w'},
         {"deadenddetect", required_argument, 0, 'd'},

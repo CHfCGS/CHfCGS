@@ -116,7 +116,7 @@ uint Dijkstra<Node,Edge>::calcShopa(NodeID src, NodeID tgt,
 template <typename Node, typename Edge>
 void Dijkstra<Node,Edge>::_relaxAllEdges(PQ& pq, PQElement const& top)
 {
-	for (auto const& edge: _g.nodeEdges(top.node, EdgeType::OUT)) { //get only base graph nodeEdges
+	for (auto const& edge: _g._nodeEdges(top.node, EdgeType::OUT)) { //get only base graph nodeEdges
 		NodeID tgt(edge.tgt);
 		uint new_dist(top.distance() + edge.distance());
 
@@ -237,15 +237,17 @@ uint CHDijkstra<Node,Edge>::calcShopa(NodeID src, NodeID tgt,
                         // check for stalling (if there is a node tmp_node (ABOVE) and an edge (tmp_node,cur_node)
                         // which sum to a smaller distance (!)
                         //for(int j=0; j<myGraph.nofInEdges(cur_node); j++)
-                        for (auto const& tmp_edge: _g._nodeEdges(top.node, !top.direction)) { //changed to get all nodeEdges
+                        
+                        for (auto const& tmp_edge: _g._nodeEdges(top.node, !top.direction)) {
                             double tmp_wgt = tmp_edge.distance();
                             NodeID tmp_node = otherNode(tmp_edge, !top.direction);
                             if (_dir[top.direction]._dists[top.node] - tmp_wgt > _dir[top.direction]._dists[tmp_node]) {
-                                stalled = true;
+                                stalled = true;                              
                                 break;
                             }
-                            if (_g.isUp(tmp_edge, !top.direction))
-                                break;
+                            
+                            //if (_g.isUp(tmp_edge, !top.direction))
+                                //break;
                         }
                         /*
                         for (int j = graph.nofInEdges(cur_node) - 1; j >= 0; j--) {

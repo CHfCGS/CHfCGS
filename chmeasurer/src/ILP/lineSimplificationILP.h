@@ -12,10 +12,10 @@ class lineSimplificationILP {
     
     
     
-    CHGraph<CHNode, CHEdge> &graph;
+    const CHGraph<CHNode, CHEdge> &graph;
     glp_prob *lp;
     
-    const static size_t size = 40000;
+    const static size_t size = 4000000;
     size_t nofNonZeros = 0;
     
     
@@ -28,8 +28,12 @@ class lineSimplificationILP {
     //whole ILP is invalid if size is not big enough
     bool enoughSpace;
     
-    int ia[1+size], ja[1+size];    
-    double ar[1+size];        
+    std::vector<int> ia;
+    std::vector<int> ja;
+    std::vector<double> ar;
+    
+    //int ia[1+size], ja[1+size];    
+    //double ar[1+size];        
     
    
     
@@ -60,8 +64,8 @@ class lineSimplificationILP {
         ar[index] = r;
     }
                     
-    void setInOutDegreeCoefficients(std::vector<Line> &lines, NodeID node_id) {                   
-        for (Line &line : lines) { 
+    void setInOutDegreeCoefficients(const std::vector<Line> &lines, NodeID node_id) {                   
+        for (const Line &line : lines) { 
             assert(line.start.ch_node_id != line.end.ch_node_id);                                 
             //src
             setInOutCoefficient(line.start.posInChain + 1, line.id + 1 , -1.0);           
@@ -78,7 +82,7 @@ class lineSimplificationILP {
         glp_set_row_name(lp, glp_get_num_rows(lp), row_name);
     }
     
-    void addDegreeRows(ILP_Chain ilp_chain, std::vector<Line> &lines) {                
+    void addDegreeRows(const ILP_Chain &ilp_chain, const std::vector<Line> &lines) {                
         assert(ilp_chain.size() >1);        
         
         //nodes 0 and n-1 should have degree 1                
@@ -185,9 +189,12 @@ class lineSimplificationILP {
                 + ilp_data.edgeIntersections.size();               
         preNofNonZeros = 2*ilp_data.potEdges1.size() + 2*ilp_data.edgeIntersections.size();
         nofNonZeros = 0;
-        enoughSpace =  preNofNonZeros < (int) size;                     
+        enoughSpace =  preNofNonZeros < (int) size;
+        Print("preNofNonZeros" << preNofNonZeros);
+        assert(enoughSpace);
     }
-    static ILP_Chain::iterator calculateHalfListIt(ILP_Chain &chain) {
+    /*
+    static ILP_Chain::iterator calculateHalfListIt(const ILP_Chain &chain) {
         int i = 0;
         int size = chain.size();
         ILP_Chain::iterator halfListIt = chain.begin();        
@@ -196,12 +203,15 @@ class lineSimplificationILP {
             i++;
         }
         return halfListIt;
-    }
+    }*/
     
 public:
 
-    lineSimplificationILP(CHGraph<CHNode, CHEdge> &graph): graph(graph) {    
+    lineSimplificationILP(const CHGraph<CHNode, CHEdge> &graph): graph(graph) {    
         objective_value = std::numeric_limits<double>::max();
+        ia.resize(size+1);
+        ja.resize(size+1);
+        ar.resize(size+1);
     }
     
     ~lineSimplificationILP() {
@@ -231,7 +241,8 @@ public:
         assert(preNofNonZeros == (int) nofNonZeros);
         
                 
-        glp_load_matrix(lp, nofNonZeros, ia, ja, ar);
+        //glp_load_matrix(lp, nofNonZeros, ia, ja, ar);
+        glp_load_matrix(lp, nofNonZeros, &ia[0], &ja[0], &ar[0]);
         //glp_write_lp(lp, NULL, "lp.txt");
 
 

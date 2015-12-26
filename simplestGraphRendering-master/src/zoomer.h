@@ -30,18 +30,22 @@ namespace Zoomer {
 			if (edges[edge.child_edge1].is_valid(nodes)) {
 				edge.remaining = false;
 				removeShortcut(nodes, edges, edge.child_edge1);
+				assert(edges[edge.child_edge2].is_valid(nodes));
+				removeShortcut(nodes, edges, edge.child_edge2);
 			}
+			/*
 			if (edges[edge.child_edge2].is_valid(nodes)) {
 				edge.remaining = false;
 				removeShortcut(nodes, edges, edge.child_edge2);
-			}
+			}*/
 		}   
 	}
 	
 	static void expandEdge(const vector<CHNode> &nodes, vector<CHEdge> &edges, const EdgeID edgeID, double expandSize) {
 		CHEdge &edge = edges[edgeID];
-		if (edge.is_shortcut()) {
-			if (edge.getDist(nodes) > expandSize) {
+		if (edge.is_shortcut() && edge.remaining) {
+			//if (edge.getDist(nodes) > expandSize) {
+			if (edge.dist > expandSize) {
 			//double BendingRatio = calcBendingRatio(nodes [edge.src], nodes[edge.getCenterPoint(edges)], nodes[edge.tgt]);
 			//if (BendingRatio > expandSize) {
 				edge.remaining = false;
@@ -177,9 +181,9 @@ namespace Zoomer {
 			DEBUG("Processing expandSize");
 			//process expandSize
 			for (uint edgeID = 0; edgeID < ch_edges.size(); edgeID++){
-				if (ch_edges[edgeID].remaining) {
-					expandEdge(ch_nodes, ch_edges, edgeID, expandSize);
-				}        
+				//if (ch_edges[edgeID].remaining) {
+				expandEdge(ch_nodes, ch_edges, edgeID, expandSize);
+				//}        
 			}  
 		}
 		
