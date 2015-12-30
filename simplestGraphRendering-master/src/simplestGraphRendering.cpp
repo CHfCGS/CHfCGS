@@ -974,10 +974,11 @@ int main(int argc, char*argv[])
 
 	/* Create a orbital camera */
 	OrbitalCamera camera;
-	camera.longitude = 8.63;//0.0;
-	camera.latitude = 53.51;//0.0;
+	
+	camera.longitude = 8.799697; //8.63; //0.0;
+	camera.latitude = 53.099966; //53.51; //0.0;
 	camera.orbit = 1.002;
-	camera.near = 0.0001;
+	camera.near = 0.001;
 	camera.far = 10.0;
 	camera.fovy = 30.0 * 3.14/180.0f;
 	camera.aspect_ratio = 16.0/9.0;

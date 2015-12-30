@@ -20,7 +20,7 @@
 #include "dijkstra.h"
 #include "track_time.h"
 
-//#include "CGAL/cdthp_cross.h"
+#include "CGAL/cdthp_cross.h"
 //#include "CGAL/self_intersection_checker.h"
 
 #include "measure_options.h"
@@ -68,7 +68,7 @@ namespace chm {
                         error_counts.weighted_regularity_sum +=
                                 chain_length * rg.calcStandardDeviation(redetected_edge_chain.remaining_chain, chain_length);
                         error_counts.weighted_variance_sum += chain_length * ec.calcMAD(redetected_edge_chain, chain_length);
-                        error_counts.chain_length_sum += chain_length;
+                        error_counts.length_sum += chain_length;
                         
                         error_counts.nofNodesWithAngelChange += redetected_edge_chain.remaining_chain.size() - 2;
                         error_counts.angular_change_sum += ac.calcACsum(redetected_edge_chain.remaining_chain, expandedChain);
@@ -117,8 +117,8 @@ namespace chm {
                         }                    
                         Chain split_chain = chains::toNodeChain(split_edge_chain, graph);
                         Chain expanded_split_chain = chains::toExpandedNodeChain(split_edge_chain, graph);  
-                        Print("split_chain.size()" << split_chain.size());
-                        Print("expanded_split_chain.size()" << expanded_split_chain.size());
+                        //Print("split_chain.size()" << split_chain.size());
+                        //Print("expanded_split_chain.size()" << expanded_split_chain.size());
 
                         /*
                         SelfIntersectionChecker selfIntersectionChecker(graph);
@@ -134,7 +134,7 @@ namespace chm {
                             double diff = nof_edges - ilpNeededNumberOfEdges;
                             //Debug("ilpNeededNumberOfEdges:" << ilpNeededNumberOfEdges);
                             //Debug("diff:" << diff);
-                            errorcounts.chain_length_sum += chains::calcChainLength(expanded_split_chain, graph);                       
+                            errorcounts.length_sum += chains::calcChainLength(expanded_split_chain, graph);                       
                             errorcounts.addedDiffs += diff;                                                   
                             /*
                         }else {
@@ -164,9 +164,9 @@ namespace chm {
                 }              
             }
             errorcounts.print(); 
-            Print("length" << errorcounts.chain_length_sum);
-            assert(errorcounts.chain_length_sum != 0);
-            Print("diff/length ratio" << errorcounts.addedDiffs/errorcounts.chain_length_sum);
+            Print("length" << errorcounts.length_sum);
+            assert(errorcounts.length_sum != 0);
+            Print("diff/length ratio" << errorcounts.addedDiffs/errorcounts.length_sum);
         }                
         
         
@@ -216,8 +216,8 @@ namespace chm {
                                 
                                 if(chains::uniqueElements(expandedChainTo, expandedChainFrom)) { //can happen by having same centernode
                                 
-                                    Print("split_chain.size()" << chainTo.size() + chainFrom.size());
-                                    Print("expanded_split_chain.size()" << expandedChainTo.size() + expandedChainFrom.size());                                                                
+                                    //Print("split_chain.size()" << chainTo.size() + chainFrom.size());
+                                    //Print("expanded_split_chain.size()" << expandedChainTo.size() + expandedChainFrom.size());                                                                
 
                                     DiscreteFrechet dF(graph);
                                     double eta = dF.calc_dF(chainTo, chainFrom);
@@ -227,9 +227,10 @@ namespace chm {
 
 
                                     ParallelLineSimplificationILP p_ilp(graph);
+                                    const double epsilon_relaxation = 2.0;
                                     double p_ilpNeededNumberOfEdges
                                             = p_ilp.solve(expandedChainTo, expandedChainFrom,
-                                                epsilon_error + std::numeric_limits<double>::epsilon(),
+                                                epsilon_relaxation * epsilon_error + std::numeric_limits<double>::epsilon(),
                                                 eta + std::numeric_limits<double>::epsilon());
 
                                     size_t preSize = split_edge_chain_pair.chainTo.size() + split_edge_chain_pair.chainFrom.size();
@@ -239,8 +240,8 @@ namespace chm {
                                     //Debug("ilpNeededNumberOfEdges:" << ilpNeededNumberOfEdges);
                                     //Debug("diff:" << diff);
                                     double combined_chain_length = chains::calcChainLength(chainTo, graph) + chains::calcChainLength(chainFrom, graph);                                    
-                                    errorcounts.weighted_eta += eta * combined_chain_length;
-                                    errorcounts.chain_length_sum += combined_chain_length;                      
+                                    //errorcounts.weighted_eta += eta * combined_chain_length;
+                                    errorcounts.length_sum += combined_chain_length;                      
                                     errorcounts.addedDiffs += diff;     
                                 }
                             }
@@ -248,10 +249,10 @@ namespace chm {
                     }
             }
             errorcounts.print();   
-            Print("length" << errorcounts.chain_length_sum);
-            assert(errorcounts.chain_length_sum != 0);
-            Print("diff/length ratio" << errorcounts.addedDiffs/errorcounts.chain_length_sum);
-            Print("avg_eta" << errorcounts.weighted_eta/errorcounts.chain_length_sum);
+            Print("length" << errorcounts.length_sum);
+            assert(errorcounts.length_sum != 0);
+            Print("diff/length ratio" << errorcounts.addedDiffs/errorcounts.length_sum);
+            Print("avg_eta" << errorcounts.weighted_eta/errorcounts.length_sum);
         }
         
         void makeDijkstraMeasure() {            
@@ -318,12 +319,13 @@ namespace chm {
             
         }
         
-        /*
+        
         void makeEdgeMeasure() {
             using namespace std::chrono;
             steady_clock::time_point t1 =  steady_clock::now();
             Print("makeEdgeMeasure");
             Print("Accumulating Error and Crossings Counting");
+            ErrorCounts error_counts;
             CDTHPCross cdthpC(graph, grid);
             //Grid grid = Grid(1, graph);
             double getNofCrossings = 0;
@@ -340,17 +342,22 @@ namespace chm {
                     //getNofCrossings += raycaster.getNofCrossings(chain);
                     getNofCrossings += cdthpC.getNofCrossings(chain);
                     double epsilon_error = graph.calcEdgeError(edge_id);
-                    accumulatedError += epsilon_error;                        
+                    accumulatedError += epsilon_error;
+                    const CHEdge& edge = graph.getEdge(edge_id);
+                    error_counts.length_sum += geo::geoDist(
+                                graph.getNode(edge.src),
+                                graph.getNode(edge.tgt));
                 }
                 
-            }                        
-            Print("number of Crossings: " << getNofCrossings);
-            Print("accumulated error: " << accumulatedError);
+            }        
+            error_counts.print();            
+            Print("number of Crossings/length: " << getNofCrossings/error_counts.length_sum);
+            Print("accumulated error/length: " << accumulatedError/error_counts.length_sum);
             
             duration<double> time_span =  duration_cast<duration<double>>(steady_clock::now() - t1);
             Print("makeEdgeMeasure took " << time_span.count() << " seconds.\n");
             Unused(time_span);
-        }*/
+        }
         
         
     public:
@@ -368,7 +375,7 @@ namespace chm {
                 assert(graph.isValidNode(i));
             }
 
-            Chains_and_Remainder CaR;
+            Chains_and_Remainder CaR(graph.getMaxStreetType());
             
             //graph.zoom(50, false, 800);    
             graph.zoom(0.02, true, 800);    
@@ -400,10 +407,12 @@ namespace chm {
             Print("Number of chain pairs: " << CaR.chainPairs.size());
                         
             //Print("Zooming ");                                               
-            
-            //make_chain_measure(CaR);
-            //makeEdgeMeasure();
-            
+            if(m_options.edge) {
+                makeEdgeMeasure();    
+            }            
+            if(m_options.chain) {
+                make_chain_measure(CaR);
+            }                        
             if (m_options.dijkstra) {
                 makeDijkstraMeasure();
             }

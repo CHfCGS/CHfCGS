@@ -122,9 +122,9 @@ struct RedetectedChain {
 
 struct Chains_and_Remainder {
 
-    Chains_and_Remainder() : remainder(), oneWayChainsAccordingToType() {
-        oneWayChainsAccordingToType.resize(20);
-        twoWayChainsAccordingToType.resize(20);//different street Types //TODO: calculate maxStreetType beforehand        
+    Chains_and_Remainder(uint max_street_type) : remainder(), oneWayChainsAccordingToType() {
+        oneWayChainsAccordingToType.resize(max_street_type+1);
+        twoWayChainsAccordingToType.resize(max_street_type+1);//different street Types //TODO: calculate maxStreetType beforehand        
         //Print("Default-constructed capacity is " << chainsAccordingToType.capacity());
         //chainsAccordingToType.shrink_to_fit();
         //Print("after shrink " << chainsAccordingToType.capacity());
@@ -308,7 +308,7 @@ namespace chains {
             assert(front_part.size() + back_part.size() == chain_size_before);
                         
             std::list<EdgeChain> output_front = split(front_part, graph);
-            std::list<EdgeChain> output_back = split(front_part, graph);
+            std::list<EdgeChain> output_back = split(back_part, graph);
             
             split_chains.splice(split_chains.end(), output_front);
             split_chains.splice(split_chains.end(), output_back);                                                
@@ -370,7 +370,7 @@ namespace chains {
     
     static std::list<EdgeChainPair> split (EdgeChainPair& chain_pair, const CHGraph<CHNode, CHEdge>& graph) {        
         std::list<EdgeChainPair> edge_chain_pairs;
-        const uint critical_size = 50;
+        const uint critical_size = 35;
         //get sizes
         EdgeChain* p_bigger_chain = nullptr;
         EdgeChain* p_smaller_chain = nullptr;

@@ -54,6 +54,8 @@ class CH_Parser {
 
         ss >> buffer;
         r_edge.child_edge2 = atoi(buffer.c_str());
+        
+        ss >> r_edge.vis_unpleasing;        
         /*
         is >> src;
 is >> tgt;

@@ -35,7 +35,9 @@ class Graph
 		std::vector<uint> _id_to_index;
 
 		EdgeID edge_count = 0;
+                uint max_street_type = 0;
 
+                void fixEdgeType();
 		void sortInEdges();
 		void sortOutEdges();
 		void initOffsets();
@@ -58,7 +60,7 @@ class Graph
 		template<typename Range>
 		void printInfo(Range&& nodes) const;
                 
-                void setEdgeFlag(EdgeID edge_id, bool tag);
+                void setVisualFlag(EdgeID edge_id, bool tag);
 		uint getNrOfNodes() const { return _nodes.size(); }
 		uint getNrOfEdges() const { return _out_edges.size(); }
 		EdgeT const& getEdge(EdgeID edge_id) const { return _out_edges[_id_to_index[edge_id]]; }
@@ -66,6 +68,7 @@ class Graph
                 std::vector<EdgeT> const& getAllEdges() {return _out_edges;};
 		Metadata const& getMetadata() const { return _meta_data; }
                 
+                uint getMaxStreetType() const {return max_street_type;} 
 		uint getNrOfEdges(NodeID node_id) const;
 		uint getNrOfEdges(NodeID node_id, EdgeType type) const;                                
                 double getLat(NodeID node_id) const;
@@ -73,7 +76,7 @@ class Graph
                 std::list<NodeID> nodeNeighbours(NodeID node_id) const;                
                 std::list<NodeID> nodeNeighbours(NodeID node_id, StreetType type) const;
                 std::list<NodeID> nodeNeighbours(NodeID node_id, StreetType streetType, EdgeType edgeDirection) const;
-                StreetType getMaxStreetType(NodeID node_id) const;                
+                StreetType getMinStreetType(NodeID node_id) const;                
                 bool degree_leq(NodeID node_id , uint degree) const;
                 bool isOneway(NodeID node_id) const;
 
@@ -101,6 +104,8 @@ void Graph<NodeT, EdgeT>::init(GraphInData<NodeT, EdgeT>&& data)
 	Print("Graph info:");
 	Print("===========");
 	printInfo();
+        
+        fixEdgeType();
 }
 
 template <typename NodeT, typename EdgeT>
@@ -165,16 +170,34 @@ void Graph<NodeT, EdgeT>::printInfo(Range&& nodes) const
 #endif
 }
 
-//misuse speed as flag
 template <typename NodeT, typename EdgeT>
-void Graph<NodeT, EdgeT>::setEdgeFlag(EdgeID edge_id, bool tag) { 
+void Graph<NodeT, EdgeT>::setVisualFlag(EdgeID edge_id, bool tag) { 
+    _out_edges[_id_to_index[edge_id]].vis_unpleasing = tag;
+    /*
         if (tag) {
             _out_edges[_id_to_index[edge_id]].speed = 1000; 
         }else {
             _out_edges[_id_to_index[edge_id]].speed = -1000; 
-        }
+        }    */
+
 }
     
+//change edge types so that smaller numbers indicate higher importance
+template <typename NodeT, typename EdgeT>
+void Graph<NodeT, EdgeT>::fixEdgeType() { 
+    for (EdgeT& edge: _out_edges) {                
+        if (edge.type < 1) {
+            edge.type = 15;
+        }
+        //red lanes
+        else if (edge.type == 9 || edge.type == 10) {
+            edge.type = 4; 
+        }
+        max_street_type = std::max(max_street_type, edge.type);
+    }    
+    Print("maxStreetType: " << max_street_type);
+}
+
 
 template <typename NodeT, typename EdgeT>
 void Graph<NodeT, EdgeT>::sortInEdges()
@@ -318,20 +341,20 @@ std::list<NodeID> Graph<NodeT, EdgeT>::nodeNeighbours(NodeID node_id, StreetType
 }
 
 template <typename NodeT, typename EdgeT>
-StreetType Graph<NodeT, EdgeT>::getMaxStreetType(NodeID node_id) const
+StreetType Graph<NodeT, EdgeT>::getMinStreetType(NodeID node_id) const
 {
-        StreetType MaxStreetType = std::numeric_limits<StreetType>::lowest();
+        StreetType MinStreetType = getMaxStreetType();
         for (auto const& edge : nodeEdges(node_id, EdgeType::IN)) {
-            if (edge.type > MaxStreetType) {
-                MaxStreetType = edge.type;
+            if (edge.type < MinStreetType) {
+                MinStreetType = edge.type;
             }
         }
         for (auto const& edge : nodeEdges(node_id, EdgeType::OUT)) {
-            if (edge.type > MaxStreetType) {
-                MaxStreetType = edge.type;
+            if (edge.type < MinStreetType) {
+                MinStreetType = edge.type;
             }
         }
-        return MaxStreetType;
+        return MinStreetType;
 }
 
 template <typename NodeT, typename EdgeT>

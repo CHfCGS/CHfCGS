@@ -63,9 +63,9 @@ struct ChainsAccordingToType {
 
 struct Chains_and_Remainder {
 
-    Chains_and_Remainder() : remainder(), oneWayChainsAccordingToType() {
-        oneWayChainsAccordingToType.resize(20);
-        twoWayChainsAccordingToType.resize(20);//different street Types //TODO: calculate maxStreetType beforehand        
+    Chains_and_Remainder(uint max_street_type) : remainder(), oneWayChainsAccordingToType() {
+        oneWayChainsAccordingToType.resize(max_street_type + 1);
+        twoWayChainsAccordingToType.resize(max_street_type + 1);//different street Types //TODO: calculate maxStreetType beforehand        
         //Print("Default-constructed capacity is " << chainsAccordingToType.capacity());
         //chainsAccordingToType.shrink_to_fit();
         //Print("after shrink " << chainsAccordingToType.capacity());

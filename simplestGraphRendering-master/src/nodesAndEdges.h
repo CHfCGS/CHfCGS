@@ -56,7 +56,10 @@ struct CHEdge {
     int speed;
     EdgeID child_edge1;
     EdgeID child_edge2;
+    bool vis_unpleasing;
+
     bool remaining;
+
     
     bool is_shortcut(){return (child_edge1 !=-1 && child_edge2 != -1);}	                   
     bool is_valid(const std::vector<CHNode> &nodes) {

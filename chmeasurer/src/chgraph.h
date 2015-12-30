@@ -36,9 +36,11 @@ class CHGraph
 		//std::vector<uint> _id_to_index;
 
 		EdgeID edge_count = 0;
+                uint max_street_type = 0;
 
                 double min_geo_importance = std::numeric_limits<double>::max(); 
                 
+                void fixEdgeType();
 		void sortInEdges();
 		void sortOutEdges();
 		void initOffsets();
@@ -47,7 +49,7 @@ class CHGraph
 		void update();
                 
                 void setCenterNodesLists();
-                
+                                
                 //zoom helper functions
                 //bool isRemaining(EdgeID edge_id) const;
                 void invalidateHigherShortcut(const EdgeID edge_id);
@@ -71,7 +73,7 @@ class CHGraph
 		 * the edges according to OutEdgeSort and InEdgeSort. */
 		void init(GraphInData<NodeT,EdgeT>&& data);
                 
-                void zoom(double percent_of_valid_nodes, bool expand, double expandsize);
+                void zoom(double percent_of_valid_nodes, bool expand, double expandsize, bool spareShortcuts=false);
 
 		void printInfo() const;
 		template<typename Range>
@@ -79,6 +81,8 @@ class CHGraph
                               
                 bool isUp(EdgeT const& edge, EdgeType direction) const;
                 
+                //uint getMaxStreetType() const {return max_street_type;} 
+                uint getMaxStreetType() const {return max_street_type;} 
 		uint getNrOfNodes() const { return _nodes.size(); }
 		uint getNrOfEdges() const { return _out_edges.size(); }
                 uint getNrOfValidNodes() const;
@@ -104,7 +108,7 @@ class CHGraph
                 std::list<NodeID> nodeNeighbours(NodeID node_id) const;                
                 std::list<NodeID> nodeNeighbours(NodeID node_id, StreetType type) const;
                 std::list<NodeID> nodeNeighbours(NodeID node_id, StreetType streetType, EdgeType edgeDirection) const;
-                StreetType getMaxStreetType(NodeID node_id) const;
+                StreetType getMinStreetType(NodeID node_id) const;
                 bool degree_leq_two(NodeID node_id) const;
                 bool isOneway(NodeID node_id) const;
 
@@ -164,6 +168,8 @@ void CHGraph<NodeT, EdgeT>::init(GraphInData<NodeT, EdgeT>&& data)
 	Print("Graph info:");
 	Print("===========");
 	printInfo();
+        
+        fixEdgeType();
 }
 
 template <typename NodeT, typename EdgeT>
@@ -385,7 +391,7 @@ void CHGraph<NodeT, EdgeT>::calcMinGeoImportance()
 }
 
 template <typename NodeT, typename EdgeT>
-void CHGraph<NodeT, EdgeT>::zoom(double percent_of_valid_nodes, bool expand, double expandSize)
+void CHGraph<NodeT, EdgeT>::zoom(double percent_of_valid_nodes, bool expand, double expandSize, bool spareShortcuts)
 {
     markValidNodes(percent_of_valid_nodes);
 
@@ -398,6 +404,15 @@ void CHGraph<NodeT, EdgeT>::zoom(double percent_of_valid_nodes, bool expand, dou
     //remove too high-level shortcuts    
     for (EdgeID edgeID = 0; edgeID < (int) edge_count; edgeID++) {
         invalidateHigherShortcut(edgeID);
+    }
+        
+    if (spareShortcuts) {
+        //do not draw visually unpleasing shortcuts
+        for (uint edgeID = 0; edgeID < (int) edge_count; edgeID++){
+            if (_out_edges[edgeID].vis_unpleasing) {
+                _validEdges[edgeID] = false;       
+            }				
+        }
     }
     
     calcMinGeoImportance();
@@ -455,8 +470,8 @@ void CHGraph<NodeT, EdgeT>::zoom(double percent_of_valid_nodes, bool expand, dou
         //
         
         if (isShortcut(edge_id) && _validEdges[edge_id]) {
-            //if (getEdgeDist(edge_id) > expandSize) {
-            if (_out_edges[edge_id].dist > expandSize) {
+            if (getEdgeDist(edge_id) > 0.002) {
+            //if (_out_edges[edge_id].dist > expandSize) {
                 //double BendingRatio = calcBendingRatio(nodes [edge.src], nodes[edge.getCenterPoint(edges)], nodes[edge.tgt]);
                 //if (BendingRatio > expandSize) {
                 
@@ -477,7 +492,23 @@ void CHGraph<NodeT, EdgeT>::zoom(double percent_of_valid_nodes, bool expand, dou
             }
         }
     }
-    
+ 
+//change edge types so that smaller numbers indicate higher importance
+template <typename NodeT, typename EdgeT>
+void CHGraph<NodeT, EdgeT>::fixEdgeType() { 
+    for (EdgeT& edge: _out_edges) {
+        /*
+        if (edge.type < 1) {
+            edge.type = 15;
+        }
+        //red lanes
+        else if (edge.type == 9 || edge.type == 10) {
+            edge.type = 4; 
+        }*/
+        max_street_type = std::max(max_street_type, edge.type);
+    }    
+    Print("maxStreetType: " << max_street_type);
+}
 
 template <typename NodeT, typename EdgeT>
 uint CHGraph<NodeT, EdgeT>::getNrOfEdges(NodeID node_id) const
@@ -583,20 +614,20 @@ std::list<NodeID> CHGraph<NodeT, EdgeT>::nodeNeighbours(NodeID node_id, StreetTy
 }
 
 template <typename NodeT, typename EdgeT>
-StreetType CHGraph<NodeT, EdgeT>::getMaxStreetType(NodeID node_id) const
+StreetType CHGraph<NodeT, EdgeT>::getMinStreetType(NodeID node_id) const
 {
-        StreetType MaxStreetType = 0;
+        StreetType min_street_type = getMaxStreetType();
         for (auto const& edge : valid_nodeEdges(node_id, EdgeType::IN)) {
-            if (edge.type > MaxStreetType) {
-                MaxStreetType = edge.type;
+            if (edge.type < min_street_type) {
+                min_street_type = edge.type;
             }
         }
         for (auto const& edge : valid_nodeEdges(node_id, EdgeType::OUT)) {
-            if (edge.type > MaxStreetType) {
-                MaxStreetType = edge.type;
+            if (edge.type < min_street_type) {
+                min_street_type = edge.type;
             }
         }
-        return MaxStreetType;
+        return min_street_type;
 }
 
 template <typename NodeT, typename EdgeT>

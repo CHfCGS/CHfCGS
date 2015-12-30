@@ -293,7 +293,7 @@ public:
         
         
         /* solve problem */        
-        Print("solving");
+        //Print("solving");
         glp_simplex(lp, NULL);
         
         glp_iocp parm;

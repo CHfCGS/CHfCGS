@@ -190,6 +190,7 @@ class lineSimplificationILP {
         preNofNonZeros = 2*ilp_data.potEdges1.size() + 2*ilp_data.edgeIntersections.size();
         nofNonZeros = 0;
         enoughSpace =  preNofNonZeros < (int) size;
+        
         Print("preNofNonZeros" << preNofNonZeros);
         assert(enoughSpace);
     }

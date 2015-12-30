@@ -13,7 +13,7 @@ struct ErrorCounts {
     double weighted_eta = 0;
     
     uint chain_counter = 0;
-    double chain_length_sum = 0;
+    double length_sum = 0;
     double angular_change_sum = 0;
     uint nofNodesWithAngelChange = 0;
         
@@ -28,6 +28,7 @@ struct ErrorCounts {
         Print("chainRedetectedCounter:" << chainRedetectedCounter);
         Print("chainPairRedetectedCounter:" << chainPairRedetectedCounter);
                 
+        Print("length_sum" << length_sum);
         Print("epsilonerrorEqualszero:" << epsilonerrorEqualszero);
         Print("epsilonerrorGreaterzero:" << epsilonerrorGreaterzero);
         Print("selfIntersecting:" << selfIntersecting);
@@ -39,12 +40,12 @@ struct ErrorCounts {
         } else {
             Print("avg_angular_change:" << angular_change_sum/nofNodesWithAngelChange);        
         }
-        if (chain_length_sum == 0) {
+        if (length_sum == 0) {
             Print("regularity_sum:" << "NAN");
             Print("error_consistency_sum:" << "NAN");
         } else {
-            Print("avg_regularity:" << weighted_regularity_sum/chain_length_sum);
-            Print("avg_error_consistency:" << weighted_variance_sum/chain_length_sum);
+            Print("avg_regularity:" << weighted_regularity_sum/length_sum);
+            Print("avg_error_consistency:" << weighted_variance_sum/length_sum);
         }
         Print("");
 

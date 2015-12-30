@@ -307,6 +307,7 @@ struct CHEdge : EdgeT
 	EdgeID child_edge1 = c::NO_EID;
 	EdgeID child_edge2 = c::NO_EID;
 	NodeID center_node = c::NO_NID;
+        bool vis_unpleasing = false;
 
 	CHEdge() { }
 	CHEdge(EdgeT const& edge): EdgeT(edge) { }

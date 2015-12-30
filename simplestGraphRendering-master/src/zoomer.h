@@ -56,7 +56,7 @@ namespace Zoomer {
 			}
 		}
 	}
-	
+	/*
 	static Level calculateZoomlvl(vector<CHNode> &nodes, double percent_of_showed_nodes) {		
 		Level maxLevel = 0;
 		for (CHNode node: nodes) {
@@ -79,7 +79,7 @@ namespace Zoomer {
 			i--;
 		}    
 		return i+1;
-	}	 	
+	}*/	 	
 	
 	static ValidLevelInfo calcValidLevel(vector<CHNode> &nodes, size_t numberOfValidNodes) {
 		ValidLevelInfo vli;
@@ -112,6 +112,7 @@ namespace Zoomer {
 	static void markValidNodes(vector<CHNode> &nodes, double percent_of_valid_nodes) { 
 	    assert(percent_of_valid_nodes >= 0 && percent_of_valid_nodes <= 100);
 	    size_t numberOfValidNodes = (uint) trunc((percent_of_valid_nodes/100.0) * nodes.size());
+	    DEBUG("numberOfValidNodes" << numberOfValidNodes);
 	    ValidLevelInfo vli = calcValidLevel(nodes, numberOfValidNodes);
 //	    _validNodes.resize(_nodes.size());
 	    size_t nofValidatedNodesOnCriticalLevel = 0;
@@ -141,7 +142,17 @@ namespace Zoomer {
 		) {	
 
 		DEBUG("markValidNodes");
-		markValidNodes(ch_nodes, percent_of_showed_nodes);					
+		markValidNodes(ch_nodes, percent_of_showed_nodes);
+
+		/*
+		size_t nofValidNodes2 = 0;
+		for(NodeID nodeID = 0; nodeID< (int) nodes.size(); nodeID++) {
+			if(ch_nodes[nodeID].remaining) {
+				nofValidNodes2++;
+			}
+		}
+		DEBUG("numberOfValidNodes2" << nofValidNodes2);
+		*/
 			
 		/*
 		DEBUG("Calculating zoomlvl");
@@ -170,7 +181,7 @@ namespace Zoomer {
                 if (spareShortcuts) {
                     //do not draw visually unpleasing shortcuts
                     for (uint edgeID = 0; edgeID < ch_edges.size(); edgeID++){
-                        if (ch_edges[edgeID].speed == -1000) {
+                        if (ch_edges[edgeID].vis_unpleasing) {
                             ch_edges[edgeID].remaining = false;       
                         }				
                     }

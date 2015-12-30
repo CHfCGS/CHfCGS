@@ -125,8 +125,9 @@ namespace chc {
                 uint max_degree = MAX_UINT) const;
         int calcEdgeDiff(NodeID node) const;            
         std::vector<int> calcEdgeDiffs(std::vector<NodeID> const& nodes) const;
-        std::vector<int> calcMaxStreetTypes(std::vector<NodeID> const& nodes) const;
+        std::vector<int> calcMinStreetTypes(std::vector<NodeID> const& nodes) const;
         
+        std::vector<int> calcEdgePlus(std::vector<NodeID> const& nodes) const;        
         void calcNodeWeights(std::vector<NodeID> const& nodes, std::vector<double> &node_weights) const;
         std::vector<sortNode> calcNodeWeights(std::vector<NodeID> const& nodes) const;
         std::vector<int> calcWeightedEdgeDiffs(std::vector<NodeID> const& nodes) const;
@@ -298,7 +299,7 @@ namespace chc {
         for (CHConstructor<NodeT, EdgeT>::SHTagInfo sh_tag_info: sh_tag_infos) {                        
             const Shortcut &shortcut = *sh_tag_info.shortcut_p;                        
             if (!_otherPathExist(td, shortcut.src, shortcut.tgt, (1+sh_tag_info.weight)*shortcut.dist)) {
-                _base_graph.setEdgeFlag(shortcut.id, true);
+                _base_graph.setVisualFlag(shortcut.id, false);
             }
         }  
     }
@@ -319,7 +320,7 @@ namespace chc {
         //initialize all last shortcuts with unpleasing flag        
         for (const EdgeT &edge: _base_graph.getAllEdges()) {            
             if(_base_graph.isShortcutOfRound(edge.id, lastRoundLvl)) {
-                _base_graph.setEdgeFlag(edge.id, false);
+                _base_graph.setVisualFlag(edge.id, true);
             }
         }
         
@@ -352,7 +353,7 @@ namespace chc {
             if (td.dists[top.node] != top.distance()) continue;
 
             for (auto const& edge : _base_graph.nodeEdges(top.node, EdgeType::OUT)) {
-                if (edge.speed == -1000) break; //visually unpleasing edges are not taken
+                if (edge.vis_unpleasing) break; //visually unpleasing edges are not taken
 
                 NodeID tgt_node(otherNode(edge, EdgeType::OUT));
                 uint new_dist(top.distance() + edge.distance());
@@ -700,7 +701,7 @@ namespace chc {
         auto shortcuts(getShortcutsOfContracting(nodes));
 
         uint size(nodes.size());
-#pragma omp parallel for num_threads(_num_threads) schedule(dynamic)
+//#pragma omp parallel for num_threads(_num_threads) schedule(dynamic)
         for (uint i = 0; i < size; i++) {
             edge_diffs[i] = (int) shortcuts[i].size() - (int) _base_graph.getNrOfEdges(nodes[i]);
         }
@@ -709,17 +710,31 @@ namespace chc {
     }
     
     template <typename NodeT, typename EdgeT>
-    std::vector<int> CHConstructor<NodeT, EdgeT>::calcMaxStreetTypes(std::vector<NodeID> const& nodes) const {
-        std::vector<int> max_street_types(nodes.size());
+    std::vector<int> CHConstructor<NodeT, EdgeT>::calcEdgePlus(std::vector<NodeID> const& nodes) const {
+        std::vector<int> edge_plus(nodes.size());
+        auto shortcuts(getShortcutsOfContracting(nodes));
+
+        uint size(nodes.size());
+#pragma omp parallel for num_threads(_num_threads) schedule(dynamic)
+        for (uint i = 0; i < size; i++) {
+            edge_plus[i] = (int) shortcuts[i].size();
+        }
+
+        return edge_plus;
+    }
+    
+    template <typename NodeT, typename EdgeT>
+    std::vector<int> CHConstructor<NodeT, EdgeT>::calcMinStreetTypes(std::vector<NodeID> const& nodes) const {
+        std::vector<int> min_street_types(nodes.size());
         //auto shortcuts(getShortcutsOfContracting(nodes));
 
         uint size(nodes.size());
 #pragma omp parallel for num_threads(_num_threads) schedule(dynamic)
         for (uint i = 0; i < size; i++) {
-            max_street_types[i] = (int) _base_graph.getMaxStreetType(nodes[i]);
+            min_street_types[i] = (int) _base_graph.getMinStreetType(nodes[i]);
         }
 
-        return max_street_types;
+        return min_street_types;
     }
     
     template <typename NodeT, typename EdgeT>
@@ -800,7 +815,8 @@ namespace chc {
                 //node_weight.geo_measure = std::max(node_weight.geo_measure, geo_dist * pow(geo_dist/shortcut.dist, 1));                            
                 node_weight.geo_measure = std::max(node_weight.geo_measure, ew::calcWeight(shortcut.dist, src_node, tgt_node));
                 
-                node_weight.error = std::max(node_weight.error, errorMeasure->calcError(src_node, tgt_node, center_node));                            
+                //node_weight.error = std::max(node_weight.error, errorMeasure->calcError(src_node, tgt_node, center_node));                            
+                node_weight.error += errorMeasure->calcError(src_node, tgt_node, center_node);
             }            
                         
             

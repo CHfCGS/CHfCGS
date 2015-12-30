@@ -95,7 +95,7 @@ add_executable(ch_measurer
 	src/ch_measurer.cpp	
 	$<TARGET_OBJECTS:common>
 )
-target_link_libraries(ch_measurer ${GLPK_LIBRARIES} ${CGAL_LIBRARY} ${GMP_LIBRARIES} ${Boost_LIBRARIES} ) 
+target_link_libraries(ch_measurer ${GLPK_LIBRARIES} ${CGAL_LIBRARY} ${GMP_LIBRARIES} ${Boost_LIBRARIES} )
 
 set(TESTING OFF)
 

@@ -31,7 +31,7 @@ public:
         //reset marked
         std::fill(marked.begin(), marked.end(), false);        
         
-        Chains_and_Remainder CaR;    
+        Chains_and_Remainder CaR(graph.getMaxStreetType());    
 
         //collect all chains
         for (NodeID node_id : nodes) {        
@@ -65,7 +65,7 @@ public:
         chain.emplace_back(node_id);
         marked[node_id] = true;
 
-        StreetType type = graph.getMaxStreetType(node_id);
+        StreetType type = graph.getMinStreetType(node_id);
         bool isOneway = graph.isOneway(node_id);
         
         //backward direction

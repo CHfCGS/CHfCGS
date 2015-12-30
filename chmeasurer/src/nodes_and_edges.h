@@ -48,7 +48,7 @@ struct Edge {
     uint source;
     uint target;
     uint width;
-    int color;
+    int color;    
 };
 
 struct CHNode {
@@ -86,6 +86,7 @@ struct CHEdge {
     int speed;
     EdgeID child_edge1;
     EdgeID child_edge2;
+    bool vis_unpleasing;
     //bool remaining;
     
     uint distance() const { return dist; }

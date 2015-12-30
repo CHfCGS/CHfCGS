@@ -32,7 +32,7 @@ public:
         std::fill(marked.begin(), marked.end(), false);        
 
         //std::vector<chc::Chain> chains;
-        Chains_and_Remainder CaR;
+        Chains_and_Remainder CaR(base_graph.getMaxStreetType());
         //std::vector<bool> marked(base_graph.getNrOfNodes(), false);
 
         //collect all chains
@@ -67,7 +67,7 @@ public:
         chain.emplace_back(node_id);
         marked[node_id] = true;
 
-        chc::StreetType type = base_graph.getMaxStreetType(node_id);
+        chc::StreetType type = base_graph.getMinStreetType(node_id);
         bool isOneway = base_graph.isOneway(node_id);
         
         //backward direction

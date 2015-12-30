@@ -19,6 +19,8 @@ void printHelp() {
             << "Mandatory arguments are:\n"
             << "  -i, --infile <path>        Read graph from <path>\n"
             << "Optional arguments are:\n"
+            << "  -e, --edge <type>"
+            << "  -c, --chain <type>"
             << "  -d, --dijkstra <type>"
             << "  -l, --ilp <type>"
             << "  -p, --P_ilp <type>";
@@ -32,6 +34,8 @@ int main(int argc, char** argv) {
     
     const struct option longopts[] = {        
         {"infile", required_argument, 0, 'i'}, 
+        {"edge", no_argument, 0, 'e'},   
+        {"chain", no_argument, 0, 'c'},   
         {"dijkstra", no_argument, 0, 'd'},   
         {"ilp", no_argument, 0, 'l'},   
         {"p_ilp", no_argument, 0, 'p'},   
@@ -42,11 +46,17 @@ int main(int argc, char** argv) {
     int iarg(0);
     opterr = 1;
 
-    while ((iarg = getopt_long(argc, argv, "i:dlp", longopts, &index)) != -1) {
+    while ((iarg = getopt_long(argc, argv, "i:ecdlp", longopts, &index)) != -1) {
         switch (iarg) {            
             case 'i':
                 filepath = optarg;
-                break;                                    
+                break;    
+            case 'e':
+                m_options.edge = true;
+                break;
+            case 'c':
+                m_options.chain = true;
+                break;
             case 'd':
                 m_options.dijkstra = true;
                 break;

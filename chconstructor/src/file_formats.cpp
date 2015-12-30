@@ -410,7 +410,8 @@ namespace chc {
 		os << edge.src << " " << edge.tgt << " " << edge.dist << " "
 			<< edge.type << " " << edge.speed << " "
 			<< (edge.child_edge1 == c::NO_EID ? "-1" : std::to_string(edge.child_edge1)) << " "
-			<< (edge.child_edge2 == c::NO_EID ? "-1" : std::to_string(edge.child_edge2)) << "\n";
+			<< (edge.child_edge2 == c::NO_EID ? "-1" : std::to_string(edge.child_edge2)) << " "
+                        << edge.vis_unpleasing << "\n";
 	}
 
 	template<>

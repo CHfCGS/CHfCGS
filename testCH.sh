@@ -11,9 +11,11 @@ out=$data"FMAXSPEED.txt"
 #chconstructor
 in=$out
 out=$data"_ch_out.graph"
-#chconstructor/build/ch_constructor -i data/Graph/$in -o data/CH/$out -d EDE -p DP -s DP -e VE -w P -f FMI_DIST -g FMI_CH
-#chconstructor/build/ch_constructor -i data/Graph/$in -o data/CH/$out -d EDE -p DP -s DP -e VE -f FMI_DIST -g FMI_CH
-chconstructor/build/ch_constructor -i data/Graph/$in -o data/CH/$out -p EDGE_DIFF -s DP -e VE -f FMI_DIST -g FMI_CH
+#chconstructor/build/ch_constructor -i data/Graph/$in -o data/CH/$out  -p DP -s DP -e VE -f FMI_DIST -g FMI_CH #-d EDE
+chconstructor/build/ch_constructor -i data/Graph/$in -o data/CH/$out  -p DP -s DP -e VE -w P -f FMI_DIST -g FMI_CH # -d EDE
+#chconstructor/build/ch_constructor -i data/Graph/$in -o data/CH/$out -d EDE -p DP -s DP -c -e VE -f FMI_DIST -g FMI_CH
+#chconstructor/build/ch_constructor -i data/Graph/$in -o data/CH/$out -p EDGE_DIFF -v -s DP -e VE -f FMI_DIST -g FMI_CH
+#chconstructor/build/ch_constructor -i data/Graph/$in -o data/CH/$out -s DP -e VE -f FMI_DIST -g FMI_CH
  
 
 #measurer
@@ -23,6 +25,12 @@ NOW=$(date +"%Y_%m_%d_%H_%M_%S")
 LOGFILE="$NOW.log"
 
 
-./ch_measurer -i ../../data/CH/$in -l  2>&1 | tee ../logs/$LOGFILE    #-d #-p -l 
+./ch_measurer -i ../../data/CH/$in -p  2>&1 | tee ../logs/$LOGFILE    #-e -c -d -l  -p 
 
 #echo ./ch_measurer -i ../../data/CH/$in > ../logs/$LOGFILE -p | tee /dev/tty | foo
+
+#visualizer
+in=$out
+cd ../..
+cd simplestGraphRendering-master/build
+./simple -gf ../../data/CH/$in
