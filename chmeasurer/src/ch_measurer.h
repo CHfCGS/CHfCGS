@@ -21,7 +21,7 @@
 #include "track_time.h"
 
 #include "CGAL/cdthp_cross.h"
-//#include "CGAL/self_intersection_checker.h"
+#include "CGAL/self_intersection_checker.h"
 
 #include "measure_options.h"
 #include "simple_measures/angular_change.h"
@@ -120,11 +120,11 @@ namespace chm {
                         //Print("split_chain.size()" << split_chain.size());
                         //Print("expanded_split_chain.size()" << expanded_split_chain.size());
 
-                        /*
+                        
                         SelfIntersectionChecker selfIntersectionChecker(graph);
                         if(!selfIntersectionChecker.isSelfIntersecting(split_chain)
                                 && !selfIntersectionChecker.isSelfIntersecting(expanded_split_chain)) {                           
-                         * */
+                        
                             lineSimplificationILP ilp(graph);
                             double ilpNeededNumberOfEdges
                                 = ilp.solve(expanded_split_chain, epsilon_error + std::numeric_limits<double>::epsilon());                    
@@ -136,10 +136,10 @@ namespace chm {
                             //Debug("diff:" << diff);
                             errorcounts.length_sum += chains::calcChainLength(expanded_split_chain, graph);                       
                             errorcounts.addedDiffs += diff;                                                   
-                            /*
+                            
                         }else {
                             errorcounts.selfIntersecting++;
-                        }                           */
+                        }                           
                     }                    
                 }
             }
@@ -189,9 +189,11 @@ namespace chm {
                         double eta_whole = dF.calc_dF(chainpair.chainTo, chainpair.chainFrom);
                         double combined_whole_chain_length = chains::calcChainLength(chainpair.chainTo, graph) + chains::calcChainLength(chainpair.chainFrom, graph);                                    
                         errorcounts.weighted_eta += eta_whole * combined_whole_chain_length;
+                        errorcounts.length_sum2 += combined_whole_chain_length;
                         
                         EdgeChainPair edge_chain_pair(chainpair, graph);                                                
                         
+                        //process the splitted parts of the chains
                         for (EdgeChainPair split_edge_chain_pair : chains::split(edge_chain_pair, graph)) {
                             if (split_edge_chain_pair.chainTo.size() >= 2 && split_edge_chain_pair.chainFrom.size() >= 2) { 
                                 double epsilon_error = 0;
@@ -214,45 +216,53 @@ namespace chm {
                                 Chain expandedChainTo = chains::toExpandedNodeChain(split_edge_chain_pair.chainTo, graph);                            
                                 Chain expandedChainFrom = chains::toExpandedNodeChain(split_edge_chain_pair.chainFrom, graph);
                                 
-                                if(chains::uniqueElements(expandedChainTo, expandedChainFrom)) { //can happen by having same centernode
-                                
-                                    //Print("split_chain.size()" << chainTo.size() + chainFrom.size());
-                                    //Print("expanded_split_chain.size()" << expandedChainTo.size() + expandedChainFrom.size());                                                                
+                                SelfIntersectionChecker selfIntersectionChecker(graph);
+                                if(!selfIntersectionChecker.isSelfIntersecting(chainTo)
+                                        && !selfIntersectionChecker.isSelfIntersecting(chainFrom)
+                                        && !selfIntersectionChecker.isSelfIntersecting(expandedChainTo)
+                                        && !selfIntersectionChecker.isSelfIntersecting(expandedChainFrom)) {  
+                                    if(chains::uniqueElements(expandedChainTo, expandedChainFrom)) { //can happen by having same centernode
 
-                                    DiscreteFrechet dF(graph);
-                                    double eta = dF.calc_dF(chainTo, chainFrom);
-                                    //double eta2 = dF.calc_dF(redetected_chainTo.remaining_chain, redetected_chainFrom.remaining_chain);
-                                    //double eta = std::max(eta1, eta2);
-                                    Print("eta " << eta);                                                                                                
+                                        //Print("split_chain.size()" << chainTo.size() + chainFrom.size());
+                                        //Print("expanded_split_chain.size()" << expandedChainTo.size() + expandedChainFrom.size());                                                                
+
+                                        DiscreteFrechet dF(graph);
+                                        double eta = dF.calc_dF(chainTo, chainFrom);
+                                        //double eta2 = dF.calc_dF(redetected_chainTo.remaining_chain, redetected_chainFrom.remaining_chain);
+                                        //double eta = std::max(eta1, eta2);
+                                        Print("eta " << eta);                                                                                                
 
 
-                                    ParallelLineSimplificationILP p_ilp(graph);
-                                    const double epsilon_relaxation = 2.0;
-                                    double p_ilpNeededNumberOfEdges
-                                            = p_ilp.solve(expandedChainTo, expandedChainFrom,
-                                                epsilon_relaxation * epsilon_error + std::numeric_limits<double>::epsilon(),
-                                                eta + std::numeric_limits<double>::epsilon());
+                                        ParallelLineSimplificationILP p_ilp(graph);
+                                        const double epsilon_relaxation = 2.0;
+                                        double p_ilpNeededNumberOfEdges
+                                                = p_ilp.solve(expandedChainTo, expandedChainFrom,
+                                                    epsilon_relaxation * epsilon_error + std::numeric_limits<double>::epsilon(),
+                                                    eta + std::numeric_limits<double>::epsilon());
 
-                                    size_t preSize = split_edge_chain_pair.chainTo.size() + split_edge_chain_pair.chainFrom.size();
+                                        size_t preSize = split_edge_chain_pair.chainTo.size() + split_edge_chain_pair.chainFrom.size();
 
-                                    //assert(preSize >= p_ilpNeededNumberOfEdges);
-                                    double diff = preSize - p_ilpNeededNumberOfEdges;
-                                    //Debug("ilpNeededNumberOfEdges:" << ilpNeededNumberOfEdges);
-                                    //Debug("diff:" << diff);
-                                    double combined_chain_length = chains::calcChainLength(chainTo, graph) + chains::calcChainLength(chainFrom, graph);                                    
-                                    //errorcounts.weighted_eta += eta * combined_chain_length;
-                                    errorcounts.length_sum += combined_chain_length;                      
-                                    errorcounts.addedDiffs += diff;     
+                                        assert(preSize >= p_ilpNeededNumberOfEdges);
+                                        double diff = preSize - p_ilpNeededNumberOfEdges;
+                                        //Debug("ilpNeededNumberOfEdges:" << ilpNeededNumberOfEdges);
+                                        //Debug("diff:" << diff);
+                                        double combined_chain_length = chains::calcChainLength(chainTo, graph) + chains::calcChainLength(chainFrom, graph);                                    
+                                        //errorcounts.weighted_eta += eta * combined_chain_length;
+                                        errorcounts.length_sum += combined_chain_length;                      
+                                        errorcounts.addedDiffs += diff;     
+                                    }                                        
+                                } else {
+                                    errorcounts.selfIntersecting++;
                                 }
-                            }
-                        }                                                
+                            }                                                
+                        }
                     }
             }
             errorcounts.print();   
             Print("length" << errorcounts.length_sum);
-            assert(errorcounts.length_sum != 0);
+            //assert(errorcounts.length_sum != 0);
             Print("diff/length ratio" << errorcounts.addedDiffs/errorcounts.length_sum);
-            Print("avg_eta" << errorcounts.weighted_eta/errorcounts.length_sum);
+            Print("avg_eta" << errorcounts.weighted_eta/errorcounts.length_sum2);
         }
         
         void makeDijkstraMeasure() {            
@@ -370,7 +380,7 @@ namespace chm {
         void makeMeasurement(MeasureOptions m_options) {
             Print("make measure");    
             //measurements without path-finding info
-            graph.zoom(100, false, 0);
+            graph.zoom(100, false, true, 0);
             for (uint i = 0; i < graph.getNrOfNodes(); i++) {
                 assert(graph.isValidNode(i));
             }
@@ -378,7 +388,8 @@ namespace chm {
             Chains_and_Remainder CaR(graph.getMaxStreetType());
             
             //graph.zoom(50, false, 800);    
-            graph.zoom(0.02, true, 800);    
+            //graph.zoom(0.02, true, true, 800);    
+            graph.zoom(0.02, true, true, 0.004);    
             Print("Detecting chains");            
             //CaR = chaindetector.detectChains(EdgeDiffPrioritizer<GraphT, CHConstructorT>::_prio_vec);  
             /*
@@ -422,6 +433,11 @@ namespace chm {
             
             if (m_options.p_ilp) {
                 make_p_ilp_measure(CaR);
+            }
+            
+            //affords only zooming
+            if (m_options.expand_diff) {
+                graph.zoom(0.02, true, false, 0.2);
             }
            
         }

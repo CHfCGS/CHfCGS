@@ -266,7 +266,7 @@ struct PrioNode2 {
         //right hand side
         double rhs_error;
         int rhs_cross_diff;
-        if (this->followerValid) {
+        if (rhs.followerValid) {
             PrioNode2 &follower = *(rhs.follower_h);
             rhs_error = (rhs.error + follower.error)/2;
             rhs_cross_diff = (rhs.cross_diff + follower.cross_diff)/2.0;
@@ -274,7 +274,8 @@ struct PrioNode2 {
             rhs_error = rhs.error;
             rhs_cross_diff = rhs.cross_diff;
         }
-                  
+            
+        //compare
         if (lhs_cross_diff > rhs_cross_diff) {
             return true;
         } else if (lhs_cross_diff == rhs_cross_diff) {            

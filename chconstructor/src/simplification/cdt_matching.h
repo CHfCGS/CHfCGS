@@ -222,7 +222,7 @@ private:
     }
     */
     
-    void insertChainConstraints(std::list<PrioNodeHandle> &list,
+    void insertChainConstraints(const std::list<PrioNodeHandle> &list,
                                     std::list<CDT::Vertex_handle> &vertexHandles,
                                     bool side,
                                     CDT &cdt) {
@@ -247,8 +247,8 @@ private:
         }
     }
     
-    void insertConstraints(std::list<PrioNodeHandle> &toList,
-                            std::list<PrioNodeHandle> &fromList,
+    void insertConstraints(const std::list<PrioNodeHandle> &toList,
+                            const std::list<PrioNodeHandle> &fromList,
                             CDT &cdt) {
         
         std::list<CDT::Vertex_handle> vertexHandlesTo;
@@ -268,8 +268,8 @@ public:
     CDTMatching2(const GraphT &graph) : graph(graph) {        
     }
 
-    void match(std::list<PrioNodeHandle> &toList,
-                std::list<PrioNodeHandle> &fromList) {
+    void match(const std::list<PrioNodeHandle> &toList,
+                const std::list<PrioNodeHandle> &fromList) {
         assert(toList.size() >= 1 && fromList.size() >= 1);
         CDT cdt;                
 

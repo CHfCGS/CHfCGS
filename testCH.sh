@@ -11,11 +11,16 @@ out=$data"FMAXSPEED.txt"
 #chconstructor
 in=$out
 out=$data"_ch_out.graph"
-#chconstructor/build/ch_constructor -i data/Graph/$in -o data/CH/$out  -p DP -s DP -e VE -f FMI_DIST -g FMI_CH #-d EDE
-chconstructor/build/ch_constructor -i data/Graph/$in -o data/CH/$out  -p DP -s DP -e VE -w P -f FMI_DIST -g FMI_CH # -d EDE
-#chconstructor/build/ch_constructor -i data/Graph/$in -o data/CH/$out -d EDE -p DP -s DP -c -e VE -f FMI_DIST -g FMI_CH
-#chconstructor/build/ch_constructor -i data/Graph/$in -o data/CH/$out -p EDGE_DIFF -v -s DP -e VE -f FMI_DIST -g FMI_CH
-#chconstructor/build/ch_constructor -i data/Graph/$in -o data/CH/$out -s DP -e VE -f FMI_DIST -g FMI_CH
+NOW=$(date +"%Y_%m_%d_%H_%M_%S")
+LOGFILE="$NOW.log"
+#chconstructor/build/ch_constructor -i data/Graph/$in -o data/CH/$out  -p DP -s NTH -d EDE -f FMI_DIST -g FMI_CH 2>&1 | tee chconstructor/log/$LOGFILE # -d EDE
+#chconstructor/build/ch_constructor -i data/Graph/$in -o data/CH/$out  -p DP -s DP -e VE -d EDE -f FMI_DIST -g FMI_CH 2>&1 | tee chconstructor/log/$LOGFILE #-d EDE
+chconstructor/build/ch_constructor -i data/Graph/$in -o data/CH/$out  -p DP -s DP -e VE -w P -f FMI_DIST -g FMI_CH 2>&1 | tee chconstructor/log/$LOGFILE # -d EDE
+#chconstructor/build/ch_constructor -i data/Graph/$in -o data/CH/$out  -p DP -s BU -e KE -w CD -d EDE -f FMI_DIST -g FMI_CH 2>&1 | tee chconstructor/log/$LOGFILE #-d EDE
+
+#chconstructor/build/ch_constructor -i data/Graph/$in -o data/CH/$out -d EDE -p DP -s DP -c -e VE -f FMI_DIST -g FMI_CH 2>&1 | tee chconstructor/log/$LOGFILE
+#chconstructor/build/ch_constructor -i data/Graph/$in -o data/CH/$out -p EDGE_DIFF -v -s DP -e VE -f FMI_DIST -g FMI_CH 2>&1 | tee chconstructor/log/$LOGFILE
+#chconstructor/build/ch_constructor -i data/Graph/$in -o data/CH/$out -s DP -e VE -f FMI_DIST -g FMI_CH 2>&1 | tee chconstructor/log/$LOGFILE
  
 
 #measurer
@@ -25,7 +30,7 @@ NOW=$(date +"%Y_%m_%d_%H_%M_%S")
 LOGFILE="$NOW.log"
 
 
-./ch_measurer -i ../../data/CH/$in -p  2>&1 | tee ../logs/$LOGFILE    #-e -c -d -l  -p 
+./ch_measurer -i ../../data/CH/$in -p  2>&1 | tee ../logs/$LOGFILE    #-e -c -d -l -p -v 
 
 #echo ./ch_measurer -i ../../data/CH/$in > ../logs/$LOGFILE -p | tee /dev/tty | foo
 
@@ -33,4 +38,4 @@ LOGFILE="$NOW.log"
 in=$out
 cd ../..
 cd simplestGraphRendering-master/build
-./simple -gf ../../data/CH/$in
+#./simple -gf ../../data/CH/$in

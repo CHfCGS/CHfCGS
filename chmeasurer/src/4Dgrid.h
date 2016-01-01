@@ -12,6 +12,7 @@
 #include <cstdlib>
 #include <cmath>
 #include <iostream>
+#include <algorithm>
 
 #include "nodes_and_edges.h"
 #include "chains.h"
@@ -199,13 +200,16 @@ public:
     }
         
     
-    void identifyPairs(Chains_and_Remainder &CaR) {        
-        for (int i = 1; i < 11; ++i) { //range of streettypes where two laning can occur
+    void identifyPairs(Chains_and_Remainder &CaR) {  
+        const uint l_1 = 11;
+        const uint l_2 = CaR.oneWayChainsAccordingToType.size();
+        uint highestTwoLaning = std::min(l_1, l_2);
+        for (uint i = 1; i < highestTwoLaning; ++i) { //range of streettypes where two laning can occur
         //int i = 0;
         //for (ChainsOfType &chainsOfType : CaR.chainsAccordingToType) {
             
             ChainsOfType &chainsOfType = CaR.oneWayChainsAccordingToType.at(i);
-            Print("Number of chainsOfType: " << chainsOfType.size());
+            Print("Number of chainsOfType: " << i << ": " << chainsOfType.size());
             //int j=i;
             //i++;
             //if (1 <= j && j < 11) {
@@ -311,10 +315,14 @@ public:
         //ChainsOfType::iterator closestChain = chainsptr->end();
         //Gridpoint closestChain(chains.end(), nullptr, false);
         Gridpoint* closestChain = nullptr;
-        //double waylength = geoDistComparison(nodeIdFront, nodeIdBack);                
+        //double waylength = geoDist(nodeIdFront, nodeIdBack);                
+        
+        //double closestDistance = waylength / 10;//200; //min(waylength / 10, 1.0);
+        double waylength = geo::geoDist(base_graph.getNode(nodeIdFront), base_graph.getNode(nodeIdBack));                
         //double closestDistance = numeric_limits<double>::max();
-        double closestDistance = 20000;//200; //min(waylength / 10, 1.0);
-
+        double closestDistance = waylength / 5;
+        //double closestDistance = numeric_limits<double>::max();
+        
         for (int dx1 = -1; dx1 <= 1; dx1++) {
             if (indexInRange(x1, dx1)) {
                 for (int dx2 = -1; dx2 <= 1; dx2++) {

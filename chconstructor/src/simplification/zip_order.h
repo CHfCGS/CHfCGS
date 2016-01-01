@@ -24,12 +24,15 @@ template <class GraphT>
 class ZipOrder {
     
     struct ZipNode {
-        std::list<PrioNodeHandle>::const_iterator handleIt; //iterator in an Intervall list
+        //std::list<PrioNodeHandle>::const_iterator handleIt; //iterator in an Intervall list
+        PrioNodeHandle pnh;
         //PPrioNodeRef &pnr;
         bool listDirection = 0; //saves on which line the node was, true = To, false = From
-        ZipNode() {};
-        ZipNode(std::list<PrioNodeHandle>::const_iterator handleIt, bool listDirection):
-            handleIt(handleIt), listDirection(listDirection) {};
+        ZipNode() {}
+        //ZipNode(std::list<PrioNodeHandle>::const_iterator handleIt, bool listDirection):
+        //    handleIt(handleIt), listDirection(listDirection) {};
+        ZipNode(PrioNodeHandle pnh, bool listDirection):
+            pnh(pnh), listDirection(listDirection) {}
     };
     
     struct ZipSegment {
@@ -42,9 +45,11 @@ class ZipOrder {
     const GraphT &graph;           
        
     //double geoDist(NodeID nodeID1, NodeID nodeID2) {
-    double geoDist(const ZipNode zn1, const ZipNode zn2) {
-        const PrioNode2 &pn1 = *(*zn1.handleIt);
-        const PrioNode2 &pn2 = *(*zn2.handleIt);
+    double geoDist(const ZipNode zn1, const ZipNode zn2) const {
+        //const PrioNode2 &pn1 = *(*zn1.handleIt);
+        //const PrioNode2 &pn2 = *(*zn2.handleIt);
+        const PrioNode2 &pn1 = *zn1.pnh;
+        const PrioNode2 &pn2 = *zn2.pnh;
         return geo::geoDist(graph.getNode(pn1.node_id), graph.getNode(pn2.node_id));
         /*
         double lon1 = base_graph.getLon(nodeID1);
@@ -64,7 +69,7 @@ class ZipOrder {
     //on the active side it is pointed to the element which is already pushed on zipOrder and on the inactive side it is the first element which is still not pushed
     ZipNode getNext(const std::list<PrioNodeHandle> &list1, const std::list<PrioNodeHandle> &list2,
                     std::list<PrioNodeHandle>::const_iterator &it1, std::list<PrioNodeHandle>::const_iterator &it2,
-                    bool &activeDirection) {
+                    bool &activeDirection) const {
         
         //active direction 1 = true, 2 = false
         const std::list<PrioNodeHandle> &activeList = activeDirection ?  list1 : list2;
@@ -79,12 +84,13 @@ class ZipOrder {
             activeIt++;
             activeDirection = !activeDirection;
 
-            return ZipNode(passiveIt, activeDirection);
+            assert(passiveIt != passiveList.end());
+            return ZipNode(*passiveIt, activeDirection);
         } else {
             if (passiveIt == passiveList.end()) {
                 activeIt++;
 
-                return ZipNode(activeIt, activeDirection);
+                return ZipNode(*activeIt, activeDirection);
             } else {                                   
                 double currentDistance = ls::mc::geoDist(*activeIt, *passiveIt, graph);
                 double afterleapedDistance = ls::mc::geoDist(*nextIt, *passiveIt, graph);
@@ -94,18 +100,18 @@ class ZipOrder {
                 if (currentDistance > afterleapedDistance) {
                     activeIt++;
 
-                    return ZipNode(activeIt, activeDirection);
+                    return ZipNode(*activeIt, activeDirection);
                 } else {
                     activeIt++;
                     activeDirection = !activeDirection;
 
-                    return ZipNode(passiveIt, activeDirection);
+                    return ZipNode(*passiveIt, activeDirection);
                 }
             }
         }            
     }
     
-    int getPreviousNodeOnOtherSide(std::vector<ZipNode> &zipOrder, int i) {
+    static int getPreviousNodeOnOtherSide(const std::vector<ZipNode> &zipOrder, int i) {
         debug_assert(0 <= i && i < (int) zipOrder.size());
         bool activeSide = zipOrder[i].listDirection;
         
@@ -118,7 +124,7 @@ class ZipOrder {
         return i;                
     }
     
-    int getNextNodeOnOtherSide(std::vector<ZipNode> &zipOrder, int i) {
+    static int getNextNodeOnOtherSide(const std::vector<ZipNode> &zipOrder, int i) {
         debug_assert(0 <= i && i < (int) zipOrder.size());
         bool activeSide = zipOrder[i].listDirection;
         
@@ -131,9 +137,10 @@ class ZipOrder {
         return i;                
     }
     
-    
-    void _setFollower (const std::list<PrioNodeHandle>::const_iterator nodeIt,
+    /*
+    static void _setFollowerZN (const std::list<PrioNodeHandle>::const_iterator nodeIt,
                       const std::list<PrioNodeHandle>::const_iterator followerIt) {
+        
         PrioNode2 &node = *(*nodeIt);
         PrioNode2 &follower = *(*followerIt);
         node.followerValid = true;
@@ -142,15 +149,17 @@ class ZipOrder {
         const PrioNodeHandle pnh = *nodeIt;
         std::list<PrioNodeHandle> &guidelist = follower.guides;
         guidelist.push_back(pnh);
-    }
+        
+        //_setFollower(*nodeIt, *followerIt);        
+    }*/
     
-    void _setFollowers (std::list<ZipNode> &zipNodes, std::list<PrioNodeHandle>::const_iterator followerIt) {
-        for (ZipNode &zn : zipNodes) {
-           _setFollower (zn.handleIt, followerIt); 
+    static void _setFollowers (const std::list<ZipNode> &zipNodes, PrioNodeHandle follower_pnh) {
+        for (const ZipNode &zn : zipNodes) {
+           _setFollower(zn.pnh, follower_pnh); 
         }
     }
     
-    void processSegment (ZipSegment &zs) {         
+    void processSegment (ZipSegment &zs) const {         
         if (zs.zipNodes.empty()) {
             return; //Recursion end
         } else {
@@ -178,26 +187,26 @@ class ZipOrder {
             if (minSide == true) { //cut away front part                
                 followerDeterminedZipNodes.splice (followerDeterminedZipNodes.begin(),
                     zs.zipNodes, zs.zipNodes.begin(), ++minIt);
-                _setFollowers(followerDeterminedZipNodes, zs.prevOnOtherSide.handleIt);                
+                _setFollowers(followerDeterminedZipNodes, zs.prevOnOtherSide.pnh);                
                 processSegment(zs);
                 
             } else {  //cut away back part
                 
                 followerDeterminedZipNodes.splice (followerDeterminedZipNodes.begin(),
                     zs.zipNodes, minIt, zs.zipNodes.end());
-                _setFollowers(followerDeterminedZipNodes, zs.nextOnOtherSide.handleIt);                
+                _setFollowers(followerDeterminedZipNodes, zs.nextOnOtherSide.pnh);                
                 processSegment(zs);                
             }
             
         }
     }
     
-    void setFollowers (std::vector<ZipNode> &zipOrder, bool careOrdering, 
-            const std::list<PrioNodeHandle> &list1, const std::list<PrioNodeHandle> &list2) {
+    void setFollowers(const std::vector<ZipNode> &zipOrder, bool careOrdering, 
+            const std::list<PrioNodeHandle> &list1, const std::list<PrioNodeHandle> &list2) const {
         
         if (careOrdering && list1.size()>=1 && list2.size()>=1) {
                   
-            //more sophisticated to respect ordering
+            //more sophisticated with respect to ordering
             
             bool active_Direction;
             //first Segment
@@ -211,7 +220,7 @@ class ZipOrder {
                 i++;
             }
             firstSegment.nextOnOtherSide = zipOrder.at(i);
-            _setFollowers(firstSegment.zipNodes, firstSegment.nextOnOtherSide.handleIt);            
+            _setFollowers(firstSegment.zipNodes, firstSegment.nextOnOtherSide.pnh);            
             uint lastOfFirst = i-1;            
             
             //last Segment
@@ -225,7 +234,7 @@ class ZipOrder {
                 j--;
             }
             lastSegment.prevOnOtherSide = zipOrder.at(j);
-            _setFollowers(lastSegment.zipNodes, lastSegment.prevOnOtherSide.handleIt); 
+            _setFollowers(lastSegment.zipNodes, lastSegment.prevOnOtherSide.pnh); 
             uint firstOfLast = j+1;
                  
             //middle Segments
@@ -288,9 +297,9 @@ class ZipOrder {
 
                 debug_assert(0<=follower && follower < (int) zipOrder.size());
                 
-                std::list<PrioNodeHandle>::const_iterator nodeIt = zipOrder[i].handleIt;
-                std::list<PrioNodeHandle>::const_iterator followerIt = zipOrder[follower].handleIt;
-                _setFollower(nodeIt, followerIt);                
+                //std::list<PrioNodeHandle>::const_iterator nodeIt = zipOrder[i].handleIt;
+                //std::list<PrioNodeHandle>::const_iterator followerIt = zipOrder[follower].handleIt;                
+                _setFollower(zipOrder[i].pnh, zipOrder[follower].pnh);                
             }   
         }                 
     }
@@ -301,14 +310,14 @@ public:
     ZipOrder(const GraphT &graph)
         : graph(graph) {}
     
-    void match(const std::list<PrioNodeHandle> &list1, const std::list<PrioNodeHandle> &list2) {
+    void match(const std::list<PrioNodeHandle> &list1, const std::list<PrioNodeHandle> &list2) const {
         std::vector<ZipNode> zipOrder;
         size_t size = list1.size() + list2.size();
         zipOrder.reserve(size);
         //construct an ordering to get follow-function
 
         bool activeDirection = true; //there cant happen that much if we start arbitrarily
-        zipOrder.push_back(ZipNode(list1.begin(), activeDirection));
+        zipOrder.push_back(ZipNode(list1.front(), activeDirection));
 
         auto it1 = list1.begin();
         auto it2 = list2.begin();

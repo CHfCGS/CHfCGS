@@ -76,7 +76,8 @@ class Graph
                 std::list<NodeID> nodeNeighbours(NodeID node_id) const;                
                 std::list<NodeID> nodeNeighbours(NodeID node_id, StreetType type) const;
                 std::list<NodeID> nodeNeighbours(NodeID node_id, StreetType streetType, EdgeType edgeDirection) const;
-                StreetType getMinStreetType(NodeID node_id) const;                
+                StreetType getMinStreetType(NodeID node_id) const;   
+                std::vector<StreetType> getStreetTypeVector() const;
                 bool degree_leq(NodeID node_id , uint degree) const;
                 bool isOneway(NodeID node_id) const;
 
@@ -355,6 +356,17 @@ StreetType Graph<NodeT, EdgeT>::getMinStreetType(NodeID node_id) const
             }
         }
         return MinStreetType;
+}
+
+template <typename NodeT, typename EdgeT>
+std::vector<StreetType> Graph<NodeT, EdgeT>::getStreetTypeVector() const
+{
+    std::vector<StreetType> streetTypes;
+    streetTypes.resize(getNrOfNodes());
+    for(NodeID node_id = 0; node_id < getNrOfNodes(); node_id++) {
+        streetTypes[node_id] = getMinStreetType(node_id);
+    }
+    return streetTypes;
 }
 
 template <typename NodeT, typename EdgeT>

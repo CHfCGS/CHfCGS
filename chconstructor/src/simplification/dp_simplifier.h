@@ -45,9 +45,7 @@ class DPSimplifier : public LineSimplifier{
             for (PrioNodeHandle guide_h : max.guides) {
                 PrioNode2 &guide = *guide_h;
                 guide.followerValid = false;
-            }
-            
-            
+            }                        
             
             //check if there is a follower
             if (max.followerValid) {
@@ -317,7 +315,7 @@ class DPSimplifier : public LineSimplifier{
                 initializeChain(chain1);
                 initializeChain(chain2);
 
-                //one chain need to reversed for matching
+                //one chain needs to reversed for matching
                 intervalls.back().prioNodeHandles.reverse();                
                 mc::match<GraphT> (graph, intervalls.front().prioNodeHandles, intervalls.back().prioNodeHandles, s_options.pairMatch_type);
                 //matchChainPairNodes2<GraphT> matcher(base_graph, intervalls.front(), intervalls.back());

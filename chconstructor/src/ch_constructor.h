@@ -119,8 +119,10 @@ namespace chc {
         void rebuildCompleteGraph();
 
         /* const functions that use algorithms from the CHConstructor */
+        
         std::vector<NodeID> calcIndependentSet(std::vector<sortNode> const& sorted_nodes,
-                uint max_degree = MAX_UINT) const;
+                uint max_degree = MAX_UINT) const;        
+        std::vector<NodeID> calcIndependentSetMedian(std::vector<NodeID> const& nodes, uint median) const;        
         std::vector<NodeID> calcIndependentSet(std::vector<NodeID> const& nodes,
                 uint max_degree = MAX_UINT) const;
         int calcEdgeDiff(NodeID node) const;            
@@ -663,6 +665,25 @@ namespace chc {
 
         for (NodeID node : nodes) {
             if (!marked[node] && max_degree >= _base_graph.getNrOfEdges(node)) {
+                marked[node] = true;
+                _markNeighbours(node, marked);
+                independent_set.push_back(node);
+            }
+        }
+        return independent_set;
+    }
+           
+    template <typename NodeT, typename EdgeT>
+    std::vector<NodeID> CHConstructor<NodeT, EdgeT>::calcIndependentSetMedian(std::vector<NodeID> const& nodes, uint median_pos) const {
+        uint set_size_max = median_pos + 1;
+        assert(set_size_max <= nodes.size());
+        std::vector<NodeID> independent_set;
+        std::vector<bool> marked(_base_graph.getNrOfNodes(), false);
+        independent_set.reserve(set_size_max);
+
+        for (int i = 0; i < set_size_max; i++) {
+            NodeID node = nodes[i];
+            if (!marked[node]) {
                 marked[node] = true;
                 _markNeighbours(node, marked);
                 independent_set.push_back(node);

@@ -66,6 +66,11 @@ namespace geo {
     bool differentSign(double d1, double d2) {
         return (d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0);
     }
+    
+    //height divided by baselength
+    double getTriangleProportion(CHNode source, CHNode target, CHNode outlier) {
+        return calcPerpendicularLength(source, target, outlier)/geoDist(source, target);
+    }
 
     bool testIntersection(CHLine line1, CHLine line2) {
         //4 Orientation tests

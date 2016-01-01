@@ -11,8 +11,8 @@
 
 #include "simplification/lineSimplifierType.h"
 #include "simplification/lineSimplifier.h"
-#include "simplification/dp_simplifier.h"
-#include "simplification/discreteCurveEvolution.h"
+//#include "simplification/dp_simplifier.h"
+//#include "simplification/discreteCurveEvolution.h"
 
 #include "chains.h"
 #include "grid.h"
@@ -84,7 +84,31 @@ namespace chc {
 
             bool operator()(NodeID node1, NodeID node2) const
             {               
-                return g.getMaxStreetType(node1) > g.getMaxStreetType(node1);                    
+                return g.getMaxStreetType(node1) > g.getMaxStreetType(node2);                    
+            }                        
+        }; 
+        
+        struct CompOriginalMST {            
+            const std::vector<StreetType>& _streetTypes;
+            CompOriginalMST(const std::vector<StreetType>& _streetTypes)
+                    : _streetTypes(_streetTypes) {}
+
+            bool operator()(NodeID node1, NodeID node2) const
+            {               
+                return _streetTypes[node1] > _streetTypes[node2];                    
+            }                        
+        }; 
+        
+        struct CompEdgeDiff {
+            const std::vector<uint>& node_id_to_index;
+            const std::vector<int>& edge_diffs;            
+
+            CompEdgeDiff(const std::vector<uint>& node_id_to_index, std::vector<int>& edge_diffs)
+                    : node_id_to_index(node_id_to_index), edge_diffs(edge_diffs) {}
+
+            bool operator()(NodeID node_id1, NodeID node_id2) const
+            {                               
+                return edge_diffs[node_id_to_index[node_id1]] < edge_diffs[node_id_to_index[node_id2]];                    
             }                        
         }; 
         
@@ -108,6 +132,8 @@ namespace chc {
         CHConstructorT const& _chc;
         std::vector<NodeID> _prio_vec;
         std::vector<double> weights;
+        const std::vector<StreetType> _streetTypes;        
+        std::vector<uint> _node_id_to_index;
                         
         State state;
         Grid<GraphT> grid;
@@ -176,6 +202,7 @@ namespace chc {
 
             from_nodes.resize(remaining_nodes);
         }
+        
         
         double simulateChainContract(const std::list<ChainPriolist> &chain_prio_lists) const {
             std::vector<double> independent_set_errors;            
@@ -401,7 +428,38 @@ namespace chc {
             }
         }   
         
-        std::vector<NodeID> getLowEdgeDiffNodes (const std::vector<NodeID>& nodes) {
+        void setNodeIDsToIndices(const std::vector<NodeID>& nodes) {            
+            uint index = 0;
+            for (NodeID node_id: nodes) {
+                _node_id_to_index[node_id] = index;
+                index++;
+            }
+        }
+        
+        void getLowEdgeDiffNodesMedian (std::vector<NodeID>& nodes) {
+            auto edge_diffs(_chc.calcEdgeDiffs(nodes));
+            setNodeIDsToIndices(nodes);
+            uint median_pos = nodes.size()/2;
+            std::nth_element(nodes.begin(), nodes.begin() + median_pos, nodes.end(), CompEdgeDiff(_node_id_to_index, edge_diffs));            
+            nodes.resize(median_pos + 1);            
+        }
+        
+        
+        std::vector<NodeID> _chooseIndependentSetFromRemainderOriginalMSTMedian(std::vector<NodeID> &remainder) {            
+            uint median_pos = (remainder.size())/2;            
+            std::nth_element(remainder.begin(), remainder.begin() + median_pos, remainder.end(), CompOriginalMST(_streetTypes));            
+                    
+            std::sort(remainder.begin(), remainder.begin() + median_pos, CompInOutProduct(_base_graph));        
+            auto independent_set(_chc.calcIndependentSetMedian(remainder, median_pos));                                    
+            getLowEdgeDiffNodesMedian(independent_set);                        
+            return independent_set;
+        } 
+        /*
+        std::vector<NodeID> getOriginalMstMedian (const std::vector<NodeID>& nodes) {
+            std::nth_element(nodes.begin(), nodes.begin() + nodes.size()/2, nodes.end(), CompOriginalMST(_base_graph));            
+        }*/
+        
+        std::vector<NodeID> getLowEdgeDiffNodes (const std::vector<NodeID>& nodes) const {
             auto edge_diffs(_chc.calcEdgeDiffs(nodes));            
 
             double edge_diff_mean(0);
@@ -420,7 +478,31 @@ namespace chc {
             return low_edge_diff_nodes;            
         }
         
-        std::vector<NodeID> getHighMSTNodes (const std::vector<NodeID>& nodes) {
+        std::vector<NodeID> getOriginalMST (const std::vector<NodeID>& nodes) const{
+            StreetType highest_max_street_type = 0;
+            for (NodeID node_id: nodes) {
+                if (_streetTypes[node_id] > highest_max_street_type) {
+                    highest_max_street_type = _streetTypes[node_id];
+                }                
+            }
+            std::vector<NodeID> high_mst_nodes; 
+            for (NodeID node_id: nodes) {
+                if (_streetTypes[node_id] >= highest_max_street_type/2) {
+                    high_mst_nodes.push_back(node_id);
+                }                
+            }
+            return high_mst_nodes;                                
+        }
+        
+        std::vector<NodeID> _chooseIndependentSetFromRemainderOriginalMST(std::vector<NodeID> &remainder) const {            
+            auto high_mst_nodes(getOriginalMST(remainder));            
+            std::sort(high_mst_nodes.begin(), high_mst_nodes.end(), CompInOutProduct(_base_graph));        
+            auto independent_set(_chc.calcIndependentSet(high_mst_nodes));                        
+            return getLowEdgeDiffNodes(independent_set);                        
+        } 
+        
+        
+        std::vector<NodeID> getHighMSTNodes (const std::vector<NodeID>& nodes) const {
             auto min_street_types(_chc.calcMinStreetTypes(nodes));
 
             int highest_mst(-3);
@@ -623,7 +705,8 @@ namespace chc {
         //, dp(this->_base_graph, grid), cpdp(this->_base_graph,
         
         DPPrioritizer(SOptions s_options, GraphT const& base_graph, CHConstructorT const& chc)
-                : _base_graph(base_graph), _chc(chc), weights(_base_graph.getNrOfNodes()), state(State::start),
+                : _base_graph(base_graph), _chc(chc), weights(_base_graph.getNrOfNodes()),
+                _streetTypes(_base_graph.getStreetTypeVector()), _node_id_to_index(_base_graph.getNrOfNodes()), state(State::start),
                 grid(1000, base_graph), fourDGrid(1, base_graph), deadEndDetector(base_graph),
                 chaindetector(base_graph), _CaR(_base_graph.getMaxStreetType()), // epsilon(10000),        
                 s_options(s_options) {                        
@@ -700,12 +783,13 @@ namespace chc {
                             }                        
                         }
                         //dont contract peanuts
-                        //double threshold = log(_base_graph.getNrOfNodes()) / log (1.01);
-                        double threshold = 1;
+                        double threshold = log(_base_graph.getNrOfNodes()) / log (1.1);
+                        Print("threshold: " << threshold);
+                        //double threshold = 1;
                         if(next_nodes.size() < threshold) {
                             _deadEndPrioLists.clear();
                             deadEndPhaseCounter++;
-                            if (deadEndPhaseCounter > 20) {
+                            if (deadEndPhaseCounter > 5) {
                                 state = State::removingChains;  
                             }
 
@@ -836,9 +920,11 @@ namespace chc {
                 }
                 
                 case State::removingRemaining: { 
-                    Print("_prio_vec.size()" << _prio_vec.size());
+                    //Print("_prio_vec.size()" << _prio_vec.size());
                     Print("Getting Independent set from Remainder");
-                    next_nodes = _chooseIndependentSetFromRemainderED(_CaR.remainder);
+                    //next_nodes = _chooseIndependentSetFromRemainderED(_CaR.remainder);
+                    //next_nodes = _chooseIndependentSetFromRemainderOriginalMST(_CaR.remainder);
+                    next_nodes = _chooseIndependentSetFromRemainderOriginalMSTMedian(_CaR.remainder);
                     //next_nodes = _chooseIndependentSetFromRemainder3(_CaR.remainder, s_options.errorMeasure_type);
                     //next_nodes = _chooseIndependentSetFromRemainderED(_CaR.remainder);
                     //next_nodes = _chooseIndependentSetFromRemainderLowGeoMeasure(_CaR.remainder, s_options.errorMeasure_type);

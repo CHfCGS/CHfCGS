@@ -1,9 +1,11 @@
 #pragma once
 
+#include "nth_point_simplifier.h"
 #include "dp_simplifier.h"
 #include "lineSimplifier.h"
 #include "../s_options.h"
 #include "discreteCurveEvolution.h"
+
 
 #include <memory>
 
@@ -23,6 +25,9 @@ LineSimplifierType toLineSimplifierType(std::string const& type)
 	if (type == "NONE") {
             return LineSimplifierType::NONE;
 	}
+        else if (type == "NTH") {
+            return LineSimplifierType::NTH;
+	}
         else if (type == "DP") {
             return LineSimplifierType::DP;
 	}
@@ -38,6 +43,8 @@ std::string to_string(LineSimplifierType type)
 	switch (type) {
 	case LineSimplifierType::NONE:
 		return "NONE";	
+        case LineSimplifierType::NTH:
+		return "NTH";	
         case LineSimplifierType::DP:
 		return "DP";	
         case LineSimplifierType::BU:
@@ -55,6 +62,8 @@ template <class GraphT>
         switch (lineSimplifier_type) {
             case LineSimplifierType::NONE:
                 return nullptr;
+            case LineSimplifierType::NTH:                
+                return std::unique_ptr<LineSimplifier>(new NthPointSimplifier<GraphT>());
             case LineSimplifierType::DP:
                 return std::unique_ptr<LineSimplifier>(new DPSimplifier<GraphT>(s_options, graph, grid));
             case LineSimplifierType::BU:                

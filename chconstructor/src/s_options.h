@@ -6,7 +6,7 @@
 #include "dead_end_detector.h"
 
 namespace ls {    
-    enum class LineSimplifierType { NONE = 0, BU, DP}; 
+    enum class LineSimplifierType { NONE = 0, NTH , BU, DP}; 
 //    enum class PairMatchType { NONE = 0, ZO, CD};
 }
 

@@ -4,6 +4,7 @@
 
 #include "widthAndColors.h"
 #include "nodesAndEdges.h"
+#include "geoFunctions.h"
 
 #define DEBUG_BUILD
 
@@ -40,12 +41,25 @@ namespace Zoomer {
 			}*/
 		}   
 	}
+
+	/*
+	static double CHGraph<NodeT, EdgeT>::edgeError(const vector<CHNode> &nodes, const vector<CHEdge> &edges const EdgeID edge_id) const {
+		const EdgeT& edge = getEdge(edge_id);
+		const NodeT& src_node = getNode(edge.src);
+		const NodeT& tgt_node = getNode(edge.tgt);
+		const EdgeT& child_edge1 = getEdge(edge.child_edge1);
+		const EdgeT& child_edge2 = getEdge(edge.child_edge2);
+		assert(child_edge1.tgt == child_edge2.src);
+		const NodeT center_node = getNode(child_edge1.tgt);
+		return geo::calcPerpendicularLength(src_node, tgt_node, center_node);
+	}*/
 	
 	static void expandEdge(const vector<CHNode> &nodes, vector<CHEdge> &edges, const EdgeID edgeID, double expandSize) {
 		CHEdge &edge = edges[edgeID];
 		if (edge.is_shortcut() && edge.remaining) {
 			//if (edge.getDist(nodes) > expandSize) {
-			if (edge.dist > expandSize) {
+			//if (edge.dist > expandSize) {
+			if (geo::geoDist(nodes[edge.src], nodes[edge.tgt]) > expandSize) {
 			//double BendingRatio = calcBendingRatio(nodes [edge.src], nodes[edge.getCenterPoint(edges)], nodes[edge.tgt]);
 			//if (BendingRatio > expandSize) {
 				edge.remaining = false;

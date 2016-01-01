@@ -141,8 +141,16 @@ class PerfectMatching {
         for (uint i = 0; i < possibleFollowersVector_q.size(); i++) {            
             getAndSetNearestFollower(q[i].pn_h, possibleFollowersVector_q[i], graph);
         }
-
-        
+    }
+    
+    double getChainLength(const std::list<PrioNodeHandle> &list) const {
+        PrioNode2 pn_start = *list.front();
+        PrioNode2 pn_end = *list.back();
+        return geo::geoDist(graph.getNode(pn_start.node_id), graph.getNode(pn_end.node_id));
+    }
+    
+    double getCombinedChainLength(const std::list<PrioNodeHandle> &list1, const std::list<PrioNodeHandle> &list2) const {        
+        return getChainLength(list1) + getChainLength(list2);
     }
 
 public:
@@ -159,9 +167,11 @@ public:
         //fill dynamic programming table
         uint i = p.size()-1;
         uint j = q.size()-1;
-        c(i, j);
+        double discrete_frechet_dist = c(i, j);
+        if (discrete_frechet_dist < getCombinedChainLength(list1, list2)/5) {
+            setFollowers(i, j);
+        }
         
-        setFollowers(i, j);
                 
     }        
 };
