@@ -248,7 +248,7 @@ public:
 
 
         //solve ILP
-        glp_simplex(lp, NULL);
+        //glp_simplex(lp, NULL);
 
         glp_iocp parm;
         glp_init_iocp(&parm);

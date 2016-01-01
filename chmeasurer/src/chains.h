@@ -354,6 +354,7 @@ namespace chains {
         
     };
     
+    /*
     static bool uniqueElements (const Chain chain1, const Chain chain2) {
         std::list<NodeID> nodes;
         for (NodeID node_id: chain1) {
@@ -366,6 +367,32 @@ namespace chains {
         uint size_before = nodes.size();
         nodes.unique();
         return (nodes.size()== size_before);
+    }*/
+    
+    static bool sameLocation(NodeID node_id1, NodeID node_id2, const CHGraph<CHNode, CHEdge>& graph) {
+        const CHNode& node1 = graph.getNode(node_id1);
+        const CHNode& node2 = graph.getNode(node_id2);
+        return node1.lat == node2.lat && node1.lon == node2.lon;
+    }
+    
+    static bool uniqueLocations(const Chain& chain1, const Chain& chain2, const CHGraph<CHNode, CHEdge>& graph) {
+        std::vector<NodeID> chain;
+        for (NodeID node_id: chain1) {
+            chain.push_back(node_id);
+        }
+        for (NodeID node_id: chain2) {
+            chain.push_back(node_id);
+        }
+        //pairwise comparision
+        bool unique = true;        
+        for (uint i = 0; i < chain.size()-1; i++) {
+            for (uint j = i+1; j < chain.size(); j++) {
+                if (sameLocation(chain[i], chain[j], graph)) {
+                    unique = false;
+                }
+            }                
+        }
+        return unique;
     }
     
     static std::list<EdgeChainPair> split (EdgeChainPair& chain_pair, const CHGraph<CHNode, CHEdge>& graph) {        

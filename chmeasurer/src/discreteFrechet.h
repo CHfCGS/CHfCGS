@@ -19,7 +19,7 @@ namespace chm {
     
 
     class DiscreteFrechet {
-        CHGraph<CHNode, CHEdge> &graph;
+        const CHGraph<CHNode, CHEdge> &graph;
         typedef std::vector<CHNode> ChainNodeVec;
         ChainNodeVec p, q;
         std::vector<std::vector<double> > ca;
@@ -67,7 +67,7 @@ namespace chm {
     public:
         
         
-        DiscreteFrechet(CHGraph<CHNode, CHEdge> &graph) : graph(graph) {            
+        DiscreteFrechet(const CHGraph<CHNode, CHEdge> &graph) : graph(graph) {            
         }
         
         double calc_dF (const Chain &chain1, const Chain &chain2) {

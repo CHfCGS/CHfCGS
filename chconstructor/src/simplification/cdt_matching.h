@@ -242,7 +242,7 @@ private:
         //insert constraints
         for (auto it = vertexHandles.begin(); it != --vertexHandles.end(); it++) {
             auto next = it;
-            next++;
+            next++;            
             cdt.insert_constraint(*it, *next);
         }
     }

@@ -1,4 +1,4 @@
-_data=bremen  #ChainPair2 # #bremen #ProDPExample #Intersection #baden-wuerttemberg #stuttgart-regbez #ZipOrderingTest #ProP_ILPChainPair #IntersectionBu
+_data=baden-wuerttemberg  #ChainPair2 # #bremen #ProDPExample #Intersection #baden-wuerttemberg #stuttgart-regbez #ZipOrderingTest #ProP_ILPChainPair #IntersectionBu
 data=${1-$_data}
 echo "data: " "$data"
 

@@ -251,7 +251,7 @@ class ParallelLineSimplificationILP {
         nofNonZeros = 0;
         Print("preNofNonZeros" << preNofNonZeros);
         enoughSpace =  preNofNonZeros < (int) size;              
-        assert(enoughSpace);
+        assert(enoughSpace);                        
     }
     
    
@@ -291,10 +291,10 @@ public:
         //glp_load_matrix(lp, nofNonZeros, ia, ja, ar);         
         //glp_write_lp(lp, NULL, "lp.txt");
         
-        
+        //Print("factorize" << glp_factorize(lp));
         /* solve problem */        
         //Print("solving");
-        glp_simplex(lp, NULL);
+        //glp_simplex(lp, NULL);
         
         glp_iocp parm;
         glp_init_iocp(&parm);

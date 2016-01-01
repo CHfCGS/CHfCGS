@@ -189,8 +189,7 @@ public:
         }*/
         assert(cellsizex != 0);
         assert(cellsizey != 0);
-    }
-        
+    }        
     
     void identifyPairs(Chains_and_Remainder &CaR) {        
         const uint l_1 = 11;
@@ -235,7 +234,7 @@ public:
                                     if (gridpoint.isMatched == false && gridpoint.partnerGridpoint != nullptr) {
                                         if (gridpoint.partnerGridpoint->isMatched == false && gridpoint.partnerGridpoint->partnerGridpoint != nullptr) {
                                             if (gridpoint.partnerGridpoint->chain != gridpoint.chain) { //may not be its own partner
-                                                if (gridpoint.partnerGridpoint->partnerGridpoint->chain == gridpoint.chain) {
+                                                if (gridpoint.partnerGridpoint->partnerGridpoint->chain == gridpoint.chain) {                                                    
                                                     ChainPair chainpair;
                                                     chainpair.chainTo.splice(chainpair.chainTo.end(), *gridpoint.chain);
                                                     chainpair.chainFrom.splice(chainpair.chainFrom.end(), *gridpoint.partnerGridpoint->chain);
@@ -244,6 +243,7 @@ public:
                                                     chainsOfType.erase(gridpoint.partnerGridpoint->chain);
                                                     gridpoint.isMatched = true;
                                                     gridpoint.partnerGridpoint->isMatched = true;
+                                                    
                                                 }
                                             }
                                         }
@@ -306,9 +306,9 @@ public:
         //ChainsOfType::iterator closestChain = chainsptr->end();
         //Gridpoint closestChain(chains.end(), nullptr, false);
         Gridpoint* closestChain = nullptr;
-        double waylength = geo::geoDist(base_graph.getNode(nodeIdFront), base_graph.getNode(nodeIdBack));               
-        //double closestDistance = numeric_limits<double>::max();
+        double waylength = geo::geoDist(base_graph.getNode(nodeIdFront), base_graph.getNode(nodeIdBack));                       
         double closestDistance = waylength / 5;
+        //double closestDistance = std::numeric_limits<double>::max();
 
         for (int dx1 = -1; dx1 <= 1; dx1++) {
             if (indexInRange(x1, dx1)) {

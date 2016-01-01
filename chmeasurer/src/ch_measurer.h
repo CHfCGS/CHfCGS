@@ -188,7 +188,7 @@ namespace chm {
                         DiscreteFrechet dF(graph);
                         double eta_whole = dF.calc_dF(chainpair.chainTo, chainpair.chainFrom);
                         double combined_whole_chain_length = chains::calcChainLength(chainpair.chainTo, graph) + chains::calcChainLength(chainpair.chainFrom, graph);                                    
-                        errorcounts.weighted_eta += eta_whole * combined_whole_chain_length;
+                        errorcounts.weighted_eta2 += eta_whole * combined_whole_chain_length;
                         errorcounts.length_sum2 += combined_whole_chain_length;
                         
                         EdgeChainPair edge_chain_pair(chainpair, graph);                                                
@@ -216,12 +216,12 @@ namespace chm {
                                 Chain expandedChainTo = chains::toExpandedNodeChain(split_edge_chain_pair.chainTo, graph);                            
                                 Chain expandedChainFrom = chains::toExpandedNodeChain(split_edge_chain_pair.chainFrom, graph);
                                 
-                                SelfIntersectionChecker selfIntersectionChecker(graph);
-                                if(!selfIntersectionChecker.isSelfIntersecting(chainTo)
-                                        && !selfIntersectionChecker.isSelfIntersecting(chainFrom)
-                                        && !selfIntersectionChecker.isSelfIntersecting(expandedChainTo)
-                                        && !selfIntersectionChecker.isSelfIntersecting(expandedChainFrom)) {  
-                                    if(chains::uniqueElements(expandedChainTo, expandedChainFrom)) { //can happen by having same centernode
+                                
+                                if(chains::uniqueLocations(expandedChainTo, expandedChainFrom, graph)) { //can happen by having same centernode or nodes in the same place
+                                    assert(chains::uniqueLocations(chainTo, chainFrom, graph)); //because they are subsets of expanded
+                                    SelfIntersectionChecker selfIntersectionChecker(graph);
+                                    if(!selfIntersectionChecker.isSelfIntersecting(chainTo, chainFrom)                                      
+                                        && !selfIntersectionChecker.isSelfIntersecting(expandedChainTo, expandedChainFrom)) {  
 
                                         //Print("split_chain.size()" << chainTo.size() + chainFrom.size());
                                         //Print("expanded_split_chain.size()" << expandedChainTo.size() + expandedChainFrom.size());                                                                
@@ -246,14 +246,20 @@ namespace chm {
                                         double diff = preSize - p_ilpNeededNumberOfEdges;
                                         //Debug("ilpNeededNumberOfEdges:" << ilpNeededNumberOfEdges);
                                         //Debug("diff:" << diff);
-                                        double combined_chain_length = chains::calcChainLength(chainTo, graph) + chains::calcChainLength(chainFrom, graph);                                    
+                                        double combined_chain_length
+                                            = chains::calcChainLength(expandedChainTo, graph)
+                                            + chains::calcChainLength(expandedChainFrom, graph);                                    
                                         //errorcounts.weighted_eta += eta * combined_chain_length;
                                         errorcounts.length_sum += combined_chain_length;                      
-                                        errorcounts.addedDiffs += diff;     
-                                    }                                        
+                                        errorcounts.addedDiffs += diff * combined_chain_length;
+                                        errorcounts.weighted_eta += eta * combined_chain_length;
+                                    } else {
+                                        errorcounts.selfIntersecting++;
+                                    }
                                 } else {
-                                    errorcounts.selfIntersecting++;
-                                }
+                                    errorcounts.sameLocation++;
+                                }                                        
+                                
                             }                                                
                         }
                     }
@@ -261,8 +267,9 @@ namespace chm {
             errorcounts.print();   
             Print("length" << errorcounts.length_sum);
             //assert(errorcounts.length_sum != 0);
-            Print("diff/length ratio" << errorcounts.addedDiffs/errorcounts.length_sum);
-            Print("avg_eta" << errorcounts.weighted_eta/errorcounts.length_sum2);
+            Print("avg_diff" << errorcounts.addedDiffs/errorcounts.length_sum);
+            Print("avg_eta" << errorcounts.weighted_eta/errorcounts.length_sum);
+            Print("avg_eta_whole" << errorcounts.weighted_eta2/errorcounts.length_sum2);
         }
         
         void makeDijkstraMeasure() {            

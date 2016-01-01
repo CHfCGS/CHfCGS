@@ -437,19 +437,24 @@ namespace chc {
         }
         
         void getLowEdgeDiffNodesMedian (std::vector<NodeID>& nodes) {
+            Print("edge_diffs");
             auto edge_diffs(_chc.calcEdgeDiffs(nodes));
+            Print("setNodeIDsToIndices");
             setNodeIDsToIndices(nodes);
             uint median_pos = nodes.size()/2;
+            Print("nth_element edge_diff");
             std::nth_element(nodes.begin(), nodes.begin() + median_pos, nodes.end(), CompEdgeDiff(_node_id_to_index, edge_diffs));            
             nodes.resize(median_pos + 1);            
         }
         
         
         std::vector<NodeID> _chooseIndependentSetFromRemainderOriginalMSTMedian(std::vector<NodeID> &remainder) {            
-            uint median_pos = (remainder.size())/2;            
+            uint median_pos = (remainder.size())/2;
+            Print("nth_element MST");
             std::nth_element(remainder.begin(), remainder.begin() + median_pos, remainder.end(), CompOriginalMST(_streetTypes));            
-                    
-            std::sort(remainder.begin(), remainder.begin() + median_pos, CompInOutProduct(_base_graph));        
+            Print("sort front half");
+            std::sort(remainder.begin(), remainder.begin() + median_pos, CompOriginalMST(_streetTypes));        
+            Print("independent set");
             auto independent_set(_chc.calcIndependentSetMedian(remainder, median_pos));                                    
             getLowEdgeDiffNodesMedian(independent_set);                        
             return independent_set;

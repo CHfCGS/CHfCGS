@@ -39,7 +39,7 @@ int color(int edgeType)
 	//			5=schwarz (alle anderen)
 	switch(edgeType)
 	{
-		case(1):			// motorway	
+		case(1):			// motorway									
 		case(2):
 				return 1;
 				break;

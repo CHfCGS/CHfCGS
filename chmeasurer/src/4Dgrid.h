@@ -17,6 +17,7 @@
 #include "nodes_and_edges.h"
 #include "chains.h"
 #include "grid.h"
+#include "discreteFrechet.h"
 
 
 using namespace std;
@@ -65,7 +66,7 @@ private:
     //ChainsOfType* chainsptr;
 
     fourDvector Grid;
-    std::vector<int> testvector;
+    
     //vector<int> NextChainInSameCell;
     //vector<int> gridtest;
 
@@ -162,17 +163,34 @@ private:
         Grid.assign (Grid.begin(), Grid.end(), vector<vector<vector<ItList>>>(gridsidesize, vector<vector<ItList>>(gridsidesize, vector<ItList>(gridsidesize, ItList()))));        
          * */        
     }
+    
+    double getChainLength(const Chain& chain) const {        
+        return geo::geoDist(base_graph.getNode(chain.front()), base_graph.getNode(chain.back()));
+    }
+    
+    double getCombinedChainLength(const Chain& chain1, const Chain& chain2) const {        
+        return getChainLength(chain1) + getChainLength(chain2);
+    }
 
+    bool OkFrechetDist(const Chain& chain1, const Chain& chain2) {
+        //Chain chain2copy = chain2;
+        //chain2copy.reverse();
+        DiscreteFrechet dF(base_graph);
+        //DiscreteFrechet df(base_graph);
+        double discrete_frechet_dist = dF.calc_dF(chain1, chain2);
+        double combined_chain_length =  getCombinedChainLength(chain1, chain2);
+        return combined_chain_length > 5 * discrete_frechet_dist;
+    }
+    
 public:
 
     FourDGrid(const int size, const GraphT &base_graph) :    
         gridsidesize(size), base_graph(base_graph),
-        Grid(size, vector<vector<vector<GridCell>>>(size, vector<vector<GridCell>>(size, vector<GridCell>(size, GridCell())))),
-                testvector(size, 0)
+        Grid(size, vector<vector<vector<GridCell>>>(size, vector<vector<GridCell>>(size, vector<GridCell>(size, GridCell()))))
+               
         //,NextChainInSameCell(base_graph.getNrOfNodes(), -1)
     {          
-        testvector.resize(size *50);
-        testvector.clear();
+        
         MINLONGITUDE = numeric_limits<double>::max();
         MAXLONGITUDE = 0;
         MINLATITUDE = numeric_limits<double>::max();
@@ -199,6 +217,7 @@ public:
         assert(cellsizey != 0);
     }
         
+    
     
     void identifyPairs(Chains_and_Remainder &CaR) {  
         const uint l_1 = 11;
@@ -243,15 +262,17 @@ public:
                                     if (gridpoint.isMatched == false && gridpoint.partnerGridpoint != nullptr) {
                                         if (gridpoint.partnerGridpoint->isMatched == false && gridpoint.partnerGridpoint->partnerGridpoint != nullptr) {
                                             if (gridpoint.partnerGridpoint->chain != gridpoint.chain) { //may not be its own partner
-                                                if (gridpoint.partnerGridpoint->partnerGridpoint->chain == gridpoint.chain) {
-                                                    ChainPair chainpair;
-                                                    chainpair.chainTo.splice(chainpair.chainTo.end(), *gridpoint.chain);
-                                                    chainpair.chainFrom.splice(chainpair.chainFrom.end(), *gridpoint.partnerGridpoint->chain);
-                                                    CaR.chainPairs.push_back(chainpair);
-                                                    chainsOfType.erase(gridpoint.chain);
-                                                    chainsOfType.erase(gridpoint.partnerGridpoint->chain);
-                                                    gridpoint.isMatched = true;
-                                                    gridpoint.partnerGridpoint->isMatched = true;
+                                                if (gridpoint.partnerGridpoint->partnerGridpoint->chain == gridpoint.chain) {                                                    
+                                                    if (OkFrechetDist(*(gridpoint.chain), *(gridpoint.partnerGridpoint->chain))) {
+                                                        ChainPair chainpair;
+                                                        chainpair.chainTo.splice(chainpair.chainTo.end(), *gridpoint.chain);
+                                                        chainpair.chainFrom.splice(chainpair.chainFrom.end(), *gridpoint.partnerGridpoint->chain);
+                                                        CaR.chainPairs.push_back(chainpair);
+                                                        chainsOfType.erase(gridpoint.chain);
+                                                        chainsOfType.erase(gridpoint.partnerGridpoint->chain);
+                                                        gridpoint.isMatched = true;
+                                                        gridpoint.partnerGridpoint->isMatched = true;
+                                                    }
                                                 }
                                             }
                                         }
@@ -318,10 +339,9 @@ public:
         //double waylength = geoDist(nodeIdFront, nodeIdBack);                
         
         //double closestDistance = waylength / 10;//200; //min(waylength / 10, 1.0);
-        double waylength = geo::geoDist(base_graph.getNode(nodeIdFront), base_graph.getNode(nodeIdBack));                
-        //double closestDistance = numeric_limits<double>::max();
-        double closestDistance = waylength / 5;
-        //double closestDistance = numeric_limits<double>::max();
+        //double waylength = geo::geoDist(base_graph.getNode(nodeIdFront), base_graph.getNode(nodeIdBack));                        
+        //double closestDistance = waylength / 5;
+        double closestDistance = numeric_limits<double>::max();
         
         for (int dx1 = -1; dx1 <= 1; dx1++) {
             if (indexInRange(x1, dx1)) {

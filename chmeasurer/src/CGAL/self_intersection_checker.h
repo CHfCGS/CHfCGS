@@ -51,12 +51,28 @@ public:
                 auto lon2 = graph.getLon(*next);
                 auto lat2 = graph.getLat(*next);
                 */
+                assert(*it != *next);
+                                
+                double lon1 = graph.getLon(*it);
+                double lat1 = graph.getLat(*it);
+                double lon2 = graph.getLon(*next);
+                double lat2 = graph.getLat(*next);
                 
-                Point_2 p_1(graph.getLon(*it), graph.getLat(*it));
-                Point_2 p_2(graph.getLon(*next), graph.getLat(*next));
+                assert(!(lon1==lon2 && lat1==lat2));
                 
-                Segment_2 segment(Point_2(graph.getLon(*it), graph.getLat(*it)), Point_2(graph.getLon(*next), graph.getLat(*next)));
-                chainSegments.push_back(segment);
+                if (!(lon1==lon2 && lat1==lat2)) {  //shit can happen
+                    Point_2 p_1(lon1, lat1);
+                    Point_2 p_2(lon2, lat2);
+                    Segment_2 segment(p_1, p_2);
+                    chainSegments.push_back(segment);
+                }
+                               
+                
+                //Point_2 p_1(graph.getLon(*it), graph.getLat(*it));
+                //Point_2 p_2(graph.getLon(*next), graph.getLat(*next));
+                
+                //Segment_2 segment(Point_2(graph.getLon(*it), graph.getLat(*it)), Point_2(graph.getLon(*next), graph.getLat(*next)));
+                
                 
                 
             }
@@ -67,20 +83,38 @@ public:
         } else {//chain of zero nodes can't intersect itself
             return false;
         }       
-    }
+    }        
     
     void getChainSegments(Chain &chain, std::vector<Segment_2> &chainSegments) {
         assert(chain.size() >= 1);
         //std::vector<Segment_2> chainSegments;
         for (auto it = chain.begin(); it != --chain.end(); it++) {
+            
             auto next = it;
             next++;
-
+            assert(*it != *next);
+            
+            /*
             Point_2 p_1(graph.getLon(*it), graph.getLat(*it));
             Point_2 p_2(graph.getLon(*next), graph.getLat(*next));
 
             Segment_2 segment(p_1, p_2);
             chainSegments.push_back(segment);
+            */
+            
+            double lon1 = graph.getLon(*it);
+            double lat1 = graph.getLat(*it);
+            double lon2 = graph.getLon(*next);
+            double lat2 = graph.getLat(*next);
+
+            assert(!(lon1==lon2 && lat1==lat2));
+            if (!(lon1==lon2 && lat1==lat2)) {  //shit can happen
+                Point_2 p_1(lon1, lat1);
+                Point_2 p_2(lon2, lat2);
+                Segment_2 segment(p_1, p_2);
+                chainSegments.push_back(segment);
+            }
+            
         }
         return;
     }
@@ -91,7 +125,7 @@ public:
         std::vector<Segment_2> chainSegments;
         getChainSegments(chain1, chainSegments);
         getChainSegments(chain2, chainSegments);
-                        
+                                
         return CGAL::do_curves_intersect(chainSegments.begin(), chainSegments.end());               
     }
     
