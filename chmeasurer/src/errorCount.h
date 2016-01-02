@@ -15,6 +15,7 @@ struct ErrorCounts {
     double weighted_eta2 = 0;
     
     uint chain_counter = 0;
+    uint node_length_sum = 0;
     double length_sum = 0;
     double length_sum2 = 0;
     double angular_change_sum = 0;

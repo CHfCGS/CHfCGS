@@ -447,17 +447,27 @@ namespace chc {
             nodes.resize(median_pos + 1);            
         }
         
+        void getLowInOutProductMedian (std::vector<NodeID>& nodes) const {            
+            uint median_pos = nodes.size()/2;
+            Print("CompInOutProduct");
+            std::nth_element(nodes.begin(), nodes.begin() + median_pos, nodes.end(), CompInOutProduct(_base_graph));            
+            nodes.resize(median_pos + 1);            
+        }
         
         std::vector<NodeID> _chooseIndependentSetFromRemainderOriginalMSTMedian(std::vector<NodeID> &remainder) {            
             uint median_pos = (remainder.size())/2;
             Print("nth_element MST");
             std::nth_element(remainder.begin(), remainder.begin() + median_pos, remainder.end(), CompOriginalMST(_streetTypes));            
             Print("sort front half");
-            std::sort(remainder.begin(), remainder.begin() + median_pos, CompOriginalMST(_streetTypes));        
-            Print("independent set");
+            std::sort(remainder.begin(), remainder.begin() + median_pos, CompOriginalMST(_streetTypes));   
             auto independent_set(_chc.calcIndependentSetMedian(remainder, median_pos));                                    
-            getLowEdgeDiffNodesMedian(independent_set);                        
+            if (remainder.size() >= 500000) { //needed for germany graph                                     
+                getLowInOutProductMedian(independent_set);
+            } else {                                                
+                getLowEdgeDiffNodesMedian(independent_set);                                        
+            }
             return independent_set;
+            
         } 
         /*
         std::vector<NodeID> getOriginalMstMedian (const std::vector<NodeID>& nodes) {

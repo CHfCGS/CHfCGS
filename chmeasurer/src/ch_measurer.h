@@ -130,7 +130,7 @@ namespace chm {
                                 = ilp.solve(expanded_split_chain, epsilon_error + std::numeric_limits<double>::epsilon());                    
 
                             int nof_edges = split_chain.size()-1;
-                            //assert(nof_edges >= ilpNeededNumberOfEdges);
+                            assert(nof_edges >= ilpNeededNumberOfEdges);
                             double diff = nof_edges - ilpNeededNumberOfEdges;
                             //Debug("ilpNeededNumberOfEdges:" << ilpNeededNumberOfEdges);
                             //Debug("diff:" << diff);
@@ -234,7 +234,7 @@ namespace chm {
 
 
                                         ParallelLineSimplificationILP p_ilp(graph);
-                                        const double epsilon_relaxation = 2.0;
+                                        const double epsilon_relaxation = 1;
                                         double p_ilpNeededNumberOfEdges
                                                 = p_ilp.solve(expandedChainTo, expandedChainFrom,
                                                     epsilon_relaxation * epsilon_error + std::numeric_limits<double>::epsilon(),
@@ -250,8 +250,11 @@ namespace chm {
                                             = chains::calcChainLength(expandedChainTo, graph)
                                             + chains::calcChainLength(expandedChainFrom, graph);                                    
                                         //errorcounts.weighted_eta += eta * combined_chain_length;
-                                        errorcounts.length_sum += combined_chain_length;                      
-                                        errorcounts.addedDiffs += diff * combined_chain_length;
+                                        errorcounts.length_sum += combined_chain_length;      
+                                        uint node_chain_size = expandedChainTo.size() + expandedChainFrom.size();
+                                        errorcounts.node_length_sum += node_chain_size; 
+                                        errorcounts.length_sum += combined_chain_length;
+                                        errorcounts.addedDiffs += diff * node_chain_size;
                                         errorcounts.weighted_eta += eta * combined_chain_length;
                                     } else {
                                         errorcounts.selfIntersecting++;
@@ -266,8 +269,10 @@ namespace chm {
             }
             errorcounts.print();   
             Print("length" << errorcounts.length_sum);
+            Print("node_length_sum" << errorcounts.node_length_sum);
             //assert(errorcounts.length_sum != 0);
-            Print("avg_diff" << errorcounts.addedDiffs/errorcounts.length_sum);
+            Print("avg_diff_node_size" << errorcounts.addedDiffs/errorcounts.node_length_sum);
+            //Print("avg_diff_length" << errorcounts.addedDiffs/errorcounts.length_sum);
             Print("avg_eta" << errorcounts.weighted_eta/errorcounts.length_sum);
             Print("avg_eta_whole" << errorcounts.weighted_eta2/errorcounts.length_sum2);
         }

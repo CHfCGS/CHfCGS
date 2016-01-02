@@ -397,7 +397,7 @@ namespace chains {
     
     static std::list<EdgeChainPair> split (EdgeChainPair& chain_pair, const CHGraph<CHNode, CHEdge>& graph) {        
         std::list<EdgeChainPair> edge_chain_pairs;
-        const uint critical_size = 35;
+        const uint critical_size = 40;
         //get sizes
         EdgeChain* p_bigger_chain = nullptr;
         EdgeChain* p_smaller_chain = nullptr;
