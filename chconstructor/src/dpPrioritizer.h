@@ -762,7 +762,7 @@ namespace chc {
                                 break;
                             }
                         }                        
-                        deadEndPhaseCounter++;
+                        //deadEndPhaseCounter++;
                     }
                                         
                     Print("Removing Dead Ends");
@@ -798,20 +798,20 @@ namespace chc {
                             }                        
                         }
                         //dont contract peanuts
-                        double threshold = log(_base_graph.getNrOfNodes()) / log (1.1);
+                        //double threshold = log(_base_graph.getNrOfNodes()) / log (1.1);                        
+                        double threshold = 1;
                         Print("threshold: " << threshold);
-                        //double threshold = 1;
                         if(next_nodes.size() < threshold) {
                             _deadEndPrioLists.clear();
+                            /*
                             deadEndPhaseCounter++;
                             if (deadEndPhaseCounter > 5) {
                                 state = State::removingChains;  
-                            }
+                            }*/
 
                         }
                         break;
-                    } else {
-                        //state = State::removingPlusZero;                        
+                    } else {                        
                         state = State::removingPlusZero;                        
                     }
                     

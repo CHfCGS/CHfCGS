@@ -6,6 +6,8 @@ struct ErrorCounts {
     uint chainRedetectedCounter = 0;
     uint chainPairRedetectedCounter = 0;
             
+    double weighted_epsilon = 0;
+    
     uint epsilonerrorEqualszero = 0;
     uint epsilonerrorGreaterzero = 0;    
     uint selfIntersecting = 0;

@@ -27,7 +27,7 @@ namespace chc
 void unit_tests::testAll()
 {
 	unit_tests::testNodesAndEdges();
-	unit_tests::testGraph();
+	//unit_tests::testGraph();
 	unit_tests::testCHConstructor();
 	unit_tests::testCHDijkstra();
 	//unit_tests::testDijkstra();
@@ -59,7 +59,7 @@ void unit_tests::testNodesAndEdges()
 	Print("TEST: Nodes and edges test successful.");
 	Print("======================================\n");
 }
-
+/*
 void unit_tests::testGraph()
 {
 	Print("\n=======================");
@@ -69,11 +69,11 @@ void unit_tests::testGraph()
 	Graph<OSMNode, Edge> g;
 	g.init(FormatSTD::Reader::readGraph<OSMNode, Edge>("../test_data/15kSZHK.txt"));
 
-	/* Test the normal iterator. */
+	// Test the normal iterator.
 	for (NodeID node_id(0); node_id<g.getNrOfNodes(); node_id++) {
 		UnitTest(g.getNode(node_id).id == node_id);
 
-		/* Find for every out_edge the corresponding in edge. */
+		// Find for every out_edge the corresponding in edge.
 		for (auto const& out_edge: g.nodeEdges(node_id, EdgeType::OUT)) {
 			bool found(false);
 
@@ -91,7 +91,7 @@ void unit_tests::testGraph()
 	Print("\n============================");
 	Print("TEST: Graph test successful.");
 	Print("============================\n");
-}
+}*/
 
 void unit_tests::testCHConstructor()
 {
@@ -196,7 +196,7 @@ void unit_tests::testCHDijkstra()
 	Print("TEST: CHDijkstra test successful.");
 	Print("=================================\n");
 }
-
+/*
 void unit_tests::testDijkstra()
 {
 	Print("\n============================");
@@ -230,7 +230,7 @@ void unit_tests::testDijkstra()
 	Print("\n=================================");
 	Print("TEST: Dijkstra test successful.");
 	Print("=================================\n");
-}
+}*/
 
 void unit_tests::testPrioritizers()
 {

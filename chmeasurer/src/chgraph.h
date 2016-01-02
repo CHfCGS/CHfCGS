@@ -106,16 +106,19 @@ class CHGraph
                 
                 double getLat(NodeID node_id) const;
                 double getLon(NodeID node_id) const;
+                std::list<NodeID> nodeNeighboursInOriginal(NodeID node_id) const;                
                 std::list<NodeID> nodeNeighbours(NodeID node_id) const;                
                 std::list<NodeID> nodeNeighbours(NodeID node_id, StreetType type) const;
                 std::list<NodeID> nodeNeighbours(NodeID node_id, StreetType streetType, EdgeType edgeDirection) const;
                 StreetType getMinStreetType(NodeID node_id) const;
+                bool degree_leq_twoInOriginal(NodeID node_id) const;
                 bool degree_leq_two(NodeID node_id) const;
                 bool isOneway(NodeID node_id) const;
 
 		typedef range<typename std::vector<EdgeT>::const_iterator> node_edges_range;
 		node_edges_range _nodeEdges(NodeID node_id, EdgeType type) const;
                 std::vector<EdgeT> nodeEdges(NodeID node_id) const;
+                std::vector<EdgeT> nodeEdgesInOriginal(NodeID node_id, EdgeType type) const;
                 std::vector<EdgeT> valid_nodeEdges(NodeID node_id, EdgeType type) const;
                 std::vector<EdgeT> nodeEdges(NodeID node_id, StreetType streetType) const;
                 
@@ -604,6 +607,21 @@ std::list<NodeID> CHGraph<NodeT, EdgeT>::nodeNeighbours(NodeID node_id) const
 }
 
 template <typename NodeT, typename EdgeT>
+std::list<NodeID> CHGraph<NodeT, EdgeT>::nodeNeighboursInOriginal(NodeID node_id) const
+{
+        std::list<NodeID> neighbors;
+        for (auto const& edge : nodeEdgesInOriginal(node_id, EdgeType::IN)) {
+            neighbors.emplace_back(edge.src);
+        }
+        for (auto const& edge : nodeEdgesInOriginal(node_id, EdgeType::OUT)) {
+            neighbors.emplace_back(edge.tgt);
+        }
+        neighbors.sort();
+        neighbors.unique();
+        return neighbors;
+}
+
+template <typename NodeT, typename EdgeT>
 std::list<NodeID> CHGraph<NodeT, EdgeT>::nodeNeighbours(NodeID node_id, StreetType type) const
 {
         std::list<NodeID> neighbors;
@@ -663,6 +681,21 @@ template <typename NodeT, typename EdgeT>
 bool CHGraph<NodeT, EdgeT>::degree_leq_two(NodeID node_id) const
 {
     return (nodeNeighbours(node_id).size()<=2);
+    /*
+    if (getNrOfEdges(node_id, EdgeType::OUT)<=2 
+            && getNrOfEdges(node_id, EdgeType::IN)<=2) { //condition optional but should increase performance       
+        if (nodeNeighbours(node_id).size()<=2) {
+            return true;
+        }
+    }
+    return false;
+     * */
+}
+
+template <typename NodeT, typename EdgeT>
+bool CHGraph<NodeT, EdgeT>::degree_leq_twoInOriginal(NodeID node_id) const
+{
+    return (nodeNeighboursInOriginal(node_id).size()<=2);
     /*
     if (getNrOfEdges(node_id, EdgeType::OUT)<=2 
             && getNrOfEdges(node_id, EdgeType::IN)<=2) { //condition optional but should increase performance       
@@ -786,6 +819,17 @@ std::vector<EdgeT> CHGraph<NodeT, EdgeT>::nodeEdges(NodeID node_id) const  {
             edges.push_back(edge);           
         }                
         return edges;        
+}
+
+template <typename NodeT, typename EdgeT>
+std::vector<EdgeT> CHGraph<NodeT, EdgeT>::nodeEdgesInOriginal(NodeID node_id, EdgeType type) const  {
+        std::vector<EdgeT> nodeEdges;
+        for (auto const edge : _nodeEdges(node_id, type)) {
+            if (!isShortcut(edge.id)) {
+                nodeEdges.push_back(edge);
+            }
+        }
+        return nodeEdges;
 }
 
 template <typename NodeT, typename EdgeT>

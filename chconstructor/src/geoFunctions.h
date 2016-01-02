@@ -38,11 +38,13 @@ namespace geo {
     double geoDist(double lon1, double lat1, double lon2, double lat2) {        
         double deltaLon = lon1 - lon2;
         double deltaLat = lat1 - lat2;
+        
         double avgLat = (lat1 + lat2)/2;
        
         double x = (deltaLon) * std::cos(avgLat * M_PI / 180.0);
         double y = (deltaLat);
-        return sqrt(x*x + y*y); //*R only scaling
+        return sqrt(x*x + y*y); //R only scaling
+        
         
         //return pythagoras(deltaLon, deltaLat);        
     }

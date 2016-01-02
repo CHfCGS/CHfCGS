@@ -102,12 +102,13 @@ public:
             if (graph.degree_leq_two(current)) {
                 if (graph.isOneway(current) == isOneway) { //current node has to be oneway (twoway) if the chain is oneway (twoway)
                     std::list<NodeID> neighboursOnStreetType = graph.nodeNeighbours(current, streetType, edgeDirection);
-                    debug_assert(neighboursOnStreetType.size() <=2);                                              
-                    for (auto it = neighboursOnStreetType.begin(); it != neighboursOnStreetType.end(); it++) {
-                        if (marked.at(*it) == false) {
-                            next = *it;
-                        }
-                    }                
+                    if(neighboursOnStreetType.size() <=2) {                                              
+                        for (auto it = neighboursOnStreetType.begin(); it != neighboursOnStreetType.end(); it++) {
+                            if (marked.at(*it) == false) {
+                                next = *it;
+                            }
+                        }                
+                    }
                 }                
             }
         //}
@@ -306,7 +307,7 @@ public:
         expanded_chain.sort();
         uint sizeBefore = expanded_chain.size();
         expanded_chain.unique();
-        assert(sizeBefore == expanded_chain.size());
+        assert(sizeBefore == expanded_chain.size()); 
         */
         return expanded_chain;
     }

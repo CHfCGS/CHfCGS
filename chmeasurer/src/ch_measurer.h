@@ -62,7 +62,7 @@ namespace chm {
                     Chain expandedChain = chains::expandEdgeChain(redetected_edge_chain, graph);
                     
                     if (chains::areEqual(expandedChain, redetected_edge_chain.hull_chain)) {
-                        double chain_length = chains::calcChainLength(redetected_edge_chain.remaining_chain, graph);
+                        double chain_length = chains::calcChainGeoLength(redetected_edge_chain.remaining_chain, graph);
                         
                         //weight with length of redetected(visible) sum
                         error_counts.weighted_regularity_sum +=
@@ -94,7 +94,7 @@ namespace chm {
                 for (Chain &chain: chainsOfType) {  
                     _make_chain_measure(chain, i, error_counts);
                 }
-            }
+            }            
             error_counts.print();
         }
         
@@ -134,7 +134,9 @@ namespace chm {
                             double diff = nof_edges - ilpNeededNumberOfEdges;
                             //Debug("ilpNeededNumberOfEdges:" << ilpNeededNumberOfEdges);
                             //Debug("diff:" << diff);
-                            errorcounts.length_sum += chains::calcChainLength(expanded_split_chain, graph);                       
+                            double chain_length = chains::calcChainGeoLength(expanded_split_chain, graph);
+                            errorcounts.weighted_epsilon += epsilon_error * chain_length;
+                            errorcounts.length_sum += chain_length;
                             errorcounts.addedDiffs += diff;                                                   
                             
                         }else {
@@ -163,9 +165,17 @@ namespace chm {
                     _make_ilp_measure(chain, i, errorcounts);                   
                 }              
             }
+            for (const ChainPair& chainpair: CaR.chainPairs) {
+                //TODO Streettype needs to be removed 
+                _make_ilp_measure(chainpair.chainTo, 1, errorcounts);                   
+                _make_ilp_measure(chainpair.chainTo, 1, errorcounts);                   
+            }
+
+            
             errorcounts.print(); 
             Print("length" << errorcounts.length_sum);
-            assert(errorcounts.length_sum != 0);
+            //assert(errorcounts.length_sum != 0);
+            Print("avg_epsilon: " << errorcounts.weighted_epsilon/errorcounts.length_sum);
             Print("diff/length ratio" << errorcounts.addedDiffs/errorcounts.length_sum);
         }                
         
@@ -187,7 +197,8 @@ namespace chm {
                         
                         DiscreteFrechet dF(graph);
                         double eta_whole = dF.calc_dF(chainpair.chainTo, chainpair.chainFrom);
-                        double combined_whole_chain_length = chains::calcChainLength(chainpair.chainTo, graph) + chains::calcChainLength(chainpair.chainFrom, graph);                                    
+                        double combined_whole_chain_length = chains::calcChainGeoLength(chainpair.chainTo, graph)
+                                                            + chains::calcChainGeoLength(chainpair.chainFrom, graph);                                    
                         errorcounts.weighted_eta2 += eta_whole * combined_whole_chain_length;
                         errorcounts.length_sum2 += combined_whole_chain_length;
                         
@@ -247,8 +258,8 @@ namespace chm {
                                         //Debug("ilpNeededNumberOfEdges:" << ilpNeededNumberOfEdges);
                                         //Debug("diff:" << diff);
                                         double combined_chain_length
-                                            = chains::calcChainLength(expandedChainTo, graph)
-                                            + chains::calcChainLength(expandedChainFrom, graph);                                    
+                                            = chains::calcChainGeoLength(expandedChainTo, graph)
+                                            + chains::calcChainGeoLength(expandedChainFrom, graph);                                    
                                         //errorcounts.weighted_eta += eta * combined_chain_length;
                                         errorcounts.length_sum += combined_chain_length;      
                                         uint node_chain_size = expandedChainTo.size() + expandedChainFrom.size();
@@ -399,18 +410,12 @@ namespace chm {
 
             Chains_and_Remainder CaR(graph.getMaxStreetType());
             
+            Print("Zooming ");                                               
             //graph.zoom(50, false, 800);    
-            //graph.zoom(0.02, true, true, 800);    
-            graph.zoom(0.02, true, true, 0.004);    
-            Print("Detecting chains");            
-            //CaR = chaindetector.detectChains(EdgeDiffPrioritizer<GraphT, CHConstructorT>::_prio_vec);  
-            /*
-            std::vector<NodeID> activeNodeIDs;
-            for (uint i = 0; i < graph.getNrOfNodes(); i++) {                
-                if(graph.isValidNode(i)) {
-                    activeNodeIDs.push_back(i);                
-                }
-            }*/
+            //graph.zoom(0.02, true, true, 800);               
+            //graph.zoom(0.02, true, true, 0.005);
+            graph.zoom(0.02, true, false, 0.02);
+            //graph.zoom(45, true, true, 10000.0);                                        
             
             std::vector<NodeID> visibleNodeIDs;
             for (uint i = 0; i < graph.getNrOfNodes(); i++) {                
@@ -418,8 +423,9 @@ namespace chm {
                     visibleNodeIDs.push_back(i);                
                 }
             }
+            Print("visibleNodeIDs.size()" << visibleNodeIDs.size());
             
-                        
+            Print("Detecting chains");            
             CaR = chaindetector.detectChains(visibleNodeIDs);            
             
             //CaR = chaindetector.detectChains(activeNodeIDs);
@@ -429,7 +435,7 @@ namespace chm {
             fourDGrid.identifyPairs(CaR);
             Print("Number of chain pairs: " << CaR.chainPairs.size());
                         
-            //Print("Zooming ");                                               
+            
             if(m_options.edge) {
                 makeEdgeMeasure();    
             }            

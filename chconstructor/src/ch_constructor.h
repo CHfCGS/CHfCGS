@@ -722,7 +722,7 @@ namespace chc {
         auto shortcuts(getShortcutsOfContracting(nodes));
 
         uint size(nodes.size());
-//#pragma omp parallel for num_threads(_num_threads) schedule(dynamic)
+#pragma omp parallel for num_threads(_num_threads) schedule(dynamic)
         for (uint i = 0; i < size; i++) {
             edge_diffs[i] = (int) shortcuts[i].size() - (int) _base_graph.getNrOfEdges(nodes[i]);
         }

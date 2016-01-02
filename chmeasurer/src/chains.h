@@ -70,10 +70,14 @@ struct ChainsAccordingToType {
     
 };
  */
+typedef std::list<EdgeID> EdgeChain; 
+
 namespace chains {
-    static std::list<EdgeID> getChainEdges(const Chain& chain, const CHGraph<CHNode, CHEdge>& graph) {
+    
+    
+    static EdgeChain getChainEdges(const Chain& chain, const CHGraph<CHNode, CHEdge>& graph) {
         //assumption: connectivity is given
-        std::list<EdgeID> edges;
+        EdgeChain edges;
         assert(!chain.empty());
         for (auto it = chain.begin(); it != --chain.end(); it++) {
             auto next_it = it;
@@ -95,7 +99,7 @@ namespace chains {
     }
 }
 
-typedef std::list<EdgeID> EdgeChain; 
+
 
 struct EdgeChainPair {
     EdgeChain chainTo;
@@ -221,7 +225,7 @@ namespace chains {
         return expandedChain;
     }
 
-    static double calcChainLength(const Chain &chain, const CHGraph<CHNode, CHEdge>& graph) {
+    static double calcChainGeoLength(const Chain &chain, const CHGraph<CHNode, CHEdge>& graph) {
         assert(chain.size() >= 2);                            
         double chain_length = 0;
 
@@ -269,7 +273,7 @@ namespace chains {
         return chain;
     }
     
-    static uint getExpandedLength (const EdgeChain& chain, const CHGraph<CHNode, CHEdge>& graph) {
+    static uint getExpandedNodeLength (const EdgeChain& chain, const CHGraph<CHNode, CHEdge>& graph) {
         uint length = 0; 
         for (const EdgeID edge_id: chain) {                        
             length += graph.getCenterNodes(edge_id).size() + 1;            
@@ -279,8 +283,8 @@ namespace chains {
     
     static std::list<EdgeChain> split (EdgeChain& chain, const CHGraph<CHNode, CHEdge>& graph) {
         std::list<EdgeChain> split_chains;
-        const uint critical_size = 75;
-        uint length = getExpandedLength(chain, graph);        
+        const uint critical_size = 40;
+        uint length = getExpandedNodeLength(chain, graph);        
         
         //only long chains are splitted
         if (length >= critical_size && chain.size() >=2) {
@@ -415,8 +419,8 @@ namespace chains {
         EdgeChain& smaller_chain = *p_smaller_chain;
        
         //length in expanded edges
-        uint bigger_chain_length = getExpandedLength(bigger_chain, graph);
-        uint smaller_chain_length = getExpandedLength(smaller_chain, graph);
+        uint bigger_chain_length = getExpandedNodeLength(bigger_chain, graph);
+        uint smaller_chain_length = getExpandedNodeLength(smaller_chain, graph);
         
         //split in 2 edgechains
         if (bigger_chain.size()>=2// && smaller_chain.size()>=1

@@ -43,6 +43,7 @@ namespace geo {
         double y = (deltaLat);
         return sqrt(x*x + y*y); //R only scaling
         
+        
         //return pythagoras(deltaLon, deltaLat);        
     }
 

@@ -46,18 +46,19 @@ namespace chm
     
 void unit_tests::testAll()
 {
-    
+    unit_tests::testdiscreteFrechet();
     unit_tests::testLineSimplfication();
     unit_tests::testParallelLineSimplfication();
     
     unit_tests::testDijkstra();
     unit_tests::testCHDijkstra();
-    unit_tests::testIsBetween();
+    //unit_tests::testIsBetween();
      
-    unit_tests::testdiscreteFrechet();
+    
     unit_tests::testCDTHCross();
     unit_tests::testCrossLinks();
-    unit_tests::testFrechetDistance();    
+    unit_tests::testFrechetDistance(); 
+    
 }
 
 void unit_tests::testLineSimplfication()
@@ -90,7 +91,9 @@ void unit_tests::testLineSimplfication()
         
         lineSimplificationILP ilp(graph);
         Test(ilp.solve(chain, 0.3) == 9);
-        Test(ilp.solve(chain, 0.5) == 6);
+        Test(ilp.solve(chain, 0.5) == 6);        
+        Test(ilp.solve(chain, 10000) == 1);
+        Test(ilp.solve(chain, 0 + std::numeric_limits<double>::epsilon()) == 15);
                 
 	Print("\n============================");
 	Print("TEST: LineSimplfication test successful.");
@@ -139,6 +142,11 @@ void unit_tests::testParallelLineSimplfication()
         
         Test(p_ilp.solve(chain1, chain2, 2.9 , 2.0001)==4);
         
+        Test(p_ilp.solve(chain1, chain2, 10000, 10000) == 2);
+        
+        DiscreteFrechet df(graph);                                       
+        double discrete_frechet_dist = df.calc_dF(chain1, chain2);        
+        Test(p_ilp.solve(chain1, chain2, 0 + 2*std::numeric_limits<double>::epsilon(), 2*discrete_frechet_dist + std::numeric_limits<double>::epsilon()) == 6);
                 
         
 	Print("\n============================");
@@ -163,7 +171,7 @@ void unit_tests::testCHDijkstra()
 
         CHGraph<CHNode, CHEdge> g;
         g.init(std::move(graphInData));
-        g.zoom(100, false, 0);
+        g.zoom(100, false, false, 0);
 	
 
 	// Random Dijkstras
@@ -206,7 +214,7 @@ void unit_tests::testDijkstra()
 
         CHGraph<CHNode, CHEdge> g;
         g.init(std::move(graphInData));
-        g.zoom(100, false, 0);
+        g.zoom(100, false, false, 0);
         
 	
 
@@ -236,6 +244,7 @@ void unit_tests::testDijkstra()
 	Print("=================================\n");
 }
 
+/*
 void unit_tests::testIsBetween()
 {
 	Print("\n============================");
@@ -269,7 +278,7 @@ void unit_tests::testIsBetween()
 	Print("\n=================================");
 	Print("TEST: IsBetween test successful.");
 	Print("=================================\n");
-}
+}*/
 
 void unit_tests::testdiscreteFrechet()
 {

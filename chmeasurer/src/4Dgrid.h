@@ -175,10 +175,15 @@ private:
     bool OkFrechetDist(const Chain& chain1, const Chain& chain2) {
         //Chain chain2copy = chain2;
         //chain2copy.reverse();
+        EdgeChain edge_chain1 = chains::getChainEdges(chain1, base_graph);
+        EdgeChain edge_chain2 = chains::getChainEdges(chain2, base_graph);
+        Chain expanded_chain1 = chains::toExpandedNodeChain(edge_chain1, base_graph);
+        Chain expanded_chain2 = chains::toExpandedNodeChain(edge_chain2, base_graph);
         DiscreteFrechet dF(base_graph);
         //DiscreteFrechet df(base_graph);
-        double discrete_frechet_dist = dF.calc_dF(chain1, chain2);
-        double combined_chain_length =  getCombinedChainLength(chain1, chain2);
+        double discrete_frechet_dist = dF.calc_dF(expanded_chain1, expanded_chain2);
+        double combined_chain_length =  chains::calcChainGeoLength(expanded_chain1, base_graph)
+                                        + chains::calcChainGeoLength(expanded_chain2, base_graph);
         return combined_chain_length > 5 * discrete_frechet_dist;
     }
     
