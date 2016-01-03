@@ -249,7 +249,7 @@ class ParallelLineSimplificationILP {
                 + 2*ilp_data.edgeIntersections.size()
                 + 2*ilp_data.followerLinesUnorderings.size(); 
         nofNonZeros = 0;
-        Print("preNofNonZeros" << preNofNonZeros);
+        //Print("preNofNonZeros" << preNofNonZeros);
         enoughSpace =  preNofNonZeros < (int) size;              
         assert(enoughSpace);                        
     }
@@ -296,6 +296,7 @@ public:
         //Print("solving");
         //glp_simplex(lp, NULL);
         
+        WorkingSign();
         glp_iocp parm;
         glp_init_iocp(&parm);
         parm.presolve = GLP_ON;

@@ -19,8 +19,11 @@ namespace geo {
         double cx = cOutlier.lon;
         double cy = cOutlier.lat;
 
-        double acx = ax - cx; // pa[0] - pc[0];
-        double bcx = bx - cx; //pb[0] - pc[0];
+        double avgLat_ac = (ay + cy)/2;
+        double avgLat_bc = (by + cy)/2;
+        
+        double acx = (ax - cx) * std::cos(avgLat_ac * M_PI / 180.0); // pa[0] - pc[0];
+        double bcx = (bx - cx) * std::cos(avgLat_bc * M_PI / 180.0); //pb[0] - pc[0];
         double acy = ay - cy; //pa[1] - pc[1];
         double bcy = by - cy; //pb[1] - pc[1];
         double determinant = acx * bcy - acy * bcx;
@@ -37,7 +40,7 @@ namespace geo {
         double deltaLon = lon1 - lon2;
         double deltaLat = lat1 - lat2;
         
-        double avgLat = (lat1 + lat2)/2;
+        double avgLat = (lat1 + lat2)/2;        
         
         double x = (deltaLon) * std::cos(avgLat * M_PI / 180.0);
         double y = (deltaLat);
@@ -60,7 +63,11 @@ namespace geo {
         double area = calcArea(source, target, outlier);
         double baselength = geoDist(source, target);
         double positiveRectArea = std::abs(2.0 * area);
-        return positiveRectArea / baselength;        
+        if (baselength == 0) {
+            return std::numeric_limits<double>::max();
+        } else {
+            return positiveRectArea / baselength;        
+        }        
     }
     
     //used with calcArea for orientation tests
@@ -70,7 +77,14 @@ namespace geo {
     
     //height divided by baselength
     double getTriangleProportion(CHNode source, CHNode target, CHNode outlier) {
-        return calcPerpendicularLength(source, target, outlier)/geoDist(source, target);
+        double perpendicularLength = calcPerpendicularLength(source, target, outlier);
+        double base_length = geoDist(source, target);
+        if (base_length == 0) {
+            return std::numeric_limits<double>::max();
+        } else {
+            double proportion = perpendicularLength/base_length;
+            return proportion;
+        }        
     }
 
     bool testIntersection(CHLine line1, CHLine line2) {

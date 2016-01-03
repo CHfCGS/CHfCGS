@@ -829,22 +829,26 @@ struct State {
 	std::vector<CHEdge> ch_edges;
 	GfxGraph *gfxGraph;
 	GtkRange *hscalePercent;	
-	GtkRange *hscaleExpandSize;
-	GtkWidget *checkButtonExpand;
-        GtkWidget *checkButtonSpareShortcuts;
+	GtkRange *hscaleExpandSizeDist;
+	GtkWidget *checkButtonExpandDist;
+	GtkRange *hscaleExpandSizeOther;
+	GtkWidget *checkButtonExpandOther;
+    GtkWidget *checkButtonSpareShortcuts;
 };
 
 void on_button_clicked (GtkWidget *widget, gpointer data)
 {
 	State &state = *((State *) data);	
 	double percent = gtk_range_get_value (state.hscalePercent);
-	double expandSize = gtk_range_get_value (state.hscaleExpandSize);
+	double expandSizeDist = gtk_range_get_value (state.hscaleExpandSizeDist);
+	double expandSizeOther = gtk_range_get_value (state.hscaleExpandSizeOther);
 	//bool expand = GTK_TOGGLE_BUTTON(state.checkButton)->active;
-	bool expand = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON(state.checkButtonExpand));
-        bool spareShortcuts = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON(state.checkButtonSpareShortcuts));
+	bool expandDist = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON(state.checkButtonExpandDist));
+	bool expandOther = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON(state.checkButtonExpandOther));
+    bool spareShortcuts = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON(state.checkButtonSpareShortcuts));
 	//GTK_TOGGLE_BUTTON (widget)->active)
 		
-	Zoomer::zoom(state.ch_nodes, state.ch_edges, state.nodes, state.edges, percent , expandSize, expand , spareShortcuts);
+	Zoomer::zoom(state.ch_nodes, state.ch_edges, state.nodes, state.edges, percent , expandSizeDist, expandDist, expandSizeOther, expandOther, spareShortcuts);
 	state.gfxGraph->convertGraphData(state.nodes, state.edges);
 	state.gfxGraph->bufferGraphData();		
 }
@@ -946,8 +950,9 @@ int main(int argc, char*argv[])
 	
 	//Zoomer zoomer = Zoomer();
 	double start_percent_of_nodes = 0.02;
-	double expandSize = 0.002; //800; //0.002;
-	Zoomer::zoom(state.ch_nodes, state.ch_edges, state.nodes, state.edges, start_percent_of_nodes , expandSize, false);
+	double expandSizeDist = 0.0075; //0.002;
+	double expandSizeOther = 0.02; //800; //0.002;
+	Zoomer::zoom(state.ch_nodes, state.ch_edges, state.nodes, state.edges, start_percent_of_nodes , expandSizeDist, false, expandSizeOther, false);
 
 	/////////////////////////////////////////////////////////////////////
 	// Creation of graphics resources, i.e. shader programs, meshes, etc.
@@ -1019,32 +1024,51 @@ int main(int argc, char*argv[])
 	state.hscalePercent = GTK_RANGE(hscalePercent);
 	
 	
-	//check Button to enable/disable edge expand
-	GtkWidget *checkButtonExpand = gtk_check_button_new_with_label("enable edge expand");
-	gtk_grid_attach (GTK_GRID(grid), checkButtonExpand, 0, 2, 1, 1);  	
-	state.checkButtonExpand = checkButtonExpand;  
+	//check Button to enable/disable edge expand dist
+	GtkWidget *checkButtonExpandDist = gtk_check_button_new_with_label("enable edge expand dist");
+	gtk_grid_attach (GTK_GRID(grid), checkButtonExpandDist, 0, 2, 1, 1);  	
+	state.checkButtonExpandDist = checkButtonExpandDist;  
 	
-	//Expand
-	GtkWidget *labelExpandSize = gtk_label_new ("expand all edges with dist > :");
-    gtk_grid_attach (GTK_GRID(grid), labelExpandSize , 0, 3, 1, 1);
+	//Expand dist
+	GtkWidget *labelExpandSizeDist = gtk_label_new ("expand all edges with dist > :");
+    gtk_grid_attach (GTK_GRID(grid), labelExpandSizeDist , 0, 3, 1, 1);
 		
-	GtkAdjustment *adjExpandSize = gtk_adjustment_new(expandSize, 0.0, 0.01, 0.001, 0.001, 0.0005);	
+	GtkAdjustment *adjExpandSizeDist = gtk_adjustment_new(expandSizeDist, 0.0, 0.03, 0.0001, 0, 0);
+	//GtkAdjustment *adjExpandSize = gtk_adjustment_new(expandSize, 0.0, 0.0001, 0.00001, 0.001, 0.0);
 	//GtkAdjustment *adjExpandSize = gtk_adjustment_new(expandSize, 0.0, 10000, 10, 0.001, 0.0005);	
-	GtkWidget *hscaleExpandSize = gtk_scale_new(GtkOrientation::GTK_ORIENTATION_HORIZONTAL, adjExpandSize);
-	gtk_scale_set_digits (GTK_SCALE(hscaleExpandSize), 4);
-	gtk_scale_set_draw_value(GTK_SCALE(hscaleExpandSize), true);
-	gtk_grid_attach (GTK_GRID(grid), hscaleExpandSize, 0, 4, 1, 1);                 
-	state.hscaleExpandSize = GTK_RANGE(hscaleExpandSize);	
+	GtkWidget *hscaleExpandSizeDist = gtk_scale_new(GtkOrientation::GTK_ORIENTATION_HORIZONTAL, adjExpandSizeDist);
+	gtk_scale_set_digits (GTK_SCALE(hscaleExpandSizeDist), 5);
+	gtk_scale_set_draw_value(GTK_SCALE(hscaleExpandSizeDist), true);
+	gtk_grid_attach (GTK_GRID(grid), hscaleExpandSizeDist, 0, 4, 1, 1);                 
+	state.hscaleExpandSizeDist = GTK_RANGE(hscaleExpandSizeDist);	
 	
-        //check Button to enable/disable spareShortcuts
+	
+	//check Button to enable/disable edge expand other
+	GtkWidget *checkButtonExpandOther = gtk_check_button_new_with_label("enable edge expand other");
+	gtk_grid_attach (GTK_GRID(grid), checkButtonExpandOther, 0, 5, 1, 1);  	
+	state.checkButtonExpandOther = checkButtonExpandOther;  
+	
+	//Expand other
+	GtkWidget *labelExpandSizeOther = gtk_label_new ("expand all edges with other > :");
+    gtk_grid_attach (GTK_GRID(grid), labelExpandSizeOther , 0, 6, 1, 1);
+		
+	GtkAdjustment *adjExpandSizeOther = gtk_adjustment_new(expandSizeOther, 0.0, 1.0, 0.001, 0, 0);
+	//GtkAdjustment *adjExpandSize = gtk_adjustment_new(expandSize, 0.0, 0.0001, 0.00001, 0.001, 0.0);
+	GtkWidget *hscaleExpandSizeOther = gtk_scale_new(GtkOrientation::GTK_ORIENTATION_HORIZONTAL, adjExpandSizeOther);
+	gtk_scale_set_digits (GTK_SCALE(hscaleExpandSizeOther), 5);
+	gtk_scale_set_draw_value(GTK_SCALE(hscaleExpandSizeOther), true);
+	gtk_grid_attach (GTK_GRID(grid), hscaleExpandSizeOther, 0, 7, 1, 1);                 
+	state.hscaleExpandSizeOther = GTK_RANGE(hscaleExpandSizeOther);
+	
+    //check Button to enable/disable spareShortcuts
 	GtkWidget *checkButtonSpareShortcuts = gtk_check_button_new_with_label("enable spareShortcuts");
-	gtk_grid_attach (GTK_GRID(grid), checkButtonSpareShortcuts, 0, 5, 1, 1);  	
+	gtk_grid_attach (GTK_GRID(grid), checkButtonSpareShortcuts, 0, 8, 1, 1);  	
 	state.checkButtonSpareShortcuts = checkButtonSpareShortcuts; 
         
 	// Refresh Button
 	button = gtk_button_new_with_label ("Refresh");		
 	g_signal_connect (button, "clicked", G_CALLBACK (on_button_clicked),  &state);		
-	gtk_grid_attach (GTK_GRID(grid), button, 0, 6, 1, 1);                                     
+	gtk_grid_attach (GTK_GRID(grid), button, 0, 9, 1, 1);                                     
 	gtk_container_add (GTK_CONTAINER (GTKwindow), grid);
 	gtk_widget_show_all (GTKwindow);
 

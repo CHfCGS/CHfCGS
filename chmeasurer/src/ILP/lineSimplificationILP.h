@@ -191,7 +191,7 @@ class lineSimplificationILP {
         nofNonZeros = 0;
         enoughSpace =  preNofNonZeros < (int) size;
         
-        Print("preNofNonZeros" << preNofNonZeros);
+        //Print("preNofNonZeros" << preNofNonZeros);
         assert(enoughSpace);
     }
     /*
@@ -246,10 +246,12 @@ public:
         glp_load_matrix(lp, nofNonZeros, &ia[0], &ja[0], &ar[0]);
         //glp_write_lp(lp, NULL, "lp.txt");
 
-
+         
         //solve ILP
         //glp_simplex(lp, NULL);
 
+        WorkingSign();
+        
         glp_iocp parm;
         glp_init_iocp(&parm);
         parm.presolve = GLP_ON;

@@ -18,11 +18,20 @@ namespace geo {
         double by = bTarget.lat;
         double cx = cOutlier.lon;
         double cy = cOutlier.lat;
-
+        
+        double avgLat_ac = (ay + cy)/2;
+        double avgLat_bc = (by + cy)/2;
+        
+        double acx = (ax - cx) * std::cos(avgLat_ac * M_PI / 180.0); // pa[0] - pc[0];
+        double bcx = (bx - cx) * std::cos(avgLat_bc * M_PI / 180.0); //pb[0] - pc[0];
+        double acy = ay - cy; //pa[1] - pc[1];
+        double bcy = by - cy; //pb[1] - pc[1];
+/*
         double acx = ax - cx; // pa[0] - pc[0];
         double bcx = bx - cx; //pb[0] - pc[0];
         double acy = ay - cy; //pa[1] - pc[1];
         double bcy = by - cy; //pb[1] - pc[1];
+ * */
         double determinant = acx * bcy - acy * bcx;
         return 0.5 * determinant;
     }
@@ -62,12 +71,25 @@ namespace geo {
         double area = calcArea(source, target, outlier);
         double baselength = geoDist(source, target);
         double positiveRectArea = std::abs(2.0 * area);
-        return positiveRectArea / baselength;        
+        //return positiveRectArea / baselength;    
+        if (baselength == 0) {
+            return std::numeric_limits<double>::max();
+        } else {
+            return positiveRectArea / baselength;        
+        } 
     }
     
     //height divided by baselength
     double getTriangleProportion(OSMNode source, OSMNode target, OSMNode outlier) {
-        return calcPerpendicularLength(source, target, outlier)/geoDist(source, target);
+        double perpendicularLength = calcPerpendicularLength(source, target, outlier);
+        double base_length = geoDist(source, target);
+        if (base_length == 0) {
+            return std::numeric_limits<double>::max();
+        } else {
+            double proportion = perpendicularLength/base_length;
+            return proportion;
+        }   
+        //return calcPerpendicularLength(source, target, outlier)/geoDist(source, target);
     }
     
     //used with calcArea for orientation tests
@@ -117,14 +139,19 @@ namespace geo {
         //double length1 = geo::geoDist(graph.getNode(kink.src), graph.getNode(kink.peak));
         //double length2 = geo::geoDist(graph.getNode(kink.peak), graph.getNode(kink.tgt));        
         double divisor = s1.length * s2.length;   
-        assert(divisor > 0);
-        double toAcos = dotProduct(s1, s2)/divisor;
+        //assert(divisor > 0);
+        if (divisor == 0) {
+            double toAcos = dotProduct(s1, s2)/divisor;
+            
+            if (toAcos < -1.0) toAcos = -1.0;
+            else if (toAcos > 1.0) toAcos = 1.0;
+
+            double turnAngle = acos(toAcos) * 180.0 / M_PI;
+            return turnAngle;                        
+        } else {
+            return 0; //because dotProduct would also be 0
+        }
         
-        if (toAcos < -1.0) toAcos = -1.0;
-        else if (toAcos > 1.0) toAcos = 1.0;
-        
-        double turnAngle = acos(toAcos) * 180.0 / M_PI;
-        return turnAngle;                        
     }       
     
 }

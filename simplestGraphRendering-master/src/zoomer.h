@@ -1,6 +1,7 @@
 #pragma once
 
 #include <assert.h>
+#include <list>
 
 #include "widthAndColors.h"
 #include "nodesAndEdges.h"
@@ -52,21 +53,66 @@ namespace Zoomer {
 		assert(child_edge1.tgt == child_edge2.src);
 		const NodeT center_node = getNode(child_edge1.tgt);
 		return geo::calcPerpendicularLength(src_node, tgt_node, center_node);
-	}*/
+	}
+	*/
+ 
+	static std::list<NodeID> getCenterNodes(const vector<CHNode> &nodes, const vector<CHEdge> &edges, const EdgeID edge_id) {
+            std::list<NodeID> centerNodes;
+            const CHEdge &edge = edges[edge_id];
+            if (edge.is_shortcut()) {
+                centerNodes.splice(centerNodes.end(), getCenterNodes(nodes, edges, edge.child_edge1));
+
+                assert(edges[edge.child_edge1].tgt == edges[edge.child_edge2].src);
+                const NodeID centerNode_id = edges[edge.child_edge1].tgt;
+                centerNodes.push_back(centerNode_id);
+
+                centerNodes.splice(centerNodes.end(), getCenterNodes(nodes, edges, edge.child_edge2));
+            }
+            return centerNodes;
+        }
+
+	static double otherMeasure(const vector<CHNode> &nodes, const vector<CHEdge> &edges, const EdgeID edge_id) {
+		const CHEdge& edge = edges[edge_id];
+
+		std::list<NodeID> center_nodes = getCenterNodes(nodes, edges, edge_id);
+		const CHNode& src_node = nodes[edge.src];
+		const CHNode& tgt_node = nodes[edge.tgt];		 
+
+		double maxProportion = 0;
+		for (NodeID node_id: center_nodes) {
+		    const CHNode& center_node = nodes[node_id];
+		    double proportion = geo::getTriangleProportion(src_node, tgt_node, center_node);
+		    if (proportion > maxProportion) {
+		        maxProportion = proportion;
+		    }
+		}
+		return maxProportion;		
+    	}
 	
-	static void expandEdge(const vector<CHNode> &nodes, vector<CHEdge> &edges, const EdgeID edgeID, double expandSize) {
+	static void expandEdge(const vector<CHNode> &nodes, vector<CHEdge> &edges, const EdgeID edgeID, double expandSizeDist, bool expandOther, double expandSizeOther) {
 		CHEdge &edge = edges[edgeID];
 		if (edge.is_shortcut() && edge.remaining) {
-			//if (edge.getDist(nodes) > expandSize) {
-			//if (edge.dist > expandSize) {
-			if (geo::geoDist(nodes[edge.src], nodes[edge.tgt]) > expandSize) {
-			//double BendingRatio = calcBendingRatio(nodes [edge.src], nodes[edge.getCenterPoint(edges)], nodes[edge.tgt]);
-			//if (BendingRatio > expandSize) {
+			//const CHNode& src_node = nodes[edge.src];
+			//const CHNode& tgt_node = nodes[edge.tgt];
+			//const CHEdge& child_edge1 = edges[edge.child_edge1];
+//			const CHNode center_node = nodes[child_edge1.tgt];
+			//DEBUG("geo::getTriangleProportion)" <<  geo::getTriangleProportion(src_node, tgt_node, center_node));
+			if (geo::geoDist(nodes[edge.src], nodes[edge.tgt]) > expandSizeDist
+				|| (expandOther && otherMeasure(nodes, edges, edgeID) > expandSizeOther)) {
+				//if (edge.getDist(nodes) > expandSize) {
+				//if (edge.dist > expandSize) {			
+				
+				//if (geo::calcPerpendicularLength(src_node, tgt_node, center_node) > expandSize) {
+				
+			
+				//double BendingRatio = calcBendingRatio(nodes [edge.src], nodes[edge.getCenterPoint(edges)], nodes[edge.tgt]);
+				//if (BendingRatio > expandSize) {
 				edge.remaining = false;
 				edges[edge.child_edge1].remaining = true;
 				edges[edge.child_edge2].remaining = true;
-				expandEdge(nodes, edges, edge.child_edge1, expandSize);
-				expandEdge(nodes, edges, edge.child_edge2, expandSize);
+				expandEdge(nodes, edges, edge.child_edge1, expandSizeDist, expandOther, expandSizeOther);
+				expandEdge(nodes, edges, edge.child_edge2, expandSizeDist, expandOther, expandSizeOther);
+				
 			}
 		}
 	}
@@ -150,8 +196,10 @@ namespace Zoomer {
 
 	static void zoom(std::vector<CHNode> &ch_nodes, std::vector<CHEdge> &ch_edges, std::vector<Node> &nodes, std::vector<Edge> &edges,
 		double percent_of_showed_nodes = 2, //normal: 2
-		double expandSize = 0.002, //normal: 0.002
-		bool expand = false,
+		double expandSizeDist = 0.002, //normal: 0.002
+		bool expandDist = false,
+		double expandSizeOther = 0.002, //normal: 0.002
+		bool expandOther = false,
                 bool spareShortcuts = false
 		) {	
 
@@ -202,12 +250,12 @@ namespace Zoomer {
                 }
                 
 		
-		if (expand) {
+		if (expandDist) {
 			DEBUG("Processing expandSize");
 			//process expandSize
 			for (uint edgeID = 0; edgeID < ch_edges.size(); edgeID++){
 				//if (ch_edges[edgeID].remaining) {
-				expandEdge(ch_nodes, ch_edges, edgeID, expandSize);
+				expandEdge(ch_nodes, ch_edges, edgeID, expandSizeDist, expandOther, expandSizeOther);
 				//}        
 			}  
 		}

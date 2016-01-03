@@ -1,4 +1,5 @@
 #pragma once
+//#include  "geoFunctions.h"
 
 typedef int NodeID;
 typedef int EdgeID;
@@ -36,7 +37,7 @@ struct CHNode{
     Level lvl;
     bool remaining;
 };
-
+/*
 double pythagoras(double a, double b) {
 	return sqrt(pow(a, 2) + pow(b, 2));
 }
@@ -46,7 +47,7 @@ double geoDist(const CHNode &node1, const CHNode &node2) {
 	double dlat = node1.lat- node2.lat;
 	double dlon = node1.lon -node2.lon;
 	return pythagoras(dlat, dlon);    
-}
+}*/
 
 struct CHEdge {
 	NodeID src;
@@ -61,9 +62,9 @@ struct CHEdge {
     bool remaining;
 
     
-    bool is_shortcut(){return (child_edge1 !=-1 && child_edge2 != -1);}	                   
-    bool is_valid(const std::vector<CHNode> &nodes) {
+    bool is_shortcut() const {return (child_edge1 !=-1 && child_edge2 != -1);}	                   
+    bool is_valid(const std::vector<CHNode> &nodes) const {
         return (nodes[src].remaining && nodes[tgt].remaining);
     }    
-    double getDist(const std::vector<CHNode> &nodes) {return geoDist(nodes[src], nodes[tgt]);}
+    //double geo::getDist(const std::vector<CHNode> &nodes) {return geoDist(nodes[src], nodes[tgt]);}
 };

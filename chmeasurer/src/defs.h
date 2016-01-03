@@ -17,6 +17,12 @@
 #define Print(x) do { std::cout << x << std::endl; } while (0)
 #endif
 
+#if defined(NVERBOSE) && defined(NDEBUG)
+#define WorkingSign(x) CHC_NOP
+#else
+#define WorkingSign() do { std::cout << "+" << std::flush; } while (0)
+#endif
+
 #define Unused(x) ((void)x)
 
 #ifdef NDEBUG

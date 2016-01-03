@@ -120,28 +120,32 @@ namespace chm {
                         //Print("split_chain.size()" << split_chain.size());
                         //Print("expanded_split_chain.size()" << expanded_split_chain.size());
 
-                        
-                        SelfIntersectionChecker selfIntersectionChecker(graph);
-                        if(!selfIntersectionChecker.isSelfIntersecting(split_chain)
-                                && !selfIntersectionChecker.isSelfIntersecting(expanded_split_chain)) {                           
-                        
-                            lineSimplificationILP ilp(graph);
-                            double ilpNeededNumberOfEdges
-                                = ilp.solve(expanded_split_chain, epsilon_error + std::numeric_limits<double>::epsilon());                    
+                        if(chains::uniqueLocations(expanded_split_chain, Chain(), graph)) { //can happen by having same centernode or nodes in the same place
+                            assert(chains::uniqueLocations(split_chain, Chain(), graph)); //because they are subsets of expanded
+                            SelfIntersectionChecker selfIntersectionChecker(graph);
+                            if(!selfIntersectionChecker.isSelfIntersecting(split_chain)
+                                    && !selfIntersectionChecker.isSelfIntersecting(expanded_split_chain)) {                           
 
-                            int nof_edges = split_chain.size()-1;
-                            assert(nof_edges >= ilpNeededNumberOfEdges);
-                            double diff = nof_edges - ilpNeededNumberOfEdges;
-                            //Debug("ilpNeededNumberOfEdges:" << ilpNeededNumberOfEdges);
-                            //Debug("diff:" << diff);
-                            double chain_length = chains::calcChainGeoLength(expanded_split_chain, graph);
-                            errorcounts.weighted_epsilon += epsilon_error * chain_length;
-                            errorcounts.length_sum += chain_length;
-                            errorcounts.addedDiffs += diff;                                                   
-                            
-                        }else {
-                            errorcounts.selfIntersecting++;
-                        }                           
+                                lineSimplificationILP ilp(graph);
+                                double ilpNeededNumberOfEdges
+                                    = ilp.solve(expanded_split_chain, epsilon_error + std::numeric_limits<double>::epsilon());                    
+
+                                int nof_edges = split_chain.size()-1;
+                                assert(nof_edges >= ilpNeededNumberOfEdges);
+                                double diff = nof_edges - ilpNeededNumberOfEdges;
+                                //Debug("ilpNeededNumberOfEdges:" << ilpNeededNumberOfEdges);
+                                //Debug("diff:" << diff);
+                                double chain_length = chains::calcChainGeoLength(expanded_split_chain, graph);
+                                errorcounts.weighted_epsilon += epsilon_error * chain_length;
+                                errorcounts.length_sum += chain_length;
+                                errorcounts.addedDiffs += diff;                                                   
+
+                            }else {
+                                errorcounts.selfIntersecting++;
+                            }   
+                        } else {
+                            errorcounts.sameLocation++;
+                        }
                     }                    
                 }
             }
@@ -168,7 +172,7 @@ namespace chm {
             for (const ChainPair& chainpair: CaR.chainPairs) {
                 //TODO Streettype needs to be removed 
                 _make_ilp_measure(chainpair.chainTo, 1, errorcounts);                   
-                _make_ilp_measure(chainpair.chainTo, 1, errorcounts);                   
+                _make_ilp_measure(chainpair.chainFrom, 1, errorcounts);                   
             }
 
             
@@ -241,14 +245,14 @@ namespace chm {
                                         double eta = dF.calc_dF(chainTo, chainFrom);
                                         //double eta2 = dF.calc_dF(redetected_chainTo.remaining_chain, redetected_chainFrom.remaining_chain);
                                         //double eta = std::max(eta1, eta2);
-                                        Print("eta " << eta);                                                                                                
+                                        //Print("eta " << eta);                                                                                                
 
 
                                         ParallelLineSimplificationILP p_ilp(graph);
-                                        const double epsilon_relaxation = 1;
+                                        const double epsilon_relaxation = 10000;
                                         double p_ilpNeededNumberOfEdges
                                                 = p_ilp.solve(expandedChainTo, expandedChainFrom,
-                                                    epsilon_relaxation * epsilon_error + std::numeric_limits<double>::epsilon(),
+                                                    epsilon_relaxation + epsilon_error + std::numeric_limits<double>::epsilon(),
                                                     eta + std::numeric_limits<double>::epsilon());
 
                                         size_t preSize = split_edge_chain_pair.chainTo.size() + split_edge_chain_pair.chainFrom.size();
@@ -403,7 +407,7 @@ namespace chm {
         void makeMeasurement(MeasureOptions m_options) {
             Print("make measure");    
             //measurements without path-finding info
-            graph.zoom(100, false, true, 0);
+            graph.zoom(100, false, false, 0, 0);
             for (uint i = 0; i < graph.getNrOfNodes(); i++) {
                 assert(graph.isValidNode(i));
             }
@@ -411,10 +415,13 @@ namespace chm {
             Chains_and_Remainder CaR(graph.getMaxStreetType());
             
             Print("Zooming ");                                               
-            //graph.zoom(50, false, 800);    
+            //graph.zoom(50, false, 800); //time dist   
             //graph.zoom(0.02, true, true, 800);               
             //graph.zoom(0.02, true, true, 0.005);
-            graph.zoom(0.02, true, false, 0.02);
+            //graph.zoom(0.02, true, false, 0.02); //hat gut funktioniert für ilp
+            //graph.zoom(0.02, true, true, 0.0075, 0.02); //hat gut funktioniert für ilp
+            graph.zoom(0.02, true, true, 0.0075, 0.1);
+            //graph.zoom(0.02, true, true, 0.0075, 0.1); 
             //graph.zoom(45, true, true, 10000.0);                                        
             
             std::vector<NodeID> visibleNodeIDs;
@@ -437,6 +444,7 @@ namespace chm {
                         
             
             if(m_options.edge) {
+                graph.zoom(0.02, true, false, 0.02, 0);
                 makeEdgeMeasure();    
             }            
             if(m_options.chain) {
@@ -455,7 +463,7 @@ namespace chm {
             
             //affords only zooming
             if (m_options.expand_diff) {
-                graph.zoom(0.02, true, false, 0.2);
+                graph.zoom(0.02, true, true, 0.2, 0.1);
             }
            
         }

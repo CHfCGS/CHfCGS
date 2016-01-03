@@ -53,7 +53,7 @@ class CHGraph
                 //zoom helper functions
                 //bool isRemaining(EdgeID edge_id) const;
                 void invalidateHigherShortcut(const EdgeID edge_id);                
-                void expandEdge(const EdgeID edgeID, bool simple_expand, double expandSize);  
+                void expandEdge(const EdgeID edgeID, bool other_expand, double expandSizeDist, double expandSizeOther);  
                 void markValidNodes(double percent_of_valid_nodes);
                 ValidLevelInfo calcValidLevel(size_t numberOfValidNodes);
                 //void removeShortcut(const EdgeID edgeID);
@@ -73,7 +73,8 @@ class CHGraph
 		 * the edges according to OutEdgeSort and InEdgeSort. */
 		void init(GraphInData<NodeT,EdgeT>&& data);
                 
-                void zoom(double percent_of_valid_nodes, bool expand, bool simple_expand, double expandsize, bool spareShortcuts=false);
+                void zoom(double percent_of_valid_nodes, bool expand, bool other_expand,
+                        double expandsizeDist, double expandsizeOther, bool spareShortcuts=false);
 
 		void printInfo() const;
 		template<typename Range>
@@ -81,7 +82,7 @@ class CHGraph
                               
                 bool isUp(EdgeT const& edge, EdgeType direction) const;
                 
-                double edgeExpandMeasure(const EdgeID edge_id) const;
+                double otherMeasure(const EdgeID edge_id) const;
                 //uint getMaxStreetType() const {return max_street_type;} 
                 uint getMaxStreetType() const {return max_street_type;} 
 		uint getNrOfNodes() const { return _nodes.size(); }
@@ -168,7 +169,7 @@ void CHGraph<NodeT, EdgeT>::init(GraphInData<NodeT, EdgeT>&& data)
 
 	update();
         setCenterNodesLists();
-        zoom(0, false, true, 0);
+        zoom(0, false, false, 0, 0);
 	Print("Graph info:");
 	Print("===========");
 	printInfo();
@@ -395,7 +396,8 @@ void CHGraph<NodeT, EdgeT>::calcMinGeoImportance()
 }
 
 template <typename NodeT, typename EdgeT>
-void CHGraph<NodeT, EdgeT>::zoom(double percent_of_valid_nodes, bool expand, bool simple_expand, double expandSize, bool spareShortcuts)
+void CHGraph<NodeT, EdgeT>::zoom(double percent_of_valid_nodes, bool expand, bool other_expand,
+        double expandSizeDist, double expandSizeOther, bool spareShortcuts)
 {
     markValidNodes(percent_of_valid_nodes);
 
@@ -428,11 +430,11 @@ void CHGraph<NodeT, EdgeT>::zoom(double percent_of_valid_nodes, bool expand, boo
         //process expandSize
         for (uint edgeID = 0; edgeID < _validEdges.size(); edgeID++) {
             //if (_validEdges[edgeID]) {
-                expandEdge(edgeID, simple_expand, expandSize);
+                expandEdge(edgeID, other_expand, expandSizeDist, expandSizeOther);
             //}
         }
     }    
-    if(simple_expand == false) {
+    if(other_expand) {
         int nof_valid_edges_after = getNrOfValidEdges();
         int valid_edges_diff = nof_valid_edges_after - nof_valid_edges_before;
         Print("nof_valid_edges_before:" << nof_valid_edges_before);
@@ -479,31 +481,50 @@ void CHGraph<NodeT, EdgeT>::zoom(double percent_of_valid_nodes, bool expand, boo
     }        
     
     template <typename NodeT, typename EdgeT>
-    double CHGraph<NodeT, EdgeT>::edgeExpandMeasure(const EdgeID edge_id) const {
+    double CHGraph<NodeT, EdgeT>::otherMeasure(const EdgeID edge_id) const {
+        const EdgeT& edge = getEdge(edge_id);
+        const NodeT& src_node = getNode(edge.src);
+        const NodeT& tgt_node = getNode(edge.tgt);
+        Chain center_nodes = getCenterNodes(edge_id);
+         
+        double maxProportion = 0;
+        for (NodeID node_id: center_nodes) {
+            const NodeT& center_node = getNode(node_id);
+            double proportion = geo::getTriangleProportion(src_node, tgt_node, center_node);
+            if (proportion > maxProportion) {
+                maxProportion = proportion;
+            }
+        }
+        return maxProportion;
+        /*
         const EdgeT& edge = getEdge(edge_id);
         const NodeT& src_node = getNode(edge.src);
         const NodeT& tgt_node = getNode(edge.tgt);
         const EdgeT& child_edge1 = getEdge(edge.child_edge1);
         const EdgeT& child_edge2 = getEdge(edge.child_edge2);
         assert(child_edge1.tgt == child_edge2.src);
-        const NodeT center_node = getNode(child_edge1.tgt);
+        const NodeT center_node = getNode(child_edge1.tgt);        
         return geo::getTriangleProportion(src_node, tgt_node, center_node);
         //return geo::calcPerpendicularLength(src_node, tgt_node, center_node);
+         * */
     }
     
     template <typename NodeT, typename EdgeT>
-    void CHGraph<NodeT, EdgeT>::expandEdge(const EdgeID edge_id, bool simple_expand, double expandSize) {
-        //
+    void CHGraph<NodeT, EdgeT>::expandEdge(const EdgeID edge_id, bool other_expand, double expandSizeDist, double expandSizeOther) {        
         
         if (isShortcut(edge_id) && _validEdges[edge_id]) {
+            /*
             bool expand;
             if (simple_expand) {
-                expand = (getEdgeDist(edge_id) > expandSize);
+                expand = (getEdgeDist(edge_id) > expandSizeDist);
             } else {                      
-                expand = (edgeExpandMeasure(edge_id) > expandSize);
+                expand = (edgeExpandMeasure(edge_id) > expandSizeDist);
             }
             if (expand) {
-            //if (_out_edges[edge_id].dist > expandSize) {
+             * */
+            
+            if (getEdgeDist(edge_id) > expandSizeDist
+                    || (other_expand && otherMeasure(edge_id) > expandSizeOther)) {
                 //double BendingRatio = calcBendingRatio(nodes [edge.src], nodes[edge.getCenterPoint(edges)], nodes[edge.tgt]);
                 //if (BendingRatio > expandSize) {
                 
@@ -519,8 +540,8 @@ void CHGraph<NodeT, EdgeT>::zoom(double percent_of_valid_nodes, bool expand, boo
                 const NodeID centerNode_id = getEdge(edge.child_edge1).tgt;                
                 _expandedNodes[centerNode_id] = true;
                 
-                expandEdge(edge.child_edge1, simple_expand, expandSize);
-                expandEdge(edge.child_edge2, simple_expand, expandSize);
+                expandEdge(edge.child_edge1, other_expand, expandSizeDist, expandSizeOther);
+                expandEdge(edge.child_edge2, other_expand, expandSizeDist, expandSizeOther);
             }
         }
     }
