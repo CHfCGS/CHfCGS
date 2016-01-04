@@ -90,8 +90,10 @@ class CHGraph
                 uint getNrOfValidNodes() const;
                 uint getNrOfValidEdges() const;
 		//EdgeT const& getEdge(EdgeID edge_id) const { return _out_edges[_id_to_index[edge_id]]; }
-                EdgeT const& getEdge(EdgeID edge_id) const { return _out_edges[edge_id]; }
-		NodeT const& getNode(NodeID node_id) const { return _nodes[node_id]; }
+                //EdgeT const& getEdge(EdgeID edge_id) const { return _out_edges[edge_id]; }
+                EdgeT const& getEdge(EdgeID edge_id) const { return _out_edges.at(edge_id); }
+		//NodeT const& getNode(NodeID node_id) const { return _nodes[node_id]; }
+                NodeT const& getNode(NodeID node_id) const { return _nodes.at(node_id); }
 		Metadata const& getMetadata() const { return _meta_data; }
                                                                 
 		uint getNrOfEdges(NodeID node_id) const;                
@@ -175,6 +177,10 @@ void CHGraph<NodeT, EdgeT>::init(GraphInData<NodeT, EdgeT>&& data)
 	printInfo();
         
         fixEdgeType();
+        /*
+        for (uint i=0; i<_out_edges.size(); i++) {
+            assert(_out_edges.at(i).id == i);
+        }*/
 }
 
 template <typename NodeT, typename EdgeT>
@@ -312,6 +318,7 @@ void CHGraph<NodeT, EdgeT>::update()
 	//initIdToIndex();        
 }
 
+//evtl. bei zu großen Messungen rausnehmen
 template <typename NodeT, typename EdgeT>
 void CHGraph<NodeT, EdgeT>::setCenterNodesLists() {
     for (EdgeID edge_id = 0; edge_id < edge_count; edge_id++) {
@@ -425,8 +432,9 @@ void CHGraph<NodeT, EdgeT>::zoom(double percent_of_valid_nodes, bool expand, boo
     int nof_valid_edges_before = getNrOfValidEdges();
 
     if (expand) {
-        Debug("Processing expandSize");
+        Debug("Processing expandSize");        
         _expandedNodes.resize(_nodes.size()); //nodes which come into the graph if they are a center node        
+        std::fill(_expandedNodes.begin(), _expandedNodes.end(), false);        
         //process expandSize
         for (uint edgeID = 0; edgeID < _validEdges.size(); edgeID++) {
             //if (_validEdges[edgeID]) {
@@ -434,14 +442,14 @@ void CHGraph<NodeT, EdgeT>::zoom(double percent_of_valid_nodes, bool expand, boo
             //}
         }
     }    
-    if(other_expand) {
+    //if(other_expand) {
         int nof_valid_edges_after = getNrOfValidEdges();
         int valid_edges_diff = nof_valid_edges_after - nof_valid_edges_before;
         Print("nof_valid_edges_before:" << nof_valid_edges_before);
         Print("nof_valid_edges_after:" << nof_valid_edges_after);
         Print("valid_edges_diff:" << valid_edges_diff);
         Print("after/before:" << (double) nof_valid_edges_after / (double) nof_valid_edges_before);
-    }
+    //}
 
     #ifndef NDEBUG
     if (percent_of_valid_nodes==100) {
@@ -490,7 +498,8 @@ void CHGraph<NodeT, EdgeT>::zoom(double percent_of_valid_nodes, bool expand, boo
         double maxProportion = 0;
         for (NodeID node_id: center_nodes) {
             const NodeT& center_node = getNode(node_id);
-            double proportion = geo::getTriangleProportion(src_node, tgt_node, center_node);
+            //double proportion = geo::getTriangleProportion(src_node, tgt_node, center_node);
+            double proportion = geo::calcPerpendicularLength(src_node, tgt_node, center_node);
             if (proportion > maxProportion) {
                 maxProportion = proportion;
             }
@@ -845,7 +854,7 @@ std::vector<EdgeT> CHGraph<NodeT, EdgeT>::nodeEdges(NodeID node_id) const  {
 template <typename NodeT, typename EdgeT>
 std::vector<EdgeT> CHGraph<NodeT, EdgeT>::nodeEdgesInOriginal(NodeID node_id, EdgeType type) const  {
         std::vector<EdgeT> nodeEdges;
-        for (auto const edge : _nodeEdges(node_id, type)) {
+        for (auto const edge : _nodeEdges(node_id, type)) {            
             if (!isShortcut(edge.id)) {
                 nodeEdges.push_back(edge);
             }

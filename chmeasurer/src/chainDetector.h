@@ -61,7 +61,7 @@ public:
     void collectChain(const NodeID node_id, Chains_and_Remainder &CaR) {
         Chain chain;
 
-        debug_assert(!marked.at(node_id));
+        assert(!marked.at(node_id));
         chain.emplace_back(node_id);
         marked[node_id] = true;
 
@@ -71,9 +71,13 @@ public:
         //backward direction
         NodeID next = nextChainElement(node_id, type, EdgeType::IN, isOneway);
         while (next != c::NO_NID) {
-            debug_assert(!marked.at(next));
+            assert(!marked.at(next));
             chain.emplace_front(next);
-            marked[next] = true;
+            if (graph.degree_leq_twoInOriginal(next)) {
+                marked[next] = true;                
+            } else {
+                break;
+            }
             NodeID current = next;
             next = nextChainElement(current, type, EdgeType::IN, isOneway);
         }
@@ -81,13 +85,21 @@ public:
         //forward direction
         next = nextChainElement(node_id, type, EdgeType::OUT, isOneway);
         while (next != c::NO_NID) {
-            debug_assert(!marked.at(next));
+            assert(!marked.at(next));
             chain.emplace_back(next);
-            marked[next] = true;
+            if (graph.degree_leq_twoInOriginal(next)) {
+                marked[next] = true;
+            } else {
+                break;
+            }
             NodeID current = next;
             next = nextChainElement(current, type, EdgeType::OUT, isOneway);            
         }
-        
+        /*
+        if (chain.front() == chain.back()) {            
+            Print("chain.size()" << chain.size());
+            Print("start == end");
+        }*/
         CaR.addChainOfType(chain, type, isOneway);
     }
     

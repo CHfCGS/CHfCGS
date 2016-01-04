@@ -418,9 +418,14 @@ namespace chm {
             //graph.zoom(50, false, 800); //time dist   
             //graph.zoom(0.02, true, true, 800);               
             //graph.zoom(0.02, true, true, 0.005);
-            //graph.zoom(0.02, true, false, 0.02); //hat gut funktioniert für ilp
+            //graph.zoom(0.02, true, false, 0.02, 0); //hat gut funktioniert für ilp
             //graph.zoom(0.02, true, true, 0.0075, 0.02); //hat gut funktioniert für ilp
-            graph.zoom(0.02, true, true, 0.0075, 0.1);
+            //graph.zoom(0.02, true, true, 0.0075, 0.05);
+            //graph.zoom(0.02, true, true, 0.0075, 0.0002);
+            //graph.zoom(0.02, true, true, 0.03, 0.0002);
+            graph.zoom(0.002, true, true, 2000, 0.00002);
+            //graph.zoom(22.644, true, true, 2000, 1.0);
+            
             //graph.zoom(0.02, true, true, 0.0075, 0.1); 
             //graph.zoom(45, true, true, 10000.0);                                        
             

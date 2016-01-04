@@ -79,6 +79,7 @@ class Graph
                 StreetType getMinStreetType(NodeID node_id) const;   
                 std::vector<StreetType> getStreetTypeVector() const;
                 bool degree_leq(NodeID node_id , uint degree) const;
+                bool isActive(NodeID node_id) const;
                 bool isOneway(NodeID node_id) const;
 
 		typedef range<typename std::vector<EdgeT>::const_iterator> node_edges_range;
@@ -367,6 +368,12 @@ std::vector<StreetType> Graph<NodeT, EdgeT>::getStreetTypeVector() const
         streetTypes[node_id] = getMinStreetType(node_id);
     }
     return streetTypes;
+}
+
+template <typename NodeT, typename EdgeT>
+bool Graph<NodeT, EdgeT>::isActive(NodeID node_id , uint degree) const
+{
+    return getNrOfEdges(node_id)==0;
 }
 
 template <typename NodeT, typename EdgeT>

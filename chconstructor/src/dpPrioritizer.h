@@ -859,7 +859,7 @@ namespace chc {
                         //CaR.remainder = _prio_vec;
                                                 
                         Print("Number of chains: " << _CaR.getNrOfChains());
-                        debug_assert(_CaR.getNrOfNodesInChains() + _CaR.remainder.size() == this->_prio_vec.size());
+                        //debug_assert(_CaR.getNrOfNodesInChains() + _CaR.remainder.size() == this->_prio_vec.size());
                         if (s_options.pairMatch_type != ls::PairMatchType::NONE) {
                             Print("IdentifyingChainPairs ");
                             fourDGrid.identifyPairs(_CaR);
@@ -939,11 +939,11 @@ namespace chc {
                     Print("Getting Independent set from Remainder");
                     //next_nodes = _chooseIndependentSetFromRemainderED(_CaR.remainder);
                     //next_nodes = _chooseIndependentSetFromRemainderOriginalMST(_CaR.remainder);
-                    next_nodes = _chooseIndependentSetFromRemainderOriginalMSTMedian(_CaR.remainder);
+                    next_nodes = _chooseIndependentSetFromRemainderOriginalMSTMedian(_prio_vec);
                     //next_nodes = _chooseIndependentSetFromRemainder3(_CaR.remainder, s_options.errorMeasure_type);
                     //next_nodes = _chooseIndependentSetFromRemainderED(_CaR.remainder);
                     //next_nodes = _chooseIndependentSetFromRemainderLowGeoMeasure(_CaR.remainder, s_options.errorMeasure_type);
-                    _removeFrom(next_nodes, _CaR.remainder);
+                    //_removeFrom(next_nodes, _CaR.remainder);
                     break;
                 }
                 

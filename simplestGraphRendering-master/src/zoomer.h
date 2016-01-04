@@ -81,7 +81,8 @@ namespace Zoomer {
 		double maxProportion = 0;
 		for (NodeID node_id: center_nodes) {
 		    const CHNode& center_node = nodes[node_id];
-		    double proportion = geo::getTriangleProportion(src_node, tgt_node, center_node);
+		    double proportion = geo::calcPerpendicularLength(src_node, tgt_node, center_node);
+		    //double proportion = geo::getTriangleProportion(src_node, tgt_node, center_node);
 		    if (proportion > maxProportion) {
 		        maxProportion = proportion;
 		    }

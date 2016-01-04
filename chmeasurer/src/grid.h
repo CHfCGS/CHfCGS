@@ -227,8 +227,9 @@ public:
                         int currentNode_id = FirstNodeGrid[x][y];
                         while (currentNode_id != -1) {                            
                             if (window.isIn(graph, currentNode_id)) {
-                                
-                                windowNodes.push_back(currentNode_id);
+                                if(graph.isVisibleNode(currentNode_id)) {
+                                    windowNodes.push_back(currentNode_id);   
+                                }                                
                                 //option: let only visible nodes count
                                 /*
                                 if (graph.isVisibleNode(currentNode_id))  {

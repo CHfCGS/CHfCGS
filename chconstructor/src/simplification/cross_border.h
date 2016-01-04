@@ -79,9 +79,12 @@ namespace ls {
 
             std::list<NodeID> nodesInGrid = grid.nodesInBoundingBox(bb);
             std::vector<NodeInBox> nodesInBox;
-            for (NodeID node_id: nodesInGrid) {                    
-                bool sign = (geo::calcArea(src, tgt, graph.getNode(node_id)) >= 0) ? true : false;                
-                nodesInBox.push_back(NodeInBox(node_id, sign));
+            for (NodeID node_id: nodesInGrid) {  
+                //TODO active nodes == !degreeleq0
+                if(graph.isActive(node_id)) {
+                    bool sign = (geo::calcArea(src, tgt, graph.getNode(node_id)) >= 0) ? true : false;                
+                    nodesInBox.push_back(NodeInBox(node_id, sign));
+                }                
             }
             /*
             std::vector<NodeID> nodesInGrid = grid.nodesInNeigbourhood(bb.midLat, bb.midLon);

@@ -399,6 +399,26 @@ namespace chains {
         return unique;
     }
     
+    static bool uniqueElements(const Chain& chain1, const Chain& chain2) {
+        std::vector<NodeID> chain;
+        for (NodeID node_id: chain1) {
+            chain.push_back(node_id);
+        }
+        for (NodeID node_id: chain2) {
+            chain.push_back(node_id);
+        }
+        //pairwise comparision
+        bool unique = true;        
+        for (uint i = 0; i < chain.size()-1; i++) {
+            for (uint j = i+1; j < chain.size(); j++) {
+                if (chain[i]== chain[j]) {
+                    unique = false;
+                }
+            }                
+        }
+        return unique;
+    }
+    
     static std::list<EdgeChainPair> split (EdgeChainPair& chain_pair, const CHGraph<CHNode, CHEdge>& graph) {        
         std::list<EdgeChainPair> edge_chain_pairs;
         const uint critical_size = 40;

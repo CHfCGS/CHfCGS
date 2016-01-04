@@ -75,7 +75,11 @@ public:
         while (next != chc::c::NO_NID) {
             debug_assert(!marked.at(next));
             chain.emplace_front(next);
-            marked[next] = true;
+            if (base_graph.degree_leq(next, 2)) {
+                marked[next] = true;
+            } else {
+                break;
+            }            
             chc:: NodeID current = next;
             next = nextChainElement(current, type, chc::EdgeType::IN, isOneway);
         }
@@ -85,7 +89,11 @@ public:
         while (next != chc::c::NO_NID) {
             debug_assert(!marked.at(next));
             chain.emplace_back(next);
-            marked[next] = true;
+            if (base_graph.degree_leq(next, 2)) {
+                marked[next] = true;
+            } else {
+                break;
+            }            
             chc:: NodeID current = next;
             next = nextChainElement(current, type, chc::EdgeType::OUT, isOneway);            
         }
