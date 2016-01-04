@@ -294,8 +294,11 @@ private:
         const auto intervallIt = --(intervalls.end());
 
         //first box of a chain
-        std::vector<NodeInBox> nodesInFirstBox(cb::calcNodesInBoundingBox(*(chain.begin()), *(++(chain.begin())), graph, grid));
-        node_boxes.push_back(nodesInFirstBox);  
+        std::vector<NodeInBox> nodesInFirstBox;
+        if (s_options.checkBorderCrossing) {
+            nodesInFirstBox = cb::calcNodesInBoundingBox(*(chain.begin()), *(++(chain.begin())), graph, grid);
+        }            
+        node_boxes.push_back(nodesInFirstBox);    
 
         //initialize lists                        
         std::list<std::vector<NodeInBox> >::iterator leftBox = --node_boxes.end(); //Iterator which runs in tandem with chainNodeIterator

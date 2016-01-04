@@ -1,4 +1,4 @@
-data=baden-wuerttembergNTH #ChainPair2 # #bremen #ProDPExample #Intersection #baden-wuerttemberg #stuttgart-regbez #ZipOrderingTest #ProP_ILPChainPair #PairsToIdentify
+data=bremen #ChainPair2 # #bremen #ProDPExample #Intersection #baden-wuerttemberg #stuttgart-regbez #ZipOrderingTest #ProP_ILPChainPair #PairsToIdentify
 echo "data: " "$data"
 
 in=$data"-latest.osm.pbf"
@@ -18,7 +18,7 @@ LOGFILE="$NOW.log"
 #chconstructor/build/ch_constructor -i data/Graph/$in -o data/CH/$out  -p DP -s BU -e KE -w CD -d EDE -f FMI_DIST -g FMI_CH 2>&1 | tee chconstructor/log/$LOGFILE #-d EDE
 
 #chconstructor/build/ch_constructor -i data/Graph/$in -o data/CH/$out  -p DP -s NTH -d EDE -f FMI_DIST -g FMI_CH 2>&1 | tee chconstructor/log/$LOGFILE # -d EDE
-#chconstructor/build/ch_constructor -i data/Graph/$in -o data/CH/$out  -p DP -s DP -e VE -c -d EDE -f FMI_DIST -g FMI_CH 2>&1 | tee chconstructor/log/$LOGFILE #-d EDE
+chconstructor/build/ch_constructor -i data/Graph/$in -o data/CH/$out  -p DP -s DP -e VE -c -d EDE -f FMI_DIST -g FMI_CH 2>&1 | tee chconstructor/log/$LOGFILE #-d EDE
 #chconstructor/build/ch_constructor -i data/Graph/$in -o data/CH/$out  -p DP -s DP -e VE -d EDE -w P -d EDE -f FMI_DIST -g FMI_CH 2>&1 | tee chconstructor/log/$LOGFILE # -d EDE
 
 #chconstructor/build/ch_constructor -i data/Graph/$in -o data/CH/$out -d EDE -p DP -s DP -c -e VE -f FMI_DIST -g FMI_CH 2>&1 | tee chconstructor/log/$LOGFILE
@@ -33,7 +33,7 @@ NOW=$(date +"%Y_%m_%d_%H_%M_%S")
 LOGFILE="$NOW.log"
 
 
-./ch_measurer -i ../../data/CH/$in -l  2>&1 | tee ../logs/$LOGFILE    #-e -c -d -l -p -v 
+./ch_measurer -i ../../data/CH/$in -e  2>&1 | tee ../logs/$LOGFILE    #-e -c -d -l -p -v 
 
 #echo ./ch_measurer -i ../../data/CH/$in > ../logs/$LOGFILE -p | tee /dev/tty | foo
 

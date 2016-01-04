@@ -371,7 +371,7 @@ std::vector<StreetType> Graph<NodeT, EdgeT>::getStreetTypeVector() const
 }
 
 template <typename NodeT, typename EdgeT>
-bool Graph<NodeT, EdgeT>::isActive(NodeID node_id , uint degree) const
+bool Graph<NodeT, EdgeT>::isActive(NodeID node_id) const
 {
     return getNrOfEdges(node_id)==0;
 }
