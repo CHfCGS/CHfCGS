@@ -1,7 +1,8 @@
 #pragma once
 
 #include "../nodes_and_edges.h"
-#include "boost/heap/binomial_heap.hpp"
+//#include "boost/heap/binomial_heap.hpp"
+#include "boost/heap/fibonacci_heap.hpp"
 
 namespace ls {
 
@@ -128,7 +129,9 @@ struct PrioNodeBase;
 
 
 //typedef typename boost::heap::binomial_heap<PrioNodeBase> PrioNodeHeap;
-typedef typename boost::heap::binomial_heap<PrioNode2> PrioNodeHeap;
+//max heap
+typedef typename boost::heap::fibonacci_heap<PrioNode2, boost::heap::mutable_<true>> PrioNodeHeap;
+//typedef typename boost::heap::binomial_heap<PrioNode2> PrioNodeHeap; //update operation is broken
 typedef typename PrioNodeHeap::handle_type PrioNodeHandle;    
 
 
@@ -249,6 +252,7 @@ struct PrioNode2 {
     
     
     //< means later processed in DP and sooner contracted
+    //< means less important
     bool operator <(const PrioNode2 &rhs) const {
         
         //left hand side
@@ -265,7 +269,7 @@ struct PrioNode2 {
         
         //right hand side
         double rhs_error;
-        int rhs_cross_diff;
+        double rhs_cross_diff;
         if (rhs.followerValid) {
             PrioNode2 &follower = *(rhs.follower_h);
             rhs_error = (rhs.error + follower.error)/2;

@@ -222,26 +222,19 @@ public:
         assert(min_y <= max_y);
         for (int x = min_x; x <= max_x; x++) {
             assert(indexInRange(x, 0));
-                for (int y = min_y; y <= max_y; y++) {
-                    assert(indexInRange(y, 0));
-                        int currentNode_id = FirstNodeGrid[x][y];
-                        while (currentNode_id != -1) {                            
-                            if (window.isIn(graph, currentNode_id)) {
-                                if(graph.isVisibleNode(currentNode_id)) {
-                                    windowNodes.push_back(currentNode_id);   
-                                }                                
-                                //option: let only visible nodes count
-                                /*
-                                if (graph.isVisibleNode(currentNode_id))  {
-                                    
-                                }*/
-                            }
-                            
-                            currentNode_id = NextNodeInSameCell[currentNode_id];                            
-                        }
-                                        
-                }
-            
+            for (int y = min_y; y <= max_y; y++) {
+                assert(indexInRange(y, 0));
+                int currentNode_id = FirstNodeGrid[x][y];
+                while (currentNode_id != -1) {                            
+                    if (window.isIn(graph, currentNode_id)) {
+                        //option: let only visible nodes count
+                        //if(graph.isVisibleNode(currentNode_id)) {
+                            windowNodes.push_back(currentNode_id);   
+                        //}                                                                                                
+                    }                            
+                    currentNode_id = NextNodeInSameCell[currentNode_id];                            
+                }                                        
+            }            
         }
         return windowNodes;
     }

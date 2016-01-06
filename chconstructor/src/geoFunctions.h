@@ -11,7 +11,32 @@ namespace geo {
     
     //static double R = 6371.009; //Erdradius 
     
-    double calcArea(OSMNode aSource, OSMNode bTarget, OSMNode cOutlier) {
+    double calcSignedArea(OSMNode aSource, OSMNode bTarget, OSMNode cOutlier) {
+        
+        /*
+        double avgLat = (aSource.lat + bTarget.lat + cOutlier.lat) / 3;
+        double scale_factor_x = std::cos(avgLat * M_PI / 180.0);
+        Print(scale_factor_x);
+        double x_1 = aSource.lon * scale_factor_x;
+        double y_1 = aSource.lat;
+        double x_2 = bTarget.lon * scale_factor_x;
+        double y_2 = bTarget.lat;
+        double x_3 = cOutlier.lon * scale_factor_x;
+        double y_3 = cOutlier.lat;
+        
+        double sum = (x_3 * y_2 - x_2 * y_3)
+                           - (x_3 * y_1 - x_1 * y_3)
+                           + (x_2 * y_1 - x_1 * y_2);
+        return 0.5 * sum;
+        */
+        /*
+        return 0.5 * determinant = (x_2 * y_3 - x_3 * y_2)
+                           - (x_1 * y_3 - x_3 * y_1)
+                           - (x_1 * y_2 - x_2 * y_1);
+         * */
+       
+        
+        
         double ax = aSource.lon;
         double ay = aSource.lat;
         double bx = bTarget.lon;
@@ -19,43 +44,57 @@ namespace geo {
         double cx = cOutlier.lon;
         double cy = cOutlier.lat;
         
-        double avgLat_ac = (ay + cy)/2;
-        double avgLat_bc = (by + cy)/2;
+        /*
+        double avgLat = (aSource.lat + bTarget.lat + cOutlier.lat) / 3;
+        double scale_factor_x = std::cos(avgLat * M_PI / 180.0);
+        Print(scale_factor_x);
+         * */
         
-        double acx = (ax - cx) * std::cos(avgLat_ac * M_PI / 180.0); // pa[0] - pc[0];
-        double bcx = (bx - cx) * std::cos(avgLat_bc * M_PI / 180.0); //pb[0] - pc[0];
+        double avgLat_ac = (ay + cy)/2;
+        double avgLat_bc = (by + cy)/2;                
+        
+        double acx = (ax - cx)  * std::cos(avgLat_ac * M_PI / 180.0); // pa[0] - pc[0];
+        double bcx = (bx - cx)  * std::cos(avgLat_bc * M_PI / 180.0); //pb[0] - pc[0];
         double acy = ay - cy; //pa[1] - pc[1];
         double bcy = by - cy; //pb[1] - pc[1];
-/*
-        double acx = ax - cx; // pa[0] - pc[0];
-        double bcx = bx - cx; //pb[0] - pc[0];
-        double acy = ay - cy; //pa[1] - pc[1];
-        double bcy = by - cy; //pb[1] - pc[1];
- * */
+        
+
+        
+        
+        //double acx = ax - cx; // pa[0] - pc[0];
+        //double bcx = bx - cx; //pb[0] - pc[0];
+        //double acy = ay - cy; //pa[1] - pc[1];
+        //double bcy = by - cy; //pb[1] - pc[1];
+        
+        
         double determinant = acx * bcy - acy * bcx;
-        return 0.5 * determinant;
+        return 0.5 * determinant; 
+        
+       
     }
     
-    double calcArea(NodeID src_id, NodeID tgt_id, NodeID outlier_id, const CHGraph<OSMNode, OSMEdge> &graph) {
-        return calcArea(graph.getNode(src_id), graph.getNode(tgt_id), graph.getNode(outlier_id));
+    double calcSignedArea(NodeID src_id, NodeID tgt_id, NodeID outlier_id, const CHGraph<OSMNode, OSMEdge> &graph) {
+        return calcSignedArea(graph.getNode(src_id), graph.getNode(tgt_id), graph.getNode(outlier_id));
     }
     
     double pythagoras(double a, double b) {
 	return sqrt(pow(a, 2) + pow(b, 2));
     }
     
-    double geoDist(double lon1, double lat1, double lon2, double lat2) {        
+    double geoDist(double lon1, double lat1, double lon2, double lat2) {                
         double deltaLon = lon1 - lon2;
         double deltaLat = lat1 - lat2;
         
+        /*
         double avgLat = (lat1 + lat2)/2;
        
         double x = (deltaLon) * std::cos(avgLat * M_PI / 180.0);
         double y = (deltaLat);
         return sqrt(x*x + y*y); //R only scaling
+         */
         
         
-        //return pythagoras(deltaLon, deltaLat);        
+        return pythagoras(deltaLon, deltaLat);        
     }
 
     double geoDist(OSMNode node1, OSMNode node2) {
@@ -68,11 +107,11 @@ namespace geo {
 
     double calcPerpendicularLength(OSMNode source, OSMNode target, OSMNode outlier) {
         //calculate perpendicular length as height of a triangle
-        double area = calcArea(source, target, outlier);
+        double signed_area = calcSignedArea(source, target, outlier);
         double baselength = geoDist(source, target);
-        double positiveRectArea = std::abs(2.0 * area);
+        double positiveRectArea = std::fabs(2.0 * signed_area);
         //return positiveRectArea / baselength;    
-        if (baselength == 0) {
+        if (baselength == 0) {            
             return std::numeric_limits<double>::max();
         } else {
             return positiveRectArea / baselength;        
@@ -99,12 +138,12 @@ namespace geo {
 
     bool testIntersection(OSMLine line1, OSMLine line2) {
         //4 Orientation tests
-        double line2StartArea = calcArea(line1.src, line1.tgt, line2.src);
-        double line2EndArea = calcArea(line1.src, line1.tgt, line2.tgt);
+        double line2StartArea = calcSignedArea(line1.src, line1.tgt, line2.src);
+        double line2EndArea = calcSignedArea(line1.src, line1.tgt, line2.tgt);
         bool line1BetweenLine2 = differentSign(line2StartArea, line2EndArea);
 
-        double line1StartArea = calcArea(line2.src, line2.tgt, line1.src);
-        double line1EndArea = calcArea(line2.src, line2.tgt, line1.tgt);
+        double line1StartArea = calcSignedArea(line2.src, line2.tgt, line1.src);
+        double line1EndArea = calcSignedArea(line2.src, line2.tgt, line1.tgt);
         bool line2BetweenLine1 = differentSign(line1StartArea, line1EndArea);
 
         return line1BetweenLine2 && line2BetweenLine1;
@@ -140,7 +179,7 @@ namespace geo {
         //double length2 = geo::geoDist(graph.getNode(kink.peak), graph.getNode(kink.tgt));        
         double divisor = s1.length * s2.length;   
         //assert(divisor > 0);
-        if (divisor == 0) {
+        if (divisor != 0.0) {
             double toAcos = dotProduct(s1, s2)/divisor;
             
             if (toAcos < -1.0) toAcos = -1.0;

@@ -40,12 +40,12 @@ struct FrechetTest_data {
     static bool testIntersection(const Line line1, const Line line2) {
         
         //4 Orientation tests
-        double line2StartArea = geo::calcArea(line1.start.ch_node, line1.end.ch_node, line2.start.ch_node);
-        double line2EndArea = geo::calcArea(line1.start.ch_node, line1.end.ch_node, line2.end.ch_node);
+        double line2StartArea = geo::calcSignedArea(line1.start.ch_node, line1.end.ch_node, line2.start.ch_node);
+        double line2EndArea = geo::calcSignedArea(line1.start.ch_node, line1.end.ch_node, line2.end.ch_node);
         bool line1BetweenLine2 = geo::differentSign(line2StartArea, line2EndArea);
 
-        double line1StartArea = geo::calcArea(line2.start.ch_node, line2.end.ch_node, line1.start.ch_node);
-        double line1EndArea = geo::calcArea(line2.start.ch_node, line2.end.ch_node, line1.end.ch_node);
+        double line1StartArea = geo::calcSignedArea(line2.start.ch_node, line2.end.ch_node, line1.start.ch_node);
+        double line1EndArea = geo::calcSignedArea(line2.start.ch_node, line2.end.ch_node, line1.end.ch_node);
         bool line2BetweenLine1 = geo::differentSign(line1StartArea, line1EndArea);
 
         return line1BetweenLine2 && line2BetweenLine1;

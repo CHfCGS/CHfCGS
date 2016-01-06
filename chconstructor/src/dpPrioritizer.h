@@ -776,7 +776,8 @@ namespace chc {
                                     if (!marked[node_id]) {                                   
                                         _chc._markNeighbours(node_id, marked);
                                         next_nodes.push_back(node_id);
-                                        it = priolist.erase(it);                                        
+                                        it = priolist.erase(it);   
+                                        //break; //debug
                                     } else {
                                         break;
                                     }                                    
@@ -796,8 +797,7 @@ namespace chc {
                                     p_it = _deadEndPrioLists.erase(p_it);
                                 }
                             }                        
-                        }
-                        //dont contract peanuts
+                        }                        
                         //double threshold = log(_base_graph.getNrOfNodes()) / log (1.1);                        
                         double threshold = 1;
                         Print("threshold: " << threshold);

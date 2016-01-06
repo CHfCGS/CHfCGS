@@ -1,5 +1,6 @@
 #pragma once
 
+
 #include "defs.h"
 #include "nodes_and_edges.h"
 #include "chgraph.h"
@@ -28,7 +29,6 @@
 #include "simple_measures/regularity.h"
 #include "simple_measures/consistency.h"
 
-
 #include <chrono>
 #include <queue>
 #include <mutex>
@@ -49,8 +49,8 @@ namespace chm {
         FourDGrid<CHGraph<CHNode, CHEdge> > fourDGrid;
         //SelfIntersectionChecker selfIntersectionChecker;
         
-        
-        void _make_chain_measure(Chain &chain, int streettype, ErrorCounts &error_counts) {
+        /*
+        void _make_chain_measureOLD(Chain &chain, int streettype, ErrorCounts &error_counts) {
             //only big chains are measured
             if (chain.size() >= 3) {    
                 AngularChange ac(graph);
@@ -79,6 +79,27 @@ namespace chm {
                     error_counts.chainNotRedetectedCounter++;
                 }
             }
+        }*/
+        
+        void _make_chain_measure(const Chain &chain, int streettype, ErrorCounts &error_counts) {
+            //only big chains are measured
+            if (chain.size() >= 3) {                    
+                
+                EdgeChain edge_chain = chains::getChainEdges(chain, graph);
+                CDTHPCross cdthpC(graph, grid);                                              
+                
+                for (EdgeID edge_id: edge_chain) {
+                    
+                    if (graph.isValidEdge(edge_id) && graph.isShortcut(edge_id)) {
+
+                        Chain center_nodes = graph.getCenterNodes(edge_id);
+                        center_nodes.push_front(graph.getEdge(edge_id).src);
+                        center_nodes.push_back(graph.getEdge(edge_id).tgt);                    
+               
+                        error_counts.nofCrossings += cdthpC.getNofCrossings(center_nodes);                                                
+                    }
+                }                                        
+            }
         }
         
         void make_chain_measure(Chains_and_Remainder &CaR) {                        
@@ -94,8 +115,19 @@ namespace chm {
                 for (Chain &chain: chainsOfType) {  
                     _make_chain_measure(chain, i, error_counts);
                 }
-            }            
-            error_counts.print();
+            }     
+            for (const ChainPair& chainpair: CaR.chainPairs) {
+                //TODO Streettype needs to be removed 
+                _make_chain_measure(chainpair.chainTo, 1, error_counts);                   
+                _make_chain_measure(chainpair.chainFrom, 1, error_counts);                   
+            }
+            //error_counts.print();
+                        
+            //Print("length: " << error_counts.length_sum);
+            Print("number of Crossings: " << error_counts.nofCrossings);
+            //Print("number of Crossings/length: " << nofCrossings/error_counts.length_sum);
+            Print("number of Crossings * NrOfValidEdges: " << error_counts.nofCrossings * graph.getNrOfValidEdges());
+            //Print("accumulated error/length: " << accumulatedError/error_counts.length_sum);
         }
         
         
@@ -365,7 +397,7 @@ namespace chm {
             ErrorCounts error_counts;
             CDTHPCross cdthpC(graph, grid);
             //Grid grid = Grid(1, graph);
-            double getNofCrossings = 0;
+            double nofCrossings = 0;
             double accumulatedError = 0;
             //RayCaster raycaster(graph, grid);       
             for (uint edge_id = 0; edge_id < graph.getNrOfEdges(); edge_id++) {
@@ -377,7 +409,7 @@ namespace chm {
                     chain.push_back(graph.getEdge(edge_id).tgt);                    
                                         
                     //getNofCrossings += raycaster.getNofCrossings(chain);
-                    getNofCrossings += cdthpC.getNofCrossings(chain);
+                    nofCrossings += cdthpC.getNofCrossings(chain);
                     double epsilon_error = graph.calcEdgeError(edge_id);
                     accumulatedError += epsilon_error;
                     const CHEdge& edge = graph.getEdge(edge_id);
@@ -387,8 +419,11 @@ namespace chm {
                 }
                 
             }        
-            error_counts.print();            
-            Print("number of Crossings/length: " << getNofCrossings/error_counts.length_sum);
+            error_counts.print();        
+            Print("length: " << error_counts.length_sum);
+            Print("number of Crossings: " << nofCrossings);
+            Print("number of Crossings/length: " << nofCrossings/error_counts.length_sum);
+            Print("number of Crossings * NrOfValidEdges: " << nofCrossings * graph.getNrOfValidEdges());
             Print("accumulated error/length: " << accumulatedError/error_counts.length_sum);
             
             duration<double> time_span =  duration_cast<duration<double>>(steady_clock::now() - t1);
@@ -423,7 +458,8 @@ namespace chm {
             //graph.zoom(0.02, true, true, 0.0075, 0.05);
             //graph.zoom(0.02, true, true, 0.0075, 0.0002);
             //graph.zoom(0.02, true, true, 0.03, 0.0002);
-            graph.zoom(0.002, true, true, 2000, 0.00002);
+            //graph.zoom(0.002, true, true, 2000, 0.00002);
+            graph.zoom(0.02, true, true, 2000, 0.00002); //gut für ilp auch gut 0.002 repspektive 0.00002
             //graph.zoom(22.644, true, true, 2000, 1.0);
             
             //graph.zoom(0.02, true, true, 0.0075, 0.1); 
@@ -449,7 +485,7 @@ namespace chm {
                         
             
             if(m_options.edge) {
-                graph.zoom(0.02, true, false, 0.02, 0);
+                //graph.zoom(0.02, true, false, 0.005, 0);
                 makeEdgeMeasure();    
             }            
             if(m_options.chain) {
@@ -470,6 +506,11 @@ namespace chm {
             if (m_options.expand_diff) {
                 graph.zoom(0.02, true, true, 0.2, 0.1);
             }
+            
+            //beep for test end
+            
+            cout << '\a' << flush;
+            Print("done");
            
         }
 

@@ -10,7 +10,7 @@ namespace geo {
     //static const double PI = 3.14159265;
     //static double R = 6371.009; //Erdradius 
     
-    double calcArea(CHNode aSource, CHNode bTarget, CHNode cOutlier) {
+    double calcSignedArea(CHNode aSource, CHNode bTarget, CHNode cOutlier) {
         double ax = aSource.lon;
         double ay = aSource.lat;
         double bx = bTarget.lon;
@@ -64,9 +64,9 @@ namespace geo {
 
     double calcPerpendicularLength(CHNode source, CHNode target, CHNode outlier) {
         //calculate perpendicular length as height of a triangle
-        double area = calcArea(source, target, outlier);
+        double signed_area = calcSignedArea(source, target, outlier);
         double baselength = geoDist(source, target);
-        double positiveRectArea = std::abs(2.0 * area);
+        double positiveRectArea = std::fabs(2.0 * signed_area);
         if (baselength == 0) {
             return std::numeric_limits<double>::max();
         } else {

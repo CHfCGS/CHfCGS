@@ -39,7 +39,7 @@ class EpsilonError : public ErrorMeasure{
 //template <class GraphT>
 class AreaError : public ErrorMeasure{
     double calcError(OSMNode source, OSMNode target, OSMNode outlier) {
-        return geo::calcArea(source, target, outlier); 
+        return fabs(geo::calcSignedArea(source, target, outlier)); 
     }    
     ~AreaError() {}
 };
@@ -50,7 +50,8 @@ class KinkError : public ErrorMeasure{
         geo::twoDvector s2(outlier, target);
         double divisor = s1.length + s2.length;
         assert(divisor != 0);
-        return (geo::calcTurnAngle(s1, s2) * s1.length * s2.length) / divisor;        
+        double turn_angle = geo::calcTurnAngle(s1, s2);
+        return (turn_angle * s1.length * s2.length) / divisor;        
     } 
     ~KinkError() {}
 };

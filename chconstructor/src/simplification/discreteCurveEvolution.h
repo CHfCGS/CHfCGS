@@ -99,16 +99,18 @@ private:
                 priolist.push_back(spnMax);
             }         
         }
-        
+        for (Intervall2 intervall: intervalls) {
+            assert(intervall.prioNodeHandles.empty());
+        }
         return priolist;
     }       
     
     void smoothOut(PrioNode2 pn) {
         assert(!pn.intervallIt->prioNodeHandles.empty());
         if (pn.intervallIt->prioNodeHandles.size() == 1) {
-            pn.intervallIt->prioNodeHandles.erase(pn.posInIntervallIt);
-        }
-        else if (pn.posInIntervallIt == pn.intervallIt->prioNodeHandles.begin()) {
+            std::list<PrioNodeHandle> &prioNodeHandles = pn.intervallIt->prioNodeHandles;
+            prioNodeHandles.erase(pn.posInIntervallIt);
+        } else if (pn.posInIntervallIt == pn.intervallIt->prioNodeHandles.begin()) {
             auto nextIt = pn.posInIntervallIt;
             nextIt++;
             PrioNodeHandle next_h = *nextIt;
@@ -117,7 +119,8 @@ private:
                                             pn.left_node_boxes_its,
                                             pn.left_node_boxes_its.begin(),
                                             pn.left_node_boxes_its.end());
-            pn.intervallIt->prioNodeHandles.erase(pn.posInIntervallIt);
+            std::list<PrioNodeHandle> &prioNodeHandles = pn.intervallIt->prioNodeHandles;
+            prioNodeHandles.erase(pn.posInIntervallIt);
             update(next);
             //update(*pn.intervallIt, nextIt);
         } else if (pn.posInIntervallIt == --pn.intervallIt->prioNodeHandles.end()) {
@@ -129,7 +132,8 @@ private:
                                             pn.right_node_boxes_its,
                                             pn.right_node_boxes_its.begin(),
                                             pn.right_node_boxes_its.end());
-            pn.intervallIt->prioNodeHandles.erase(pn.posInIntervallIt);
+            std::list<PrioNodeHandle> &prioNodeHandles = pn.intervallIt->prioNodeHandles;
+            prioNodeHandles.erase(pn.posInIntervallIt);
             update(prev);
             //update(*pn.intervallIt, prevIt);            
         } else {
@@ -149,7 +153,11 @@ private:
                                             pn.left_node_boxes_its,
                                             pn.left_node_boxes_its.begin(),
                                             pn.left_node_boxes_its.end());
-            pn.intervallIt->prioNodeHandles.erase(pn.posInIntervallIt);
+            std::list<PrioNodeHandle> &prioNodeHandles = pn.intervallIt->prioNodeHandles;
+            prioNodeHandles.erase(pn.posInIntervallIt);
+                                    
+           
+            
             update(prev);
             update(next);
             //update(*pn.intervallIt, prevIt);
@@ -163,7 +171,7 @@ private:
         for (std::list<NodeBox>::iterator it: node_boxes_its) {
             NodeBox &node_box = *it;                   
             for (NodeInBox nodeInBox : node_box) {
-                bool sign = (geo::calcArea(src, tgt, nodeInBox.nodeID, graph) >= 0) ? true : false;
+                bool sign = (geo::calcSignedArea(src, tgt, nodeInBox.nodeID, graph) >= 0) ? true : false;
                 if (sign != nodeInBox.sign) {
                     crossings_counter++;
                 }
@@ -200,11 +208,11 @@ private:
     }
     
     void _updateErrors(PrioNode2 &cur, NodeID prev, NodeID next) {
-        //negative weight since heap is a max heap it should always eliminate the least critical value
+        //negative weight since heap is a max heap it should always eliminate the least critical value          
         cur.error = -errorMeasure->calcError(graph.getNode(prev),
                         graph.getNode(next),
-                        graph.getNode(cur.node_id));            
-        cur.cross_diff = calcOrientationMisses(cur, prev, next).getSum();
+                        graph.getNode(cur.node_id));         
+        cur.cross_diff = calcOrientationMisses(cur, prev, next).getSum();        
     }
     
     //void update(Intervall2 &intervall, const std::list<PrioNodeHandle>::iterator posInIntervallIt) {

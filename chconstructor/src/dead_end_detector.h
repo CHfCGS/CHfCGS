@@ -101,7 +101,15 @@ public:
         Chain deadEnd;
         NodeID start;
         NodeID finish;
-        bool isExtendedDeadEnd() {
+        bool isExtendedDeadEnd(const GraphT& base_graph) {
+            //special case
+            if (deadEnd.size()==1) {
+                //front is only element
+                if (base_graph.nodeNeighbours(deadEnd.front()).size() == 2) {
+                    return false;
+                }                
+            }
+            
             if (start == chc::c::NO_NID)
                 return true;
             else if(finish == chc::c::NO_NID)
@@ -131,7 +139,7 @@ public:
                     //if (neighbours.size() <= 2) {                        
                     if (base_graph.degree_leq(node_id, 2)) {
                         DeadEndCandidate dee = collectDeadEndCandidate(node_id);
-                        if (dee.isExtendedDeadEnd()) {
+                        if (dee.isExtendedDeadEnd(base_graph)) {                            
                             deadEnds.push_back(dee.deadEnd);
                         }                        
                     }
@@ -153,8 +161,8 @@ public:
         NodeID next = nextDeadEndElement(node_id);
         while (next != chc::c::NO_NID) {
             debug_assert(!marked.at(next));
-            dee.deadEnd.emplace_front(next);
-            marked[next] = true;
+            dee.deadEnd.emplace_front(next);                        
+            marked[next] = true;            
             chc:: NodeID current = next;
             next = nextDeadEndElement(current);            
         }
@@ -162,8 +170,8 @@ public:
         next = nextDeadEndElement(node_id);
         while (next != chc::c::NO_NID) {
             debug_assert(!marked.at(next));
-            dee.deadEnd.emplace_back(next);
-            marked[next] = true;
+            dee.deadEnd.emplace_back(next);            
+            marked[next] = true;            
             chc:: NodeID current = next;
             next = nextDeadEndElement(current);            
         }
@@ -177,11 +185,12 @@ public:
         chc::NodeID next = chc::c::NO_NID;
 
         std::list<chc::NodeID> nodeNeighbours = base_graph.nodeNeighbours(current);
-        debug_assert(nodeNeighbours.size() <= 2);
-        for (auto it = nodeNeighbours.begin(); it != nodeNeighbours.end(); it++) {            
-            if (marked.at(*it) == false) {
-                if (base_graph.degree_leq(*it, 2)) {
-                    next = *it;
+        if(nodeNeighbours.size() <= 2) {
+            for (auto it = nodeNeighbours.begin(); it != nodeNeighbours.end(); it++) {            
+                if (marked.at(*it) == false) {
+                    if (base_graph.degree_leq(*it, 2)) {
+                        next = *it;
+                    }
                 }
             }
         }

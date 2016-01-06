@@ -590,6 +590,7 @@ uint CHGraph<NodeT, EdgeT>::getNrOfValidNodes() const
     return counter;
 }
 
+//is equal to visible
 template <typename NodeT, typename EdgeT>
 uint CHGraph<NodeT, EdgeT>::getNrOfValidEdges() const
 {

@@ -198,7 +198,7 @@ class DPSimplifier : public LineSimplifier{
         for (auto it = intervall.prioNodeHandles.begin(); it != splitPosIntervallincr; it++) {
             const PrioNode2 &p = (*(*it));
             for (NodeInBox nodeInBox : p.leftBox) {
-                bool sign = (geo::calcArea(intervall.start, split.node_id, nodeInBox.nodeID, graph) >= 0) ? true : false;
+                bool sign = (geo::calcSignedArea(intervall.start, split.node_id, nodeInBox.nodeID, graph) >= 0) ? true : false;
                 if (sign != nodeInBox.sign) {
                     nof_crossings.left++;
                 }
@@ -208,7 +208,7 @@ class DPSimplifier : public LineSimplifier{
         for (auto it = split.posInIntervallIt; it != intervall.prioNodeHandles.end(); it++) {
             const PrioNode2 &p = (*(*it));
             for (NodeInBox nodeInBox : p.rightBox) {
-                bool sign = (geo::calcArea(split.node_id, intervall.finish, nodeInBox.nodeID, graph) >= 0) ? true : false;
+                bool sign = (geo::calcSignedArea(split.node_id, intervall.finish, nodeInBox.nodeID, graph) >= 0) ? true : false;
                 if (sign != nodeInBox.sign) {
                     nof_crossings.right++;
                 }
@@ -232,7 +232,7 @@ class DPSimplifier : public LineSimplifier{
             
             prioNode.nof_crossings = calcOrientationMisses(prioNode, intervall);
                                     
-            prioNode.cross_diff = (int) prioNode.nof_crossings.getSum() - (int) pre_nof_crossings;
+            prioNode.cross_diff = (int) prioNode.nof_crossings.getSum() - (int) pre_nof_crossings;            
             prioNodeHeap.update(prioNodeH);
         }
         return;
