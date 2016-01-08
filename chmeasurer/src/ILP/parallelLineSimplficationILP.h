@@ -160,7 +160,8 @@ class ParallelLineSimplificationILP {
             setRowName(it->ch_node_id, 3);      
             glp_set_row_bnds(lp, glp_get_num_rows(lp), GLP_LO, 0.0, 0.0);                                                 
             //setInDegreeCoefficients(potEdges, followerLines, node_id);            
-        }                         
+        }
+        //last node could be handled like first one
     }
 
     void addAllDegreeRows(const ILP_data &ilp_data) {
@@ -328,7 +329,7 @@ public:
                 break;
         }
         
-        glp_print_mip(lp, "p_ilp_solution.txt");
+        //glp_print_mip(lp, "p_ilp_solution.txt");
         
         /* recover and display results */
           

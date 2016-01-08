@@ -233,8 +233,12 @@ namespace chm {
                         
                         DiscreteFrechet dF(graph);
                         double eta_whole = dF.calc_dF(chainpair.chainTo, chainpair.chainFrom);
-                        double combined_whole_chain_length = chains::calcChainGeoLength(chainpair.chainTo, graph)
-                                                            + chains::calcChainGeoLength(chainpair.chainFrom, graph);                                    
+                        EdgeChain w_edge_chain_to = chains::getChainEdges(chainpair.chainTo, graph);
+                        EdgeChain w_edge_chain_from = chains::getChainEdges(chainpair.chainFrom, graph);
+                        Chain w_expandedChainTo = chains::toExpandedNodeChain(w_edge_chain_to, graph);                            
+                        Chain w_expandedChainFrom = chains::toExpandedNodeChain(w_edge_chain_from, graph);
+                        double combined_whole_chain_length = chains::calcChainGeoLength(w_expandedChainTo, graph)
+                                                            + chains::calcChainGeoLength(w_expandedChainFrom, graph);                                    
                         errorcounts.weighted_eta2 += eta_whole * combined_whole_chain_length;
                         errorcounts.length_sum2 += combined_whole_chain_length;
                         
@@ -281,10 +285,10 @@ namespace chm {
 
 
                                         ParallelLineSimplificationILP p_ilp(graph);
-                                        const double epsilon_relaxation = 10000;
+                                        const double epsilon_relaxation = 1.2;
                                         double p_ilpNeededNumberOfEdges
                                                 = p_ilp.solve(expandedChainTo, expandedChainFrom,
-                                                    epsilon_relaxation + epsilon_error + std::numeric_limits<double>::epsilon(),
+                                                    epsilon_relaxation * epsilon_error + std::numeric_limits<double>::epsilon(),
                                                     eta + std::numeric_limits<double>::epsilon());
 
                                         size_t preSize = split_edge_chain_pair.chainTo.size() + split_edge_chain_pair.chainFrom.size();
@@ -441,11 +445,12 @@ namespace chm {
             
         void makeMeasurement(MeasureOptions m_options) {
             Print("make measure");    
+            /*
             //measurements without path-finding info
             graph.zoom(100, false, false, 0, 0);
             for (uint i = 0; i < graph.getNrOfNodes(); i++) {
                 assert(graph.isValidNode(i));
-            }
+            }*/
 
             Chains_and_Remainder CaR(graph.getMaxStreetType());
             
@@ -459,9 +464,10 @@ namespace chm {
             //graph.zoom(0.02, true, true, 0.0075, 0.0002);
             //graph.zoom(0.02, true, true, 0.03, 0.0002);
             //graph.zoom(0.002, true, true, 2000, 0.00002);
-            graph.zoom(0.02, true, true, 2000, 0.00002); //gut für ilp auch gut 0.002 repspektive 0.00002
+            //graph.zoom(0.02, true, true, 2000, 0.00002); //gut für ilp auch gut 0.002 repspektive 0.00002
+            graph.zoom(0.02, true, false, 0.002, 0.00002); //gut für ilp auch gut 0.002 repspektive 0.00002
             //graph.zoom(22.644, true, true, 2000, 1.0);
-            
+            //graph.zoom(0.02, true, false, 0.002, 0.0);
             //graph.zoom(0.02, true, true, 0.0075, 0.1); 
             //graph.zoom(45, true, true, 10000.0);                                        
             
@@ -507,10 +513,9 @@ namespace chm {
                 graph.zoom(0.02, true, true, 0.2, 0.1);
             }
             
-            //beep for test end
+            //beep for test end            
+            //cout << '\a' << flush;
             
-            cout << '\a' << flush;
-            Print("done");
            
         }
 

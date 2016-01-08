@@ -341,7 +341,8 @@ ValidLevelInfo CHGraph<NodeT, EdgeT>::calcValidLevel(size_t numberOfValidNodes) 
                 maxLevel = node.lvl;
             }
         }
-
+        Print("maxLevel: " << maxLevel);
+        
         std::vector<uint> nofNodesPerLevel(maxLevel + 1, 0); //one field for level 0 is also needed
         for (NodeT node : _nodes) {
             nofNodesPerLevel[node.lvl]++;
