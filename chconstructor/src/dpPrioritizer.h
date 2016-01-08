@@ -632,7 +632,7 @@ namespace chc {
                     _chain_prio_lists.push_back(ChainPriolist(lineSimplifier->process(chainPair.chainTo, chainPair.chainFrom), chainPair)); 
                     //priolists.push_back(cpdp.process(chainPair));                        
                     //Print("Length of Priolist: " << pl.size());
-                    processed_chain_pair_counter++;
+                    processed_chain_pair_counter++;                    
                 }
                 //small chainpairs are assigned to chains
                 else {
@@ -722,7 +722,7 @@ namespace chc {
         DPPrioritizer(SOptions s_options, GraphT const& base_graph, CHConstructorT const& chc)
                 : _base_graph(base_graph), _chc(chc), weights(_base_graph.getNrOfNodes()),
                 _streetTypes(_base_graph.getStreetTypeVector()), _node_id_to_index(_base_graph.getNrOfNodes()), state(State::start),
-                grid(1000, base_graph), fourDGrid(1, base_graph), deadEndDetector(base_graph),
+                grid(1000, base_graph), fourDGrid(5, base_graph), deadEndDetector(base_graph),
                 chaindetector(base_graph), _CaR(_base_graph.getMaxStreetType()), // epsilon(10000),        
                 s_options(s_options) {                        
                     
@@ -803,6 +803,8 @@ namespace chc {
                         Print("threshold: " << threshold);
                         if(next_nodes.size() < threshold) {
                             _deadEndPrioLists.clear();
+                            
+                            //TODO save one round
                             /*
                             deadEndPhaseCounter++;
                             if (deadEndPhaseCounter > 5) {

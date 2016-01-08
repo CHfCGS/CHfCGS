@@ -3,8 +3,8 @@
 #include <limits>
 #include <algorithm>
 
-//#include "../self_intersection_checker.h"
-//#include "cdt_matching.h"
+#include "../self_intersection_checker.h"
+#include "cdt_matching.h"
 #include "../nodes_and_edges.h"
 #include "prio_nodes.h"
 #include "zip_order.h"
@@ -59,9 +59,9 @@ namespace ls {
                     if (isSelfIntersecting) {
                         zipOrder.match(list1, list2);            
                     } else {            
-                        zipOrder.match(list1, list2);            
-                        //CDTMatching2<GraphT> ctd_matcher(graph);
-                        //ctd_matcher.match(list1, list2);                        
+                        //zipOrder.match(list1, list2);            
+                        CDTMatching2<GraphT> ctd_matcher(graph);
+                        ctd_matcher.match(list1, list2);                        
                     }                                
                     break;
                 }

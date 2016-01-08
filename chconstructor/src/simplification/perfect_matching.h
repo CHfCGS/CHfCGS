@@ -113,6 +113,7 @@ class PerfectMatching {
                      geo::geoDist(p[i], q[j])
                      );*/
         } else {
+            assert(false);
             ca[i][j].c = std::numeric_limits<double>::max();
         }
 
@@ -138,8 +139,8 @@ class PerfectMatching {
         for (uint i = 0; i < possibleFollowersVector_p.size(); i++) {            
             getAndSetNearestFollower(p[i].pn_h, possibleFollowersVector_p[i], graph);
         }
-        for (uint i = 0; i < possibleFollowersVector_q.size(); i++) {            
-            getAndSetNearestFollower(q[i].pn_h, possibleFollowersVector_q[i], graph);
+        for (uint j = 0; j < possibleFollowersVector_q.size(); j++) {            
+            getAndSetNearestFollower(q[j].pn_h, possibleFollowersVector_q[j], graph);
         }
     }
     
@@ -167,10 +168,12 @@ public:
         //fill dynamic programming table
         uint i = p.size()-1;
         uint j = q.size()-1;
-        double discrete_frechet_dist = c(i, j);
-        if (discrete_frechet_dist < getCombinedChainLength(list1, list2)/5) {
+        c(i, j);
+        //double discrete_frechet_dist = c(i, j);
+        //additional filtering of pairs
+        //if (discrete_frechet_dist < getCombinedChainLength(list1, list2)/2) {
             setFollowers(i, j);
-        }
+        //}
         
                 
     }        
