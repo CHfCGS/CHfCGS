@@ -5,11 +5,16 @@
 
 using namespace chm;
 
-//utility functions for geometric calculations (in a plane)
+//utility functions for geometric calculations
 namespace geo {
     
     //static const double PI = 3.14159265;
-    //static double R = 6371.009; //Erdradius 
+    static const double R = 6371; //Erdradius in kilometern
+    
+    /*
+    double toRadians (double degree) {
+        return degree * M_PI / 180.0;
+    } */
     
     double calcSignedArea(CHNode aSource, CHNode bTarget, CHNode cOutlier) {
         double ax = aSource.lon;
@@ -27,7 +32,7 @@ namespace geo {
         double acy = ay - cy; //pa[1] - pc[1];
         double bcy = by - cy; //pb[1] - pc[1];
         double determinant = acx * bcy - acy * bcx;
-        return 0.5 * determinant;
+        return 0.5 * determinant * pow(R, 2) * pow((M_PI / 180.0), 2);
     }
     
     
@@ -44,7 +49,7 @@ namespace geo {
         
         double x = (deltaLon) * std::cos(avgLat * M_PI / 180.0);
         double y = (deltaLat);
-        return sqrt(x*x + y*y); //R only scaling
+        return sqrt(x*x + y*y) * R  * (M_PI / 180.0); //R only scaling
         
         
         //return pythagoras(deltaLon, deltaLat);        

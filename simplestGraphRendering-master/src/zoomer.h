@@ -90,7 +90,7 @@ namespace Zoomer {
 		return maxProportion;		
     	}
 	
-	static void expandEdge(const vector<CHNode> &nodes, vector<CHEdge> &edges, const EdgeID edgeID, double expandSizeDist, bool expandOther, double expandSizeOther) {
+	static void expandEdge(const vector<CHNode> &nodes, vector<CHEdge> &edges, const EdgeID edgeID, bool expandDist, double expandSizeDist, bool expandOther, double expandSizeOther) {
 		CHEdge &edge = edges[edgeID];
 		if (edge.is_shortcut() && edge.remaining) {
 			//const CHNode& src_node = nodes[edge.src];
@@ -98,7 +98,7 @@ namespace Zoomer {
 			//const CHEdge& child_edge1 = edges[edge.child_edge1];
 //			const CHNode center_node = nodes[child_edge1.tgt];
 			//DEBUG("geo::getTriangleProportion)" <<  geo::getTriangleProportion(src_node, tgt_node, center_node));
-			if (geo::geoDist(nodes[edge.src], nodes[edge.tgt]) > expandSizeDist
+			if ((expandDist && geo::geoDist(nodes[edge.src], nodes[edge.tgt]) > expandSizeDist)
 				|| (expandOther && otherMeasure(nodes, edges, edgeID) > expandSizeOther)) {
 				//if (edge.getDist(nodes) > expandSize) {
 				//if (edge.dist > expandSize) {			
@@ -111,8 +111,8 @@ namespace Zoomer {
 				edge.remaining = false;
 				edges[edge.child_edge1].remaining = true;
 				edges[edge.child_edge2].remaining = true;
-				expandEdge(nodes, edges, edge.child_edge1, expandSizeDist, expandOther, expandSizeOther);
-				expandEdge(nodes, edges, edge.child_edge2, expandSizeDist, expandOther, expandSizeOther);
+				expandEdge(nodes, edges, edge.child_edge1, expandDist, expandSizeDist, expandOther, expandSizeOther);
+				expandEdge(nodes, edges, edge.child_edge2, expandDist, expandSizeDist, expandOther, expandSizeOther);
 				
 			}
 		}
@@ -251,12 +251,12 @@ namespace Zoomer {
                 }
                 
 		
-		if (expandDist) {
+		if (expandDist || expandOther) {
 			DEBUG("Processing expandSize");
 			//process expandSize
 			for (uint edgeID = 0; edgeID < ch_edges.size(); edgeID++){
 				//if (ch_edges[edgeID].remaining) {
-				expandEdge(ch_nodes, ch_edges, edgeID, expandSizeDist, expandOther, expandSizeOther);
+				expandEdge(ch_nodes, ch_edges, edgeID, expandDist, expandSizeDist, expandOther, expandSizeOther);
 				//}        
 			}  
 		}

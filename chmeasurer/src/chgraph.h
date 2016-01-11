@@ -53,7 +53,7 @@ class CHGraph
                 //zoom helper functions
                 //bool isRemaining(EdgeID edge_id) const;
                 void invalidateHigherShortcut(const EdgeID edge_id);                
-                void expandEdge(const EdgeID edgeID, bool other_expand, double expandSizeDist, double expandSizeOther);  
+                void expandEdge(const EdgeID edgeID, bool dist_expand, bool other_expand, double expandSizeDist, double expandSizeOther);  
                 void markValidNodes(double percent_of_valid_nodes);
                 ValidLevelInfo calcValidLevel(size_t numberOfValidNodes);
                 //void removeShortcut(const EdgeID edgeID);
@@ -404,7 +404,7 @@ void CHGraph<NodeT, EdgeT>::calcMinGeoImportance()
 }
 
 template <typename NodeT, typename EdgeT>
-void CHGraph<NodeT, EdgeT>::zoom(double percent_of_valid_nodes, bool expand, bool other_expand,
+void CHGraph<NodeT, EdgeT>::zoom(double percent_of_valid_nodes, bool dist_expand, bool other_expand,
         double expandSizeDist, double expandSizeOther, bool spareShortcuts)
 {
     markValidNodes(percent_of_valid_nodes);
@@ -432,14 +432,14 @@ void CHGraph<NodeT, EdgeT>::zoom(double percent_of_valid_nodes, bool expand, boo
     //calcMinGeoImportance();
     int nof_valid_edges_before = getNrOfValidEdges();
 
-    if (expand) {
+    if (dist_expand || other_expand) {
         Debug("Processing expandSize");        
         _expandedNodes.resize(_nodes.size()); //nodes which come into the graph if they are a center node        
         std::fill(_expandedNodes.begin(), _expandedNodes.end(), false);        
         //process expandSize
         for (uint edgeID = 0; edgeID < _validEdges.size(); edgeID++) {
             //if (_validEdges[edgeID]) {
-                expandEdge(edgeID, other_expand, expandSizeDist, expandSizeOther);
+                expandEdge(edgeID, dist_expand, other_expand, expandSizeDist, expandSizeOther);
             //}
         }
     }    
@@ -520,7 +520,7 @@ void CHGraph<NodeT, EdgeT>::zoom(double percent_of_valid_nodes, bool expand, boo
     }
     
     template <typename NodeT, typename EdgeT>
-    void CHGraph<NodeT, EdgeT>::expandEdge(const EdgeID edge_id, bool other_expand, double expandSizeDist, double expandSizeOther) {        
+    void CHGraph<NodeT, EdgeT>::expandEdge(const EdgeID edge_id, bool dist_expand, bool other_expand, double expandSizeDist, double expandSizeOther) {        
         
         if (isShortcut(edge_id) && _validEdges[edge_id]) {
             /*
@@ -533,7 +533,7 @@ void CHGraph<NodeT, EdgeT>::zoom(double percent_of_valid_nodes, bool expand, boo
             if (expand) {
              * */
             
-            if (getEdgeDist(edge_id) > expandSizeDist
+            if ((dist_expand && getEdgeDist(edge_id) > expandSizeDist)
                     || (other_expand && otherMeasure(edge_id) > expandSizeOther)) {
                 //double BendingRatio = calcBendingRatio(nodes [edge.src], nodes[edge.getCenterPoint(edges)], nodes[edge.tgt]);
                 //if (BendingRatio > expandSize) {
@@ -550,8 +550,8 @@ void CHGraph<NodeT, EdgeT>::zoom(double percent_of_valid_nodes, bool expand, boo
                 const NodeID centerNode_id = getEdge(edge.child_edge1).tgt;                
                 _expandedNodes[centerNode_id] = true;
                 
-                expandEdge(edge.child_edge1, other_expand, expandSizeDist, expandSizeOther);
-                expandEdge(edge.child_edge2, other_expand, expandSizeDist, expandSizeOther);
+                expandEdge(edge.child_edge1, dist_expand, other_expand, expandSizeDist, expandSizeOther);
+                expandEdge(edge.child_edge2, dist_expand, other_expand, expandSizeDist, expandSizeOther);
             }
         }
     }

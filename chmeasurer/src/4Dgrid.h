@@ -48,8 +48,8 @@ class FourDGrid {
 private:
     //const std::vector<NodeT> &nodes;
     //constexpr auto M_PI = 3.14159265358979323846;
-    double R = 6371.009; //Erdradius
-    const double epsilon = 0.0001;
+    //double R = 6371.009; //Erdradius
+    //const double epsilon = 0.0001;
     //Longitude ~ x Latitude ~ y
     double MINLONGITUDE;
     double MAXLONGITUDE;
@@ -78,16 +78,16 @@ private:
     void calculateBorders() {
         for (u_int32_t k = 0; k < base_graph.getNrOfNodes(); k++) {
             if (base_graph.getLon(k) > MAXLONGITUDE) {
-                MAXLONGITUDE = base_graph.getLon(k) + epsilon;
+                MAXLONGITUDE = base_graph.getLon(k);
             }
             if (base_graph.getLon(k) < MINLONGITUDE) {
-                MINLONGITUDE = base_graph.getLon(k) - epsilon;
+                MINLONGITUDE = base_graph.getLon(k);
             }
             if (base_graph.getLat(k) > MAXLATITUDE) {
-                MAXLATITUDE = base_graph.getLat(k) + epsilon;
+                MAXLATITUDE = base_graph.getLat(k);
             }
             if (base_graph.getLat(k) < MINLATITUDE) {
-                MINLATITUDE = base_graph.getLat(k) - epsilon;
+                MINLATITUDE = base_graph.getLat(k);
             }
         }
     }
@@ -182,9 +182,11 @@ private:
         DiscreteFrechet dF(base_graph);
         //DiscreteFrechet df(base_graph);
         double discrete_frechet_dist = dF.calc_dF(expanded_chain1, expanded_chain2);
+        
         double combined_chain_length =  chains::calcChainGeoLength(expanded_chain1, base_graph)
                                         + chains::calcChainGeoLength(expanded_chain2, base_graph);
         return combined_chain_length > 5 * discrete_frechet_dist;
+        //return discrete_frechet_dist < 0.2;
     }
     
 public:

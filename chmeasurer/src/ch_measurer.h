@@ -160,7 +160,7 @@ namespace chm {
 
                                 lineSimplificationILP ilp(graph);
                                 double ilpNeededNumberOfEdges
-                                    = ilp.solve(expanded_split_chain, epsilon_error + std::numeric_limits<double>::epsilon());                    
+                                    = ilp.solve(expanded_split_chain, epsilon_error + std::numeric_limits<double>::epsilon() * geo::R);                    
 
                                 int nof_edges = split_chain.size()-1;
                                 assert(nof_edges >= ilpNeededNumberOfEdges);
@@ -288,8 +288,8 @@ namespace chm {
                                         const double epsilon_relaxation = 1.2;
                                         double p_ilpNeededNumberOfEdges
                                                 = p_ilp.solve(expandedChainTo, expandedChainFrom,
-                                                    epsilon_relaxation * epsilon_error + std::numeric_limits<double>::epsilon(),
-                                                    eta + std::numeric_limits<double>::epsilon());
+                                                    epsilon_relaxation * epsilon_error + std::numeric_limits<double>::epsilon() * geo::R,
+                                                    eta + std::numeric_limits<double>::epsilon() * geo::R);
 
                                         size_t preSize = split_edge_chain_pair.chainTo.size() + split_edge_chain_pair.chainFrom.size();
 
@@ -319,13 +319,13 @@ namespace chm {
                     }
             }
             errorcounts.print();   
-            Print("length" << errorcounts.length_sum);
-            Print("node_length_sum" << errorcounts.node_length_sum);
+            Print("length: " << errorcounts.length_sum);
+            Print("node_length_sum: " << errorcounts.node_length_sum);
             //assert(errorcounts.length_sum != 0);
-            Print("avg_diff_node_size" << errorcounts.addedDiffs/errorcounts.node_length_sum);
+            Print("avg_diff_node_size: " << errorcounts.addedDiffs/errorcounts.node_length_sum);
             //Print("avg_diff_length" << errorcounts.addedDiffs/errorcounts.length_sum);
-            Print("avg_eta" << errorcounts.weighted_eta/errorcounts.length_sum);
-            Print("avg_eta_whole" << errorcounts.weighted_eta2/errorcounts.length_sum2);
+            Print("avg_eta: " << errorcounts.weighted_eta/errorcounts.length_sum);
+            Print("avg_eta_whole: " << errorcounts.weighted_eta2/errorcounts.length_sum2);
         }
         
         void makeDijkstraMeasure() {            
@@ -439,7 +439,7 @@ namespace chm {
     public:
 
         CHMeasurer(CHGraph<CHNode, CHEdge> &graph):
-            graph(graph), grid(1000, graph), chaindetector(graph), fourDGrid(10, graph) {
+            graph(graph), grid(1000, graph), chaindetector(graph), fourDGrid(1, graph) {
             
         }
             
@@ -465,11 +465,19 @@ namespace chm {
             //graph.zoom(0.02, true, true, 0.03, 0.0002);
             //graph.zoom(0.002, true, true, 2000, 0.00002);
             //graph.zoom(0.02, true, true, 2000, 0.00002); //gut für ilp auch gut 0.002 repspektive 0.00002
-            graph.zoom(0.02, true, false, 0.002, 0.00002); //gut für ilp auch gut 0.002 repspektive 0.00002
+            //graph.zoom(0.02, true, false, 0.002, 0.00002); //dist
             //graph.zoom(22.644, true, true, 2000, 1.0);
             //graph.zoom(0.02, true, false, 0.002, 0.0);
             //graph.zoom(0.02, true, true, 0.0075, 0.1); 
-            //graph.zoom(45, true, true, 10000.0);                                        
+            //graph.zoom(45, true, true, 10000.0);  
+            
+            //km
+            //graph.zoom(0.02, false, true, 0, 0.12);
+            //graph.zoom(0.02, false, true, 0, 0.00);
+            //graph.zoom(0.02, false, true, 0, 0.05);//gut
+            //graph.zoom(0.002, false, true, 0, 0.05);//gut
+            //graph.zoom(0.2, false, true, 0, 0.1); //sehr gut, aber kleine Daten
+            graph.zoom(0.02, false, true, 0, 0.06);
             
             std::vector<NodeID> visibleNodeIDs;
             for (uint i = 0; i < graph.getNrOfNodes(); i++) {                

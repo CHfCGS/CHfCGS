@@ -19,12 +19,12 @@ void printHelp() {
             << "Mandatory arguments are:\n"
             << "  -i, --infile <path>        Read graph from <path>\n"
             << "Optional arguments are:\n"
-            << "  -e, --edge <type>"
-            << "  -c, --chain <type>"
-            << "  -d, --dijkstra <type>"
-            << "  -l, --ilp <type>"
-            << "  -p, --P_ilp <type>"
-            << "  -v, --expand_diff <type>";    
+            << "  -e, --edge"
+            << "  -c, --chain, cross"
+            << "  -d, --dijkstra"
+            << "  -l, --ilp"
+            << "  -p, --p_ilp"
+            << "  -v, --expand_diff";    
 }
 
 

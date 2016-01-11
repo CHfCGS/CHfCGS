@@ -949,9 +949,9 @@ int main(int argc, char*argv[])
 	//std::vector<Edge> edges;
 	
 	//Zoomer zoomer = Zoomer();
-	double start_percent_of_nodes = 0.002;
-	double expandSizeDist = 0.0075; //0.002;
-	double expandSizeOther = 0.02; ; //0.002;
+	double start_percent_of_nodes = 0.02;
+	double expandSizeDist = 10; //0.0075; //lat //0.002;
+	double expandSizeOther = 0.002; //0.02; //lat ; //0.002;
 	//0.02 triangle Proportion
 	Zoomer::zoom(state.ch_nodes, state.ch_edges, state.nodes, state.edges, start_percent_of_nodes , expandSizeDist, false, expandSizeOther, false);
 
@@ -1034,7 +1034,7 @@ int main(int argc, char*argv[])
 	GtkWidget *labelExpandSizeDist = gtk_label_new ("expand all edges with dist > :");
     gtk_grid_attach (GTK_GRID(grid), labelExpandSizeDist , 0, 3, 1, 1);
 		
-	GtkAdjustment *adjExpandSizeDist = gtk_adjustment_new(expandSizeDist, 0.0, 0.5, 0.0001, 0, 0); //geodist
+	GtkAdjustment *adjExpandSizeDist = gtk_adjustment_new(expandSizeDist, 0.0, 10, 0.01, 0, 0); //geodist , km
 	//GtkAdjustment *adjExpandSize = gtk_adjustment_new(expandSize, 0.0, 0.0001, 0.00001, 0.001, 0.0);
 	//GtkAdjustment *adjExpandSize = gtk_adjustment_new(expandSize, 0.0, 10000, 10, 0.001, 0.0005);	
 	GtkWidget *hscaleExpandSizeDist = gtk_scale_new(GtkOrientation::GTK_ORIENTATION_HORIZONTAL, adjExpandSizeDist);
@@ -1054,7 +1054,8 @@ int main(int argc, char*argv[])
     gtk_grid_attach (GTK_GRID(grid), labelExpandSizeOther , 0, 6, 1, 1);
 		
 	//GtkAdjustment *adjExpandSizeOther = gtk_adjustment_new(expandSizeOther, 0.0, 1.0, 0.001, 0, 0); //triangle proportion
-	GtkAdjustment *adjExpandSizeOther = gtk_adjustment_new(expandSizeOther, 0.0, 0.005, 0.00001, 0.001, 0.0); //perpendicular
+	//GtkAdjustment *adjExpandSizeOther = gtk_adjustment_new(expandSizeOther, 0.0, 0.005, 0.00001, 0.001, 0.0); //perpendicular, lat
+	GtkAdjustment *adjExpandSizeOther = gtk_adjustment_new(expandSizeOther, 0.0, 0.2, 0.001, 0.001, 0.0); //perpendicular, km
 	//GtkAdjustment *adjExpandSizeOther = gtk_adjustment_new(expandSizeOther, 0.0, 20, 0.0001, 0.001, 0.0); //chainpair2
 	GtkWidget *hscaleExpandSizeOther = gtk_scale_new(GtkOrientation::GTK_ORIENTATION_HORIZONTAL, adjExpandSizeOther);
 	gtk_scale_set_digits (GTK_SCALE(hscaleExpandSizeOther), 5);
