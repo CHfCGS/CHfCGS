@@ -176,7 +176,7 @@ std::vector<NodeID> EdgeDiffPrioritizer<GraphT, CHConstructorT>::_chooseIndepend
 		edge_diff_mean += edge_diffs[i];
 	}
 	edge_diff_mean /= independent_set.size();
-
+       
 	std::vector<NodeID> low_edge_diff_nodes;
 	for (size_t i(0); i<independent_set.size(); i++) {
 		//if (edge_diffs[i] <= edge_diff_mean) {
@@ -184,8 +184,8 @@ std::vector<NodeID> EdgeDiffPrioritizer<GraphT, CHConstructorT>::_chooseIndepend
                 NodeID node(independent_set[i]);
                 low_edge_diff_nodes.push_back(node);
             }
-	}
-        //low_edge_diff_nodes.resize((low_edge_diff_nodes.size()/4) +1);
+	}                       
+        low_edge_diff_nodes.resize((low_edge_diff_nodes.size()) +1);
 	return low_edge_diff_nodes;
 }
 

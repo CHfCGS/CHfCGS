@@ -145,7 +145,7 @@ private:
             for (int x2 = 0; x2 < gridsidesize; x2++) {
                 for (int y1 = 0; y1 < gridsidesize; y1++) {
                     for (int y2 = 0; y2 < gridsidesize; y2++) {
-                        Grid[x1][x2][y1][y2].clear();
+                        Grid[x1][y1][x2][y2].clear();
                     }
 
                 }
@@ -214,7 +214,7 @@ public:
                         for (int y1 = 0; y1 < gridsidesize; y1++) {
                             for (int y2 = 0; y2 < gridsidesize; y2++) {
                                 
-                                GridCell &gridCell = Grid[x1][x2][y1][y2];
+                                GridCell &gridCell = Grid[x1][y1][x2][y2];
                                 for (Gridpoint &gridpoint : gridCell) {
                                     gridpoint.partnerGridpoint = findOpposite(*(gridpoint.chain), chainsOfType);
                                 }
@@ -230,7 +230,7 @@ public:
                         for (int y1 = 0; y1 < gridsidesize; y1++) {
                             for (int y2 = 0; y2 < gridsidesize; y2++) {
                                 
-                                for (Gridpoint &gridpoint : Grid[x1][x2][y1][y2]) {                                    
+                                for (Gridpoint &gridpoint : Grid[x1][y1][x2][y2]) {                                    
                                     if (gridpoint.isMatched == false && gridpoint.partnerGridpoint != nullptr) {
                                         if (gridpoint.partnerGridpoint->isMatched == false && gridpoint.partnerGridpoint->partnerGridpoint != nullptr) {
                                             if (gridpoint.partnerGridpoint->chain != gridpoint.chain) { //may not be its own partner
@@ -319,7 +319,7 @@ public:
                                 for (int dy2 = -1; dy2 <= 1; dy2++) {
                                     if (indexInRange(y2, dy2)) {
 
-                                        for (Gridpoint &current : Grid[x1 + dx1][y1 + dy1][x2 + dx2][y2 + dy2]) {
+                                        for (Gridpoint &current : Grid[x2 + dx2][y2 + dy2][x1 + dx1][y1 + dy1]) {
                                             NodeID currentNodeIdFront = current.chain->front();
                                             NodeID currentNodeIdBack = current.chain->back();
                                             dist1 = geo::geoDist(base_graph.getNode(nodeIdFront),
