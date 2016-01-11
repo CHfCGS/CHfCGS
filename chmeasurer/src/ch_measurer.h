@@ -475,7 +475,7 @@ namespace chm {
             //graph.zoom(0.02, false, true, 0, 0.12);
             //graph.zoom(0.02, false, true, 0, 0.00);
             //graph.zoom(0.02, false, true, 0, 0.05);//gut
-            graph.zoom(0.002, false, true, 0, 0.05);//gut
+            graph.zoom(0.002, false, true, 0, 0.05);//gut , warum kein commit
             //graph.zoom(0.2, false, true, 0, 0.1); //sehr gut, aber kleine Daten
             //graph.zoom(0.02, false, true, 0, 0.06);
             
