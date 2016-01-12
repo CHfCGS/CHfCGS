@@ -49,9 +49,13 @@ class KinkError : public ErrorMeasure{
         geo::twoDvector s1(source, outlier);
         geo::twoDvector s2(outlier, target);
         double divisor = s1.length + s2.length;
-        assert(divisor != 0);
-        double turn_angle = geo::calcTurnAngle(s1, s2);
-        return (turn_angle * s1.length * s2.length) / divisor;        
+        if (divisor == 0) {
+            return 0;
+        } else {
+            double turn_angle = geo::calcTurnAngle(s1, s2);
+            return (turn_angle * s1.length * s2.length) / divisor;        
+        }
+        
     } 
     ~KinkError() {}
 };
