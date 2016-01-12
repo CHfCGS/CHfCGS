@@ -407,6 +407,13 @@ template <typename NodeT, typename EdgeT>
 void CHGraph<NodeT, EdgeT>::zoom(double percent_of_valid_nodes, bool dist_expand, bool other_expand,
         double expandSizeDist, double expandSizeOther, bool spareShortcuts)
 {
+    Print("percent_of_valid_nodes :"<< percent_of_valid_nodes);
+    Print("dist_expand :"<< dist_expand);
+    Print("other_expand :"<< other_expand);
+    Print("expandSizeDist :"<< expandSizeDist);
+    Print("expandSizeOther :"<< expandSizeOther);
+    Print("spareShortcuts :"<< spareShortcuts);
+    
     markValidNodes(percent_of_valid_nodes);
 
     //mark valid edges    
