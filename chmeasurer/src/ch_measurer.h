@@ -225,6 +225,8 @@ namespace chm {
             //for (ChainsOfType &chainsOfType: CaR.oneWayChainsAccordingToType) {                                                                
             for (ChainPair chainpair: CaR.chainPairs) {
                 
+                
+                
                 //for (auto it = chainsOfType.begin(); it!=chainsOfType.end(); ++it) {                       
                 //for (Chain &chain: chainsOfType) {                                                                
                     
@@ -439,7 +441,7 @@ namespace chm {
     public:
 
         CHMeasurer(CHGraph<CHNode, CHEdge> &graph):
-            graph(graph), grid(1000, graph), chaindetector(graph), fourDGrid(1, graph) {
+            graph(graph), grid(1000, graph), chaindetector(graph), fourDGrid(5, graph) {
             
         }
             
@@ -475,7 +477,10 @@ namespace chm {
             //graph.zoom(0.02, false, true, 0, 0.12);
             //graph.zoom(0.02, false, true, 0, 0.00);
             //graph.zoom(0.02, false, true, 0, 0.05);//gut
-            graph.zoom(0.002, false, true, 0, 0.05);//gut , warum kein commit
+            //graph.zoom(0.02, false, true, 0, 0.005);//gut
+            //graph.zoom(0.2, false, true, 0, 0.002);
+            //graph.zoom(0.2, false, true, 0, 0.0);
+            graph.zoom(0.5, false, true, 0, 0.005);
             //graph.zoom(0.2, false, true, 0, 0.1); //sehr gut, aber kleine Daten
             //graph.zoom(0.02, false, true, 0, 0.06);
             
@@ -497,11 +502,11 @@ namespace chm {
             fourDGrid.identifyPairs(CaR);
             Print("Number of chain pairs: " << CaR.chainPairs.size());
                         
-            
+            /*
             if(m_options.edge) {
                 //graph.zoom(0.02, true, false, 0.005, 0);
                 makeEdgeMeasure();    
-            }            
+            }*/
             if(m_options.chain) {
                 make_chain_measure(CaR);
             }                        
@@ -516,10 +521,13 @@ namespace chm {
                 make_p_ilp_measure(CaR);
             }
             
+            /*
             //affords only zooming
             if (m_options.expand_diff) {
                 graph.zoom(0.02, true, true, 0.2, 0.1);
             }
+            */
+
             
             //beep for test end            
             //cout << '\a' << flush;

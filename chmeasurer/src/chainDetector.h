@@ -74,6 +74,7 @@ public:
             assert(!marked.at(next));
             chain.emplace_front(next);
             if (graph.degree_leq_twoInOriginal(next)) {
+            //if (graph.degree_leq_two(next)) {
                 marked[next] = true;                
             } else {
                 break;
@@ -88,6 +89,7 @@ public:
             assert(!marked.at(next));
             chain.emplace_back(next);
             if (graph.degree_leq_twoInOriginal(next)) {
+            //if (graph.degree_leq_two(next)) {
                 marked[next] = true;
             } else {
                 break;
@@ -111,7 +113,7 @@ public:
             //only neighbours which are reachable by a street of streettype
             //std::list<chc::NodeID> neighbours = base_graph.nodeNeighbours(current);
             //if (neighbours.size() <= 2) {
-            if (graph.degree_leq_twoInOriginal(current)) {
+            //if (graph.degree_leq_twoInOriginal(current)) {
                 if (graph.isOneway(current) == isOneway) { //current node has to be oneway (twoway) if the chain is oneway (twoway)
                     std::list<NodeID> neighboursOnStreetType = graph.nodeNeighbours(current, streetType, edgeDirection);
                     if(neighboursOnStreetType.size() <=2) {                                              
@@ -122,7 +124,7 @@ public:
                         }                
                     }
                 }                
-            }
+            //}
         //}
         return next;
     }

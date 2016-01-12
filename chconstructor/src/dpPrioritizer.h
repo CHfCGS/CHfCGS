@@ -722,7 +722,7 @@ namespace chc {
         DPPrioritizer(SOptions s_options, GraphT const& base_graph, CHConstructorT const& chc)
                 : _base_graph(base_graph), _chc(chc), weights(_base_graph.getNrOfNodes()),
                 _streetTypes(_base_graph.getStreetTypeVector()), _node_id_to_index(_base_graph.getNrOfNodes()), state(State::start),
-                grid(1000, base_graph), fourDGrid(1, base_graph), deadEndDetector(base_graph),
+                grid(1000, base_graph), fourDGrid(5, base_graph), deadEndDetector(base_graph),
                 chaindetector(base_graph), _CaR(_base_graph.getMaxStreetType()), // epsilon(10000),        
                 s_options(s_options) {                        
                     

@@ -2,6 +2,7 @@
 
 #include "nodes_and_edges.h"
 #include "chgraph.h"
+#include "discreteFrechet.h"
 
 #include <limits>
 //using namespace chm;
@@ -52,6 +53,8 @@ struct ChainPair {
     }
      * */
     ChainPair(): chainTo(), chainFrom() {}
+       
+    
 };
 
 /*
@@ -202,6 +205,7 @@ namespace chains {
         }
     }
     
+    /*
     //fill up an edge chain with the nodes in between (the center nodes of the connecting edges)
     static Chain expandEdgeChain(const RedetectedChain &redetected_edge_chain, const CHGraph<CHNode, CHEdge>& graph) {
         assert(redetected_edge_chain.remaining_chain.size()>=2 &&redetected_edge_chain.edges.size()>=1);
@@ -223,7 +227,7 @@ namespace chains {
         assert(nodeIt == redetected_edge_chain.remaining_chain.end());
 
         return expandedChain;
-    }
+    }*/
 
     static double calcChainGeoLength(const Chain &chain, const CHGraph<CHNode, CHEdge>& graph) {
         assert(chain.size() >= 2);                            
@@ -398,7 +402,8 @@ namespace chains {
         }
         return unique;
     }
-    
+
+    /*
     static bool uniqueElements(const Chain& chain1, const Chain& chain2) {
         std::vector<NodeID> chain;
         for (NodeID node_id: chain1) {
@@ -418,6 +423,7 @@ namespace chains {
         }
         return unique;
     }
+    */    
     
     static std::list<EdgeChainPair> split (EdgeChainPair& chain_pair, const CHGraph<CHNode, CHEdge>& graph) {        
         std::list<EdgeChainPair> edge_chain_pairs;
@@ -528,6 +534,18 @@ namespace chains {
                 chains.splice(it, split_chains, split_chains.begin(), split_chains.end());                                        
             }                                
         }
+    }*/
+    
+    /*
+    static void cutDown(ChainPair& chain_pair) {
+        if (chain_pair.chainTo.size()<=3 || chain_pair.chainFrom.size()<=3) {
+            return;
+        } else {
+            DiscreteFrechet df;
+            double df_dist = df.calc_dF(chain_pair.chainTo, chain_pair.chainFrom);
+            if ()
+            
+        }        
     }*/
 }
 
