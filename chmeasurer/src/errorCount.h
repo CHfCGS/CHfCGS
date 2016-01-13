@@ -6,12 +6,15 @@ struct ErrorCounts {
     uint chainRedetectedCounter = 0;
     uint chainPairRedetectedCounter = 0;
             
+    
+    
     uint nofCrossings = 0;
     
     double weighted_epsilon = 0;
     
     uint epsilonerrorEqualszero = 0;
     uint epsilonerrorGreaterzero = 0;    
+    uint nofAnalyzedPolygons = 0;
     uint selfIntersecting = 0;
     uint sameLocation = 0;
     double addedDiffs = 0; 

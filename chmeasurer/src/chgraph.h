@@ -456,7 +456,10 @@ void CHGraph<NodeT, EdgeT>::zoom(double percent_of_valid_nodes, bool dist_expand
         Print("nof_valid_edges_before:" << nof_valid_edges_before);
         Print("nof_valid_edges_after:" << nof_valid_edges_after);
         Print("valid_edges_diff:" << valid_edges_diff);
+        
+        Print("-------------");
         Print("after/before:" << (double) nof_valid_edges_after / (double) nof_valid_edges_before);
+        Print("-------------");
     //}
 
     #ifndef NDEBUG

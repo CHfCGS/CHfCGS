@@ -124,7 +124,9 @@ namespace chm {
             //error_counts.print();
                         
             //Print("length: " << error_counts.length_sum);
+            Print("----------------------------");
             Print("number of Crossings: " << error_counts.nofCrossings);
+            Print("----------------------------");
             //Print("number of Crossings/length: " << nofCrossings/error_counts.length_sum);
             Print("number of Crossings * NrOfValidEdges: " << error_counts.nofCrossings * graph.getNrOfValidEdges());
             //Print("accumulated error/length: " << accumulatedError/error_counts.length_sum);
@@ -174,7 +176,8 @@ namespace chm {
 
                             }else {
                                 errorcounts.selfIntersecting++;
-                            }   
+                            }
+                            errorcounts.nofAnalyzedPolygons++;
                         } else {
                             errorcounts.sameLocation++;
                         }
@@ -211,8 +214,14 @@ namespace chm {
             errorcounts.print(); 
             Print("length" << errorcounts.length_sum);
             //assert(errorcounts.length_sum != 0);
-            Print("avg_epsilon: " << errorcounts.weighted_epsilon/errorcounts.length_sum);
-            Print("diff/length ratio" << errorcounts.addedDiffs/errorcounts.length_sum);
+            //Print("avg_epsilon: " << errorcounts.weighted_epsilon/errorcounts.length_sum);
+            Print("-------------------");
+            Print("diff/length ratio: " << errorcounts.addedDiffs/errorcounts.length_sum);
+            Print("self intersecting ratio: " << (double) errorcounts.selfIntersecting/ (double) errorcounts.nofAnalyzedPolygons );
+            Print("-------------------");
+            Print(" ");
+            
+            
         }                
         
         
@@ -312,6 +321,7 @@ namespace chm {
                                     } else {
                                         errorcounts.selfIntersecting++;
                                     }
+                                    errorcounts.nofAnalyzedPolygons++;
                                 } else {
                                     errorcounts.sameLocation++;
                                 }                                        
@@ -324,10 +334,13 @@ namespace chm {
             Print("length: " << errorcounts.length_sum);
             Print("node_length_sum: " << errorcounts.node_length_sum);
             //assert(errorcounts.length_sum != 0);
+            Print("-------------------");
             Print("avg_diff_node_size: " << errorcounts.addedDiffs/errorcounts.node_length_sum);
-            //Print("avg_diff_length" << errorcounts.addedDiffs/errorcounts.length_sum);
+            //Print("avg_diff_length" << errorcounts.addedDiffs/errorcounts.length_sum);            
             Print("avg_eta: " << errorcounts.weighted_eta/errorcounts.length_sum);
-            Print("avg_eta_whole: " << errorcounts.weighted_eta2/errorcounts.length_sum2);
+            Print("self intersecting ratio: " << (double) errorcounts.selfIntersecting/(double) errorcounts.nofAnalyzedPolygons );                        
+            Print("-------------------");
+            Print("avg_eta_whole: " << errorcounts.weighted_eta2/  errorcounts.length_sum2);
         }
         
         void makeDijkstraMeasure() {            
@@ -447,6 +460,10 @@ namespace chm {
             
         void makeMeasurement(MeasureOptions m_options) {
             Print("make measure");    
+            
+            if (m_options.dijkstra) {
+                makeDijkstraMeasure();
+            }
             /*
             //measurements without path-finding info
             graph.zoom(100, false, false, 0, 0);
@@ -510,9 +527,7 @@ namespace chm {
             if(m_options.chain) {
                 make_chain_measure(CaR);
             }                        
-            if (m_options.dijkstra) {
-                makeDijkstraMeasure();
-            }
+            
             if (m_options.ilp) {                
                 make_ilp_measure(CaR);
             }

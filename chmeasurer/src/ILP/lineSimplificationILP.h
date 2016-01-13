@@ -250,7 +250,7 @@ public:
         //solve ILP
         //glp_simplex(lp, NULL);
 
-        WorkingSign();
+        //WorkingSign();
         
         glp_iocp parm;
         glp_init_iocp(&parm);

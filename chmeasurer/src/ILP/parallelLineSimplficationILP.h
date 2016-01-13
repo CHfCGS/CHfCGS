@@ -297,7 +297,7 @@ public:
         //Print("solving");
         //glp_simplex(lp, NULL);
         
-        WorkingSign();
+        //WorkingSign();
         glp_iocp parm;
         glp_init_iocp(&parm);
         parm.presolve = GLP_ON;
