@@ -1,6 +1,9 @@
 #pragma once
 #include "defs.h"
 
+#include <iomanip> 
+#include <sstream>
+
 struct ErrorCounts {
     uint chainNotRedetectedCounter = 0;
     uint chainRedetectedCounter = 0;
@@ -65,9 +68,106 @@ struct ErrorCounts {
             Print("avg_error_consistency:" << weighted_variance_sum/length_sum);
         }
          * */
-        Print("");
-
-
-        
-    }
+        Print("");       
+    }        
 };
+
+
+struct OutData {
+        /*    
+        & t
+        & $\frac{|E_{n_z, \epsilon_z}|}{|E'_i|} $
+        & $\sharp gw$
+        & $\Delta n_{\Pslash}$
+        & $\% \times_{\Pslash}$   
+        & $\Delta n_{\Pslash_t}$
+        & $\% \times_{\Pslash_t}$
+        & $\delta_{dF}({\Pslash_t})$
+        & $\delta_{dF}(P_{t})$ \\ \hline
+        % |E'_i| |
+        %$dist(\Plslash)$
+        %| $dist(\Plslash_t)$ 
+        */ 
+        double dijkstra_time;
+        
+        double fraction;
+        
+        uint crossings;
+        
+        double deltapslash;
+        double intersection_plash;
+        
+        double deltapslasht;
+        double intersection_plasht;
+        double etapslasht;
+        double etapt;
+        
+        double E_i_size;
+        double dist_Plslash;
+        double dist_Plslash_t;
+        
+        /*
+        double pi = 3.14159265359;
+        stringstream stream;
+        stream << fixed << setprecision(2) << pi;
+        string s = stream.str();
+        */
+        
+                
+        
+        
+        
+        void print() {
+            const uint nofVariables = 12;
+            std::vector<std::stringstream> streams(nofVariables);
+            //std::vector<std::string> strings(nofVariables);
+            
+            streams[0] << std::fixed << std::setprecision(2) << dijkstra_time;
+            
+            streams[1] << std::fixed << std::setprecision(2) << fraction;
+            
+            streams[2] << crossings;
+            
+            streams[3] << std::fixed << std::setprecision(3) << deltapslash;
+            streams[4] << std::fixed << std::setprecision(3) << intersection_plash * 100;
+            
+            streams[5] << std::fixed << std::setprecision(3) << deltapslasht;
+            streams[6] << std::fixed << std::setprecision(3) << intersection_plasht * 100;
+            streams[7] << std::fixed << std::setprecision(3) << etapslasht;            
+            streams[8] << std::fixed << std::setprecision(3) << etapt;
+            
+            streams[9] << E_i_size;            
+            streams[10] << dist_Plslash;
+            streams[11] << dist_Plslash_t;            
+            
+            
+            Print("--------------------");
+            Print("Outdata:");
+            for (uint i = 0; i < 9; i++) {                
+                std::cout << " & " << streams[i].str() ;
+            }
+            std::cout << "\\\\ %";
+            for (uint i = 9; i < nofVariables; i++) {                
+                std::cout << " | " << streams[i].str() ;
+            }                                    
+            std::cout << std::endl;
+                                    
+                    
+                    
+            //streams.resize(nofVariables);
+            //streams.resize(nofVariables);
+            
+            
+            
+            
+            
+            //for (uint i = 0, i)
+            
+            //std::cout << x << std::endl;
+            
+            
+            
+            Print("--------------------");
+        }
+        
+    };

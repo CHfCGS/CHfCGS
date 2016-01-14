@@ -6,6 +6,7 @@
 #include "nodes_and_edges.h"
 //#include "chains.h"
 #include "edgeWeight.h"
+#include "errorCount.h"
 
 #include <vector>
 #include <list>
@@ -74,7 +75,7 @@ class CHGraph
 		void init(GraphInData<NodeT,EdgeT>&& data);
                 
                 void zoom(double percent_of_valid_nodes, bool expand, bool other_expand,
-                        double expandsizeDist, double expandsizeOther, bool spareShortcuts=false);
+                        double expandsizeDist, double expandsizeOther, OutData& out_data, bool spareShortcuts=false);
 
 		void printInfo() const;
 		template<typename Range>
@@ -171,7 +172,8 @@ void CHGraph<NodeT, EdgeT>::init(GraphInData<NodeT, EdgeT>&& data)
 
 	update();
         setCenterNodesLists();
-        zoom(0, false, false, 0, 0);
+        OutData out_data;
+        zoom(0, false, false, 0, 0, out_data);
 	Print("Graph info:");
 	Print("===========");
 	printInfo();
@@ -405,7 +407,7 @@ void CHGraph<NodeT, EdgeT>::calcMinGeoImportance()
 
 template <typename NodeT, typename EdgeT>
 void CHGraph<NodeT, EdgeT>::zoom(double percent_of_valid_nodes, bool dist_expand, bool other_expand,
-        double expandSizeDist, double expandSizeOther, bool spareShortcuts)
+        double expandSizeDist, double expandSizeOther, OutData& out_data, bool spareShortcuts)
 {
     Print("percent_of_valid_nodes :"<< percent_of_valid_nodes);
     Print("dist_expand :"<< dist_expand);
@@ -460,6 +462,9 @@ void CHGraph<NodeT, EdgeT>::zoom(double percent_of_valid_nodes, bool dist_expand
         Print("-------------");
         Print("after/before:" << (double) nof_valid_edges_after / (double) nof_valid_edges_before);
         Print("-------------");
+        
+        out_data.fraction = (double) nof_valid_edges_after / (double) nof_valid_edges_before;
+        out_data.E_i_size = nof_valid_edges_before;
     //}
 
     #ifndef NDEBUG

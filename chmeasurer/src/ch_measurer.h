@@ -47,6 +47,9 @@ namespace chm {
         Grid<CHGraph<CHNode, CHEdge> > grid;                
         ChainDetector<CHGraph<CHNode, CHEdge> > chaindetector;
         FourDGrid<CHGraph<CHNode, CHEdge> > fourDGrid;
+        ErrorCounts sadf;
+        OutData out_data;       
+       
         //SelfIntersectionChecker selfIntersectionChecker;
         
         /*
@@ -121,6 +124,7 @@ namespace chm {
                 _make_chain_measure(chainpair.chainTo, 1, error_counts);                   
                 _make_chain_measure(chainpair.chainFrom, 1, error_counts);                   
             }
+            out_data.crossings = error_counts.nofCrossings;
             //error_counts.print();
                         
             //Print("length: " << error_counts.length_sum);
@@ -221,7 +225,9 @@ namespace chm {
             Print("-------------------");
             Print(" ");
             
-            
+            out_data.dist_Plslash = errorcounts.length_sum;
+            out_data.deltapslash = errorcounts.addedDiffs/errorcounts.length_sum;
+            out_data.intersection_plash = (double) errorcounts.selfIntersecting/ (double) errorcounts.nofAnalyzedPolygons;                                    
         }                
         
         
@@ -341,6 +347,14 @@ namespace chm {
             Print("self intersecting ratio: " << (double) errorcounts.selfIntersecting/(double) errorcounts.nofAnalyzedPolygons );                        
             Print("-------------------");
             Print("avg_eta_whole: " << errorcounts.weighted_eta2/  errorcounts.length_sum2);
+            
+            out_data.dist_Plslash_t = errorcounts.length_sum;
+            out_data.deltapslasht = errorcounts.addedDiffs/errorcounts.length_sum;
+            out_data.intersection_plasht = (double) errorcounts.selfIntersecting/ (double) errorcounts.nofAnalyzedPolygons;  
+            out_data.etapslasht =  errorcounts.weighted_eta/errorcounts.length_sum;
+            out_data.etapt = errorcounts.weighted_eta2/  errorcounts.length_sum2;
+           
+            
         }
         
         void makeDijkstraMeasure() {            
@@ -402,9 +416,10 @@ namespace chm {
             //tt.track("Finished Dijkstras");
             
             duration<double> time_span =  duration_cast<duration<double>>(steady_clock::now() - t1);
-            Print("Dijkstras took " << time_span.count() << " seconds.\n");
-            Unused(time_span);
-            
+            double time = time_span.count();
+            Print("Dijkstras took " << time << " seconds.\n");
+            out_data.dijkstra_time = time;
+            Unused(time_span);                        
         }
         
         
@@ -497,7 +512,7 @@ namespace chm {
             //graph.zoom(0.02, false, true, 0, 0.005);//gut
             //graph.zoom(0.2, false, true, 0, 0.002);
             //graph.zoom(0.2, false, true, 0, 0.0);
-            graph.zoom(0.2, false, true, 0, 0.01); //gut für zip
+            graph.zoom(0.2, false, true, 0, 0.01, out_data); //gut für zip
             //graph.zoom(0.2, false, true, 0, 0.1); //sehr gut, aber kleine Daten
             //graph.zoom(0.02, false, true, 0, 0.06);
             
@@ -543,7 +558,7 @@ namespace chm {
             }
             */
 
-            
+            out_data.print();
             //beep for test end            
             //cout << '\a' << flush;
             
