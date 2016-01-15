@@ -185,7 +185,7 @@ std::vector<NodeID> EdgeDiffPrioritizer<GraphT, CHConstructorT>::_chooseIndepend
                 low_edge_diff_nodes.push_back(node);
             }
 	}                       
-        low_edge_diff_nodes.resize((low_edge_diff_nodes.size()) +1);
+        //low_edge_diff_nodes.resize((low_edge_diff_nodes.size())/4 +1);
 	return low_edge_diff_nodes;
 }
 

@@ -466,9 +466,27 @@ namespace chc {
             } else {                                                
                 getLowEdgeDiffNodesMedian(independent_set);                                        
             }
-            return independent_set;
-            
+            return independent_set;            
         } 
+        
+        void getLowEdgeDiffNodesNTH (std::vector<NodeID>& nodes, uint divisor) {
+            Print("edge_diffs");
+            auto edge_diffs(_chc.calcEdgeDiffs(nodes));
+            Print("setNodeIDsToIndices");
+            setNodeIDsToIndices(nodes);
+            uint nth_pos = nodes.size()/divisor;
+            Print("nth_element edge_diff");
+            std::nth_element(nodes.begin(), nodes.begin() + nth_pos, nodes.end(), CompEdgeDiff(_node_id_to_index, edge_diffs));            
+            nodes.resize(nth_pos + 1);            
+        }
+        
+        std::vector<NodeID> _chooseIndependentSetFromRemainderEdgeDiff(std::vector<NodeID> &remainder) {            
+            std::sort(_prio_vec.begin(), _prio_vec.end(), CompInOutProduct(_base_graph));        
+            auto independent_set(_chc.calcIndependentSet(_prio_vec));
+            getLowEdgeDiffNodesNTH(independent_set, 2);
+            return independent_set;
+        }
+        
         /*
         std::vector<NodeID> getOriginalMstMedian (const std::vector<NodeID>& nodes) {
             std::nth_element(nodes.begin(), nodes.begin() + nodes.size()/2, nodes.end(), CompOriginalMST(_base_graph));            
@@ -721,7 +739,8 @@ namespace chc {
         
         DPPrioritizer(SOptions s_options, GraphT const& base_graph, CHConstructorT const& chc)
                 : _base_graph(base_graph), _chc(chc), weights(_base_graph.getNrOfNodes()),
-                _streetTypes(_base_graph.getStreetTypeVector()), _node_id_to_index(_base_graph.getNrOfNodes()), state(State::start),
+                _streetTypes(_base_graph.getStreetTypeVector()), _node_id_to_index(_base_graph.getNrOfNodes()),
+                        state(State::start),
                 grid(1000, base_graph), fourDGrid(5, base_graph), deadEndDetector(base_graph),
                 chaindetector(base_graph), _CaR(_base_graph.getMaxStreetType()), // epsilon(10000),        
                 s_options(s_options) {                        
@@ -828,7 +847,7 @@ namespace chc {
                     }*/    
                 }
                 
-                
+                //too expensive
                 case State::removingPlusZero: {
                     if (false) {
                         Print("removing zeroPlusNodes");
@@ -865,6 +884,10 @@ namespace chc {
                         if (s_options.pairMatch_type != ls::PairMatchType::NONE) {
                             Print("IdentifyingChainPairs ");
                             fourDGrid.identifyPairs(_CaR);
+                        }
+                        
+                        for(ChainPair& chainpair: _CaR.chainPairs) {
+                            chains::cutDown<GraphT>(chainpair, _base_graph);
                         }
                         
                         Print("Number of chain pairs: " << _CaR.chainPairs.size());
@@ -939,12 +962,10 @@ namespace chc {
                 case State::removingRemaining: { 
                     //Print("_prio_vec.size()" << _prio_vec.size());
                     Print("Getting Independent set from Remainder");
-                    //next_nodes = _chooseIndependentSetFromRemainderED(_CaR.remainder);
-                    //next_nodes = _chooseIndependentSetFromRemainderOriginalMST(_CaR.remainder);
+                    
                     next_nodes = _chooseIndependentSetFromRemainderOriginalMSTMedian(_prio_vec);
-                    //next_nodes = _chooseIndependentSetFromRemainder3(_CaR.remainder, s_options.errorMeasure_type);
-                    //next_nodes = _chooseIndependentSetFromRemainderED(_CaR.remainder);
-                    //next_nodes = _chooseIndependentSetFromRemainderLowGeoMeasure(_CaR.remainder, s_options.errorMeasure_type);
+                    
+                    //next_nodes = _chooseIndependentSetFromRemainderEdgeDiff(_prio_vec);
                     //_removeFrom(next_nodes, _CaR.remainder);
                     break;
                 }

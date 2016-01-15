@@ -2,6 +2,7 @@
 
 #include "nodes_and_edges.h"
 
+
 using namespace chc;
 /*
 struct Chain {
@@ -120,3 +121,45 @@ struct Chains_and_Remainder {
     std::vector<ChainPair> chainPairs;
 
 };
+
+#include "discreteFrechet.h"
+
+namespace chains {
+    template <class GraphT>
+    static void cutDown(ChainPair& chain_pair, const GraphT& graph) {
+        if (chain_pair.chainTo.size()<=3 || chain_pair.chainFrom.size()<=3) {
+            return;
+        } else {
+            df::DiscreteFrechet<GraphT> df(graph);
+            double df_dist = df.calc_dF(chain_pair.chainTo, chain_pair.chainFrom);
+            double distFront =  geo::geoDist(graph.getNode(chain_pair.chainTo.front()), graph.getNode(chain_pair.chainFrom.back()));
+            double distBack =  geo::geoDist(graph.getNode(chain_pair.chainTo.back()), graph.getNode(chain_pair.chainFrom.front()));
+            if (df_dist <= distFront + std::numeric_limits<double>::epsilon()) {                
+                double distToFrom = geo::geoDist(graph.getNode(*(chain_pair.chainTo.begin())),
+                                             graph.getNode(*(++chain_pair.chainFrom.rbegin())));
+                double distFromTo = geo::geoDist(graph.getNode(*(++chain_pair.chainTo.begin())),
+                                             graph.getNode(*(chain_pair.chainFrom.rbegin())));
+                if (distToFrom >= distFromTo) {
+                    chain_pair.chainTo.pop_front();                    
+                } else {
+                    chain_pair.chainFrom.pop_back();   
+                }
+                cutDown(chain_pair, graph);
+            } else if (df_dist <= distBack + std::numeric_limits<double>::epsilon()) {
+                double distToFrom = geo::geoDist(graph.getNode(*(chain_pair.chainTo.rbegin())),
+                                             graph.getNode(*(++chain_pair.chainFrom.begin())));
+                double distFromTo = geo::geoDist(graph.getNode(*(++chain_pair.chainTo.rbegin())),
+                                             graph.getNode(*(chain_pair.chainFrom.begin())));
+                if (distToFrom >= distFromTo) {
+                    chain_pair.chainTo.pop_back();                    
+                } else {
+                    chain_pair.chainFrom.pop_front();   
+                }
+                cutDown(chain_pair, graph);
+            } else {
+                return;
+            }            
+            
+        }        
+    }
+}
