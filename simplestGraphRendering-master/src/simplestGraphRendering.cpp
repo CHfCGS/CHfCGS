@@ -771,7 +771,8 @@ namespace Parser
 
 		ss >> buffer;
 		//atoi(buffer.c_str());
-		r_edge.width = 1;//(uint)atoi(buffer.c_str());
+		r_edge.width = (uint)atoi(buffer.c_str());
+		// r_edge.width = 1;
 
 		ss >> buffer;
 		r_edge.color = (int)atoi(buffer.c_str());

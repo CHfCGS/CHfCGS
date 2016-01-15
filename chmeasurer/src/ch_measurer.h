@@ -46,8 +46,7 @@ namespace chm {
         CHGraph<CHNode, CHEdge> &graph;
         Grid<CHGraph<CHNode, CHEdge> > grid;                
         ChainDetector<CHGraph<CHNode, CHEdge> > chaindetector;
-        FourDGrid<CHGraph<CHNode, CHEdge> > fourDGrid;
-        ErrorCounts sadf;
+        FourDGrid<CHGraph<CHNode, CHEdge> > fourDGrid;        
         OutData out_data;       
        
         //SelfIntersectionChecker selfIntersectionChecker;
@@ -240,7 +239,7 @@ namespace chm {
             //for (ChainsOfType &chainsOfType: CaR.oneWayChainsAccordingToType) {                                                                
             for (ChainPair chainpair: CaR.chainPairs) {
                 
-                
+                //chains::cutDown(chainpair, graph);
                 
                 //for (auto it = chainsOfType.begin(); it!=chainsOfType.end(); ++it) {                       
                 //for (Chain &chain: chainsOfType) {                                                                
@@ -391,7 +390,7 @@ namespace chm {
                 auto rand_node = std::bind (dist, gen);
                 ofstream outFileStream;
                 outFileStream.open(queryFile);
-                queryCount = 50000;
+                queryCount = 500000;
                 outFileStream << queryCount << std::endl;
                 for (uint i = 0; i < queryCount; i++) {
                     NodeID src = rand_node();
@@ -557,7 +556,7 @@ namespace chm {
                 graph.zoom(0.02, true, true, 0.2, 0.1);
             }
             */
-
+            out_data.E_plus_size = graph.getNrOfEdges();
             out_data.print();
             //beep for test end            
             //cout << '\a' << flush;

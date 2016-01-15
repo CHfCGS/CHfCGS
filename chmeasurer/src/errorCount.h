@@ -105,6 +105,7 @@ struct OutData {
         double E_i_size;
         double dist_Plslash;
         double dist_Plslash_t;
+        double E_plus_size;
         
         /*
         double pi = 3.14159265359;
@@ -118,11 +119,11 @@ struct OutData {
         
         
         void print() {
-            const uint nofVariables = 12;
+            const uint nofVariables = 13;
             std::vector<std::stringstream> streams(nofVariables);
             //std::vector<std::string> strings(nofVariables);
             
-            streams[0] << std::fixed << std::setprecision(2) << dijkstra_time;
+            streams[0] << std::fixed << std::setprecision(0) << dijkstra_time;
             
             streams[1] << std::fixed << std::setprecision(2) << fraction;
             
@@ -138,7 +139,8 @@ struct OutData {
             
             streams[9] << E_i_size;            
             streams[10] << dist_Plslash;
-            streams[11] << dist_Plslash_t;            
+            streams[11] << dist_Plslash_t;  
+            streams[12] << E_plus_size; 
             
             
             Print("--------------------");
