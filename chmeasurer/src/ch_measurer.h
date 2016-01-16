@@ -239,7 +239,7 @@ namespace chm {
             //for (ChainsOfType &chainsOfType: CaR.oneWayChainsAccordingToType) {                                                                
             for (ChainPair chainpair: CaR.chainPairs) {
                 
-                //chains::cutDown(chainpair, graph);
+                chains::cutDown(chainpair, graph);
                 
                 //for (auto it = chainsOfType.begin(); it!=chainsOfType.end(); ++it) {                       
                 //for (Chain &chain: chainsOfType) {                                                                
