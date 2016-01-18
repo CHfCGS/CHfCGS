@@ -52,7 +52,8 @@ class KinkError : public ErrorMeasure{
         if (divisor == 0) {
             return 0;
         } else {
-            double turn_angle = geo::calcTurnAngle(s1, s2);
+            //double turn_angle = geo::calcTurnAngle(s1, s2);
+            double turn_angle = geo::calcTurnAngle2(source, target, outlier);
             return (turn_angle * s1.length * s2.length) / divisor;        
         }
         

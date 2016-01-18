@@ -166,12 +166,14 @@ namespace geo {
         }        
     };
     
+    //does not seem to work with lat, lon
     double dotProduct (twoDvector s1, twoDvector s2) {        
         double xProduct = s1.x * s2.x;
         double yProduct = s1.y * s2.y;
         return xProduct + yProduct;
     }
     
+    //by dot product
     double calcTurnAngle(twoDvector s1, twoDvector s2){
         //double length1 = geo::geoDist(graph.getNode(kink.src), graph.getNode(kink.peak));
         //double length2 = geo::geoDist(graph.getNode(kink.peak), graph.getNode(kink.tgt));        
@@ -189,6 +191,31 @@ namespace geo {
             return 0; //because dotProduct would also be 0
         }
         
-    }       
+    }  
+    
+    //law of cosine
+    double calcTurnAngle2(OSMNode source, OSMNode target, OSMNode outlier){
+        //double length1 = geo::geoDist(graph.getNode(kink.src), graph.getNode(kink.peak));
+        //double length2 = geo::geoDist(graph.getNode(kink.peak), graph.getNode(kink.tgt));        
+        
+        double a = geo::geoDist(target, outlier);
+        double b = geo::geoDist(source, outlier);
+        double c = geo::geoDist(source, target);
+        
+        double divisor = 2 * a * b; 
+        //assert(divisor > 0);
+        if (divisor != 0.0) {
+            double toAcos = a * a + b * b - c * c;  
+            
+            if (toAcos < -1.0) toAcos = -1.0;
+            else if (toAcos > 1.0) toAcos = 1.0;
+
+            double turnAngle = acos(toAcos) * 180.0 / M_PI;
+            return turnAngle;                        
+        } else {
+            return 0; //most reasonable answer
+        }
+        
+    } 
     
 }
