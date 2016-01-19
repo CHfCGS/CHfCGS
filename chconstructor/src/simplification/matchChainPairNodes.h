@@ -53,8 +53,8 @@ namespace ls {
                     chain1.push_front(chain2.front());
                     chain2.push_back(chain1.back()); 
 
-                    //SelfIntersectionChecker<GraphT> selfIC(graph);
-                    bool isSelfIntersecting = false;// selfIC.isSelfIntersecting(chain1, chain2);
+                    SelfIntersectionChecker<GraphT> selfIC(graph);
+                    bool isSelfIntersecting =  selfIC.isSelfIntersecting(chain1, chain2);
                     ZipOrder<GraphT> zipOrder(graph);
                     if (isSelfIntersecting) {
                         zipOrder.match(list1, list2);            

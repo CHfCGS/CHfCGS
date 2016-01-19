@@ -2,6 +2,7 @@
 
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Constrained_Delaunay_triangulation_2.h>
+#include <CGAL/Constrained_triangulation_plus_2.h>
 #include <CGAL/Triangulation_face_base_with_info_2.h>
 #include <CGAL/Triangulation_face_base_2.h>
 #include <CGAL/Triangulation_vertex_base_with_info_2.h>
@@ -68,7 +69,8 @@ private:
     typedef CGAL::Constrained_triangulation_face_base_2<K,Fbb>        Fb;
     typedef CGAL::Triangulation_data_structure_2<Vb,Fb>               TDS;
     typedef CGAL::Exact_intersections_tag                                Itag;
-    typedef CGAL::Constrained_Delaunay_triangulation_2<K, TDS, Itag>  CDT;
+    typedef CGAL::Constrained_Delaunay_triangulation_2<K, TDS, Itag>  CDTsimple;
+    typedef CGAL::Constrained_triangulation_plus_2<CDTsimple>           CDT;    
     typedef CDT::Point                                                Point;
     //typedef CGAL::Polygon_2<K>                                        Polygon_2;
     //typedef CGAL::Polygon_2<K>                                        Polygon_2;
@@ -242,8 +244,11 @@ private:
         //insert constraints
         for (auto it = vertexHandles.begin(); it != --vertexHandles.end(); it++) {
             auto next = it;
-            next++;            
-            cdt.insert_constraint(*it, *next);
+            next++; 
+            if (*it != *next) {
+                cdt.insert_constraint(*it, *next);
+            }
+            
         }
     }
     
@@ -272,7 +277,7 @@ public:
                 const std::list<PrioNodeHandle> &fromList) {
         assert(toList.size() >= 1 && fromList.size() >= 1);
         CDT cdt;                
-
+        
         /*
         std::list<CDT::Vertex_handle> vertexHandlesTo;
         uint posInChain = 0;
