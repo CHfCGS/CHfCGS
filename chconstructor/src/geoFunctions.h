@@ -201,17 +201,21 @@ namespace geo {
         double a = geo::geoDist(target, outlier);
         double b = geo::geoDist(source, outlier);
         double c = geo::geoDist(source, target);
+                
         
         double divisor = 2 * a * b; 
         //assert(divisor > 0);
         if (divisor != 0.0) {
-            double toAcos = a * a + b * b - c * c;  
+            double upper = a * a + b * b - c * c;  
+            double toAcos = upper/divisor;
+                        
             
             if (toAcos < -1.0) toAcos = -1.0;
             else if (toAcos > 1.0) toAcos = 1.0;
 
-            double turnAngle = acos(toAcos) * 180.0 / M_PI;
-            return turnAngle;                        
+            double enclosedAngle = acos(toAcos) * 180.0 / M_PI;
+            double turnAngle = 180 - enclosedAngle;                        
+            return turnAngle;
         } else {
             return 0; //most reasonable answer
         }
