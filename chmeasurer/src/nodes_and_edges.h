@@ -118,7 +118,7 @@ inline NodeID otherNode(CHEdge const& edge, EdgeType edge_type) {
 	return edge.src;
 }
 
-namespace c
+namespace constant
 {
 	uint const NO_NID(std::numeric_limits<NodeID>::max());
 	uint const NO_EID(std::numeric_limits<EdgeID>::max());
