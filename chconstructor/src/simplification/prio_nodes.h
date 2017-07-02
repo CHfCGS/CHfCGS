@@ -308,7 +308,7 @@ struct MatchNode {
     bool followerValid = false;
     std::list<std::list<MatchNode>::iterator> guides; // this object would follow all PPrioNodes in the list
     
-    NodeID node_id = c::NO_NID;
+    NodeID node_id = constant::NO_NID;
     
     MatchNode(NodeID node_id): node_id(node_id) {}
 };

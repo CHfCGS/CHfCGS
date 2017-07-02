@@ -15,7 +15,7 @@ namespace chc {
 	template<> void text_writeNode<CHNode<StefanNode>>(std::ostream& os, CHNode<StefanNode> const& node);
 
 	template<typename NodeT>
-	NodeT text_readNode(std::istream& is, NodeID node_id = c::NO_NID);
+	NodeT text_readNode(std::istream& is, NodeID node_id = constant::NO_NID);
 	template<> OSMNode text_readNode<OSMNode>(std::istream& is, NodeID node_id);
 	template<> GeoNode text_readNode<GeoNode>(std::istream& is, NodeID node_id);
 
@@ -28,7 +28,7 @@ namespace chc {
 	template<> void text_writeEdge<CHEdge<StefanEdge>>(std::ostream& os, CHEdge<StefanEdge> const& edge);
 
 	template<typename EdgeT>
-	EdgeT text_readEdge(std::istream& is, EdgeID edge_id = c::NO_EID);
+	EdgeT text_readEdge(std::istream& is, EdgeID edge_id = constant::NO_EID);
 	template<> OSMEdge text_readEdge<OSMEdge>(std::istream& is, EdgeID edge_id);
 	template<> EuclOSMEdge text_readEdge<EuclOSMEdge>(std::istream& is, EdgeID edge_id);
 	template<> OSMDistEdge text_readEdge<OSMDistEdge>(std::istream& is, EdgeID edge_id);

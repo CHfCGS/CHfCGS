@@ -70,7 +70,7 @@ struct Dijkstra<Node, Edge>::PQElement
 template <typename Node, typename Edge>
 Dijkstra<Node,Edge>::Dijkstra(Graph<Node, Edge> const& g)
 	: _g(g), _found_by(g.getNrOfNodes()),
-	_dists(g.getNrOfNodes(), c::NO_DIST) {}
+	_dists(g.getNrOfNodes(), constant::NO_DIST) {}
 
 template <typename Node, typename Edge>
 uint Dijkstra<Node,Edge>::calcShopa(NodeID src, NodeID tgt,
@@ -80,7 +80,7 @@ uint Dijkstra<Node,Edge>::calcShopa(NodeID src, NodeID tgt,
 	path.clear();
 
 	PQ pq;
-	pq.push(PQElement(src, c::NO_EID, 0));
+	pq.push(PQElement(src, constant::NO_EID, 0));
 	_dists[src] = 0;
 	_reset_dists.push_back(src);
 
@@ -97,7 +97,7 @@ uint Dijkstra<Node,Edge>::calcShopa(NodeID src, NodeID tgt,
 
 	if (pq.empty()) {
 		Print("No path found from " << src << " to " << tgt << ".");
-		return c::NO_DIST;
+		return constant::NO_DIST;
 	}
 
 	// Path backtracking.
@@ -120,7 +120,7 @@ void Dijkstra<Node,Edge>::_relaxAllEdges(PQ& pq, PQElement const& top)
 		uint new_dist(top.distance() + edge.distance());
 
 		if (new_dist < _dists[tgt]) {
-			if (_dists[tgt] == c::NO_DIST) {
+			if (_dists[tgt] == constant::NO_DIST) {
 				_reset_dists.push_back(tgt);
 			}
 			_dists[tgt] = new_dist;
@@ -134,7 +134,7 @@ template <typename Node, typename Edge>
 void Dijkstra<Node,Edge>::_reset()
 {
 	for (auto const node: _reset_dists) {
-		_dists[node] = c::NO_DIST;
+		_dists[node] = constant::NO_DIST;
 	}
 	_reset_dists.clear();
 }
@@ -200,7 +200,7 @@ template <typename Node, typename Edge>
 CHDijkstra<Node,Edge>::CHDijkstra(CHGraph<Node, Edge> const& g)
 : _g(g) {
 	for(auto& dir_info: _dir) {
-		dir_info._dists.resize(g.getNrOfNodes(), c::NO_DIST);
+		dir_info._dists.resize(g.getNrOfNodes(), constant::NO_DIST);
 		dir_info._found_by.resize(g.getNrOfNodes());
 	}
 }
@@ -213,16 +213,16 @@ uint CHDijkstra<Node,Edge>::calcShopa(NodeID src, NodeID tgt,
 	path.clear();
 
 	PQ pq;
-	pq.push(PQElement(src, c::NO_EID, EdgeType::OUT, 0));
-	pq.push(PQElement(tgt, c::NO_EID, EdgeType::IN, 0));
+	pq.push(PQElement(src, constant::NO_EID, EdgeType::OUT, 0));
+	pq.push(PQElement(tgt, constant::NO_EID, EdgeType::IN, 0));
 	_dir[EdgeType::OUT]._dists[src] = 0;
 	_dir[EdgeType::OUT]._reset_dists.push_back(src);
 	_dir[EdgeType::IN]._dists[tgt] = 0;
 	_dir[EdgeType::IN]._reset_dists.push_back(tgt);
 
 	// Dijkstra loop
-	uint shortest_dist(c::NO_DIST);
-	NodeID center_node(c::NO_NID);;
+	uint shortest_dist(constant::NO_DIST);
+	NodeID center_node(constant::NO_NID);;
 	while (!pq.empty() && pq.top().distance() <= shortest_dist) {
 		PQElement top(pq.top());
 		pq.pop();
@@ -232,7 +232,7 @@ uint CHDijkstra<Node,Edge>::calcShopa(NodeID src, NodeID tgt,
 			_relaxAllEdges(pq, top);
 
 			uint rest_dist = _dir[!top.direction]._dists[top.node];
-			if (rest_dist != c::NO_DIST
+			if (rest_dist != constant::NO_DIST
 					&& top.distance() + rest_dist < shortest_dist) {
 				shortest_dist = top.distance() + rest_dist;
 				center_node = top.node;
@@ -240,9 +240,9 @@ uint CHDijkstra<Node,Edge>::calcShopa(NodeID src, NodeID tgt,
 		}
 	}
 
-	if (center_node == c::NO_NID) {
+	if (center_node == constant::NO_NID) {
 		Print("No path found from " << src << " to " << tgt << ".");
-		return c::NO_DIST;
+		return constant::NO_DIST;
 	}
 
 	// Path backtracking.
@@ -279,7 +279,7 @@ void CHDijkstra<Node,Edge>::_relaxAllEdges(PQ& pq, PQElement const& top)
 			uint new_dist(top.distance() + edge.distance());
 
 			if (new_dist < _dir[dir]._dists[other_node]) {
-				if (_dir[dir]._dists[other_node] == c::NO_DIST) {
+				if (_dir[dir]._dists[other_node] == constant::NO_DIST) {
 					_dir[dir]._reset_dists.push_back(other_node);
 				}
 				_dir[dir]._dists[other_node] = new_dist;
@@ -295,7 +295,7 @@ void CHDijkstra<Node,Edge>::_reset()
 {
 	for (auto& dir: _dir) {
 		for (auto const node: dir._reset_dists) {
-			dir._dists[node] = c::NO_DIST;
+			dir._dists[node] = constant::NO_DIST;
 		}
 		dir._reset_dists.clear();
 	}

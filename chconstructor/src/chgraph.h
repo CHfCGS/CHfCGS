@@ -33,7 +33,7 @@ class CHGraph : public Graph<NodeT, CHEdge<EdgeT> >
 		template <typename Data>
 		void init(Data&& data)
 		{
-			_node_levels.resize(data.nodes.size(), c::NO_LVL);
+			_node_levels.resize(data.nodes.size(), constant::NO_LVL);
 			BaseGraph::init(std::forward<Data>(data));
 		}
                 
@@ -129,7 +129,7 @@ template <typename NodeT, typename EdgeT>
 void CHGraph<NodeT, EdgeT>::_addNewEdge(Shortcut& new_edge,
 		std::vector<Shortcut>& new_edge_vec)
 {
-	if (!new_edge_vec.empty() && (c::NO_EID == new_edge.id)) {
+	if (!new_edge_vec.empty() && (constant::NO_EID == new_edge.id)) {
 		Shortcut& last_edge(new_edge_vec.back());
 
 		if (equalEndpoints(new_edge, last_edge)) {
@@ -137,7 +137,7 @@ void CHGraph<NodeT, EdgeT>::_addNewEdge(Shortcut& new_edge,
 			if (new_edge.distance() >= last_edge.distance()) return;
 
 			/* only replace shortcut edges */
-			if (c::NO_NID == last_edge.center_node) {
+			if (constant::NO_NID == last_edge.center_node) {
 				/* reuse already assigned id */
 				new_edge.id = last_edge.id;
 				last_edge = new_edge;
@@ -149,7 +149,7 @@ void CHGraph<NodeT, EdgeT>::_addNewEdge(Shortcut& new_edge,
 		}
 	}
 
-	if (c::NO_EID == new_edge.id) {
+	if (constant::NO_EID == new_edge.id) {
 		new_edge.id = edge_count++;
 	}
 	new_edge_vec.push_back(new_edge);
@@ -171,7 +171,7 @@ template <typename NodeT, typename EdgeT>
 bool CHGraph<NodeT, EdgeT>::isShortcutOfRound(const Shortcut &shortcut, uint round) const
 {        
     NodeID center_node_id = shortcut.center_node;
-    if (center_node_id != c::NO_NID) { 
+    if (center_node_id != constant::NO_NID) { 
         return (_node_levels[center_node_id] == round);
     } else {
         return false;
@@ -184,7 +184,7 @@ bool CHGraph<NodeT, EdgeT>::isShortcutOfRound(EdgeID edge_id, uint round) const
     assert(0 <= edge_id && edge_id < _id_to_index.size());    
     assert(0 <= _id_to_index[edge_id] && _id_to_index[edge_id] < _out_edges.size());
     NodeID center_node_id = _out_edges[_id_to_index[edge_id]].center_node;
-    if (center_node_id != c::NO_NID) { 
+    if (center_node_id != constant::NO_NID) { 
         return (_node_levels[center_node_id] == round);
     } else {
         return false;
@@ -240,8 +240,8 @@ auto CHGraph<NodeT, EdgeT>::exportData() -> GraphCHOutData<NodeT, Shortcut>
 	for (uint i(0); i<edges.size(); i++) {
 		Shortcut& edge(edges[i]);
 		edge.id = new_id[i];
-		edge.child_edge1 = (edge.child_edge1 != c::NO_EID ? new_id[edge.child_edge1] : c::NO_EID);
-		edge.child_edge2 = (edge.child_edge2 != c::NO_EID ? new_id[edge.child_edge2] : c::NO_EID);
+		edge.child_edge1 = (edge.child_edge1 != constant::NO_EID ? new_id[edge.child_edge1] : constant::NO_EID);
+		edge.child_edge2 = (edge.child_edge2 != constant::NO_EID ? new_id[edge.child_edge2] : constant::NO_EID);
 	}
 
 	_out_edges = std::move(edges);

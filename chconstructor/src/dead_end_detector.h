@@ -71,7 +71,7 @@ public:
         
         //forward direction
         NodeID next = nextDeadEndElement(node_id);
-        while (next != chc::c::NO_NID) {
+        while (next != chc::constant::NO_NID) {
             debug_assert(!marked.at(next));
             deadEnd.emplace_back(next);
             marked[next] = true;
@@ -83,7 +83,7 @@ public:
     }
 
     chc::NodeID nextDeadEndElement(const chc::NodeID current) {
-        chc::NodeID next = chc::c::NO_NID;
+        chc::NodeID next = chc::constant::NO_NID;
 
         std::list<chc::NodeID> nodeNeighbours = base_graph.nodeNeighbours(current);
         debug_assert(nodeNeighbours.size() <= 2);
@@ -110,9 +110,9 @@ public:
                 }                
             }
             
-            if (start == chc::c::NO_NID)
+            if (start == chc::constant::NO_NID)
                 return true;
-            else if(finish == chc::c::NO_NID)
+            else if(finish == chc::constant::NO_NID)
                 return true;
             else if (start == finish) //circle
                 return true;
@@ -159,7 +159,7 @@ public:
         
         //backward direction
         NodeID next = nextDeadEndElement(node_id);
-        while (next != chc::c::NO_NID) {
+        while (next != chc::constant::NO_NID) {
             debug_assert(!marked.at(next));
             dee.deadEnd.emplace_front(next);                        
             marked[next] = true;            
@@ -168,7 +168,7 @@ public:
         }
         //forward direction (the direction which isn't marked yet)
         next = nextDeadEndElement(node_id);
-        while (next != chc::c::NO_NID) {
+        while (next != chc::constant::NO_NID) {
             debug_assert(!marked.at(next));
             dee.deadEnd.emplace_back(next);            
             marked[next] = true;            
@@ -182,7 +182,7 @@ public:
     }
 
     chc::NodeID nextDeadEndCandidateElement(const chc::NodeID current) {
-        chc::NodeID next = chc::c::NO_NID;
+        chc::NodeID next = chc::constant::NO_NID;
 
         std::list<chc::NodeID> nodeNeighbours = base_graph.nodeNeighbours(current);
         if(nodeNeighbours.size() <= 2) {
@@ -198,7 +198,7 @@ public:
     }
     
     chc::NodeID getBorder(const chc::NodeID current) {
-        chc::NodeID border = chc::c::NO_NID;
+        chc::NodeID border = chc::constant::NO_NID;
         std::list<chc::NodeID> nodeNeighbours = base_graph.nodeNeighbours(current);
         debug_assert(nodeNeighbours.size() <= 2);
         for (auto it = nodeNeighbours.begin(); it != nodeNeighbours.end(); it++) {

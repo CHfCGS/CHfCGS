@@ -258,7 +258,7 @@ namespace chc {
 		return readLine(is, [node_id](std::istream& is) {
 			OSMNode node;
 			is >> node.id >> node.osm_id >> node.lat >> node.lon >> node.elev;
-			if (node_id != c::NO_NID && node.id != node_id) {
+			if (node_id != constant::NO_NID && node.id != node_id) {
 				std::cerr << "FATAL_ERROR: Invalid node id " << node.id << " at index " << node_id << ". Exiting\n";
 				text_writeNode(std::cerr, node);
 				std::abort();
@@ -304,7 +304,7 @@ namespace chc {
 				edge.dist = signed_dist;
 			} else {
 				// mark as invalid edge with 0 length
-				edge.id = c::NO_EID;
+				edge.id = constant::NO_EID;
 				edge.dist = 0;
 			}
 			calcTimeMetric(edge);
@@ -325,7 +325,7 @@ namespace chc {
 				edge.dist = signed_dist;
 			} else {
 				// mark as invalid edge with 0 length
-				edge.id = c::NO_EID;
+				edge.id = constant::NO_EID;
 				edge.dist = 0;
 			}
 			edge.eucl_dist = edge.dist;
@@ -347,7 +347,7 @@ namespace chc {
 				edge.dist = signed_dist;
 			} else {
 				// mark as invalid edge with 0 length
-				edge.id = c::NO_EID;
+				edge.id = constant::NO_EID;
 				edge.dist = 0;
 			}
 			return edge;
@@ -373,7 +373,7 @@ namespace chc {
 				edge.dist = signed_dist;
 			} else {
 				// mark as invalid edge with 0 length
-				edge.id = c::NO_EID;
+				edge.id = constant::NO_EID;
 				edge.dist = 0;
 			}
 			return edge;
@@ -409,8 +409,8 @@ namespace chc {
 	{
 		os << edge.src << " " << edge.tgt << " " << edge.dist << " "
 			<< edge.type << " " << edge.speed << " "
-			<< (edge.child_edge1 == c::NO_EID ? "-1" : std::to_string(edge.child_edge1)) << " "
-			<< (edge.child_edge2 == c::NO_EID ? "-1" : std::to_string(edge.child_edge2)) << " "
+			<< (edge.child_edge1 == constant::NO_EID ? "-1" : std::to_string(edge.child_edge1)) << " "
+			<< (edge.child_edge2 == constant::NO_EID ? "-1" : std::to_string(edge.child_edge2)) << " "
                         << edge.vis_unpleasing << "\n";
 	}
 
@@ -419,16 +419,16 @@ namespace chc {
 	{
 		os << edge.src << " " << edge.tgt << " " << edge.dist << " "
 			<< edge.type << " " << edge.eucl_dist << " "
-			<< (edge.child_edge1 == c::NO_EID ? "-1" : std::to_string(edge.child_edge1)) << " "
-			<< (edge.child_edge2 == c::NO_EID ? "-1" : std::to_string(edge.child_edge2)) << "\n";
+			<< (edge.child_edge1 == constant::NO_EID ? "-1" : std::to_string(edge.child_edge1)) << " "
+			<< (edge.child_edge2 == constant::NO_EID ? "-1" : std::to_string(edge.child_edge2)) << "\n";
 	}
 
 	template<>
 	void text_writeEdge<CHEdge<StefanEdge>>(std::ostream& os, CHEdge<StefanEdge> const& edge)
 	{
 		os << edge.src << " " << edge.tgt << " " << edge.dist << " "
-			<< (edge.child_edge1 == c::NO_EID ? "-1" : std::to_string(edge.child_edge1)) << " "
-			<< (edge.child_edge2 == c::NO_EID ? "-1" : std::to_string(edge.child_edge2)) << "\n";
+			<< (edge.child_edge1 == constant::NO_EID ? "-1" : std::to_string(edge.child_edge1)) << " "
+			<< (edge.child_edge2 == constant::NO_EID ? "-1" : std::to_string(edge.child_edge2)) << "\n";
 	}
 
 

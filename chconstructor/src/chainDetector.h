@@ -72,7 +72,7 @@ public:
         
         //backward direction
         chc::NodeID next = nextChainElement(node_id, type, chc::EdgeType::IN, isOneway);
-        while (next != chc::c::NO_NID) {
+        while (next != chc::constant::NO_NID) {
             debug_assert(!marked.at(next));
             chain.emplace_front(next);
             if (base_graph.degree_leq(next, 2)) {
@@ -86,7 +86,7 @@ public:
         
         //forward direction
         next = nextChainElement(node_id, type, chc::EdgeType::OUT, isOneway);
-        while (next != chc::c::NO_NID) {
+        while (next != chc::constant::NO_NID) {
             debug_assert(!marked.at(next));
             chain.emplace_back(next);
             if (base_graph.degree_leq(next, 2)) {
@@ -102,7 +102,7 @@ public:
     }
     
     chc::NodeID nextChainElement(const chc::NodeID current, const chc::StreetType streetType, const chc::EdgeType edgeDirection, bool isOneway) {
-        chc::NodeID next = chc::c::NO_NID;
+        chc::NodeID next = chc::constant::NO_NID;
         //TODO/Problem: chains cant share endpoints        
         //if (base_graph.getNrOfEdges(current, chc::EdgeType::OUT) <= 2 
           //      && base_graph.getNrOfEdges(current, chc::EdgeType::IN) <= 2) { //condtion optional but should increase performance

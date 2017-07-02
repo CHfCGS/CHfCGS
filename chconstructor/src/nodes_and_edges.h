@@ -24,7 +24,7 @@ typedef uint NodeID;
 typedef uint EdgeID;
 typedef uint StreetType;
 
-namespace c
+namespace constant
 {
 	uint const NO_NID(std::numeric_limits<NodeID>::max());
 	uint const NO_EID(std::numeric_limits<EdgeID>::max());
@@ -112,7 +112,7 @@ struct CHNode : NodeT
 {
 	typedef NodeT base_node_type;
 
-	uint lvl = c::NO_LVL;
+	uint lvl = constant::NO_LVL;
 
 	explicit CHNode() { }
 	explicit CHNode(NodeT const& node) : NodeT(node) { }
@@ -142,7 +142,7 @@ using MakeCHNode = typename _MakeCHNode<typename std::remove_reference<NodeT>::t
 
 struct Node
 {
-	NodeID id = c::NO_NID;
+	NodeID id = constant::NO_NID;
 
 	explicit Node() { }
 	explicit Node(NodeID id) : id(id) { }
@@ -152,7 +152,7 @@ struct Node
 
 struct GeoNode
 {
-	NodeID id = c::NO_NID;
+	NodeID id = constant::NO_NID;
 	double lat = 0;
 	double lon = 0;
 	int elev = 0;
@@ -171,7 +171,7 @@ struct GeoNode
 
 struct StefanNode
 {
-	NodeID id = c::NO_NID;
+	NodeID id = constant::NO_NID;
 	uint64_t osm_id = std::numeric_limits<uint>::max();
 	double lat = 0;
 	double lon = 0;
@@ -198,7 +198,7 @@ struct WayOSMNode
         //std::list<std::reference_wrapper<DirectedWay<WayOSMNode>>> nodes;
         
         
-        NodeID id = c::NO_NID;
+        NodeID id = constant::NO_NID;
 	uint64_t osm_id = std::numeric_limits<uint>::max();
 	double lat = 0;
 	double lon = 0;
@@ -247,7 +247,7 @@ struct WayOSMNode
 
 struct OSMNode
 {
-	NodeID id = c::NO_NID;
+	NodeID id = constant::NO_NID;
 	uint64_t osm_id = std::numeric_limits<uint>::max();
 	double lat = 0;
 	double lon = 0;
@@ -304,9 +304,9 @@ struct CHEdge : EdgeT
 {
 	typedef EdgeT base_edge_type;
         
-	EdgeID child_edge1 = c::NO_EID;
-	EdgeID child_edge2 = c::NO_EID;
-	NodeID center_node = c::NO_NID;
+	EdgeID child_edge1 = constant::NO_EID;
+	EdgeID child_edge2 = constant::NO_EID;
+	NodeID center_node = constant::NO_NID;
         bool vis_unpleasing = false;
 
 	CHEdge() { }
@@ -341,10 +341,10 @@ MakeCHEdge<EdgeT> make_shortcut(EdgeT const& edge1, EdgeT const& edge2) {
 
 struct Edge
 {
-	EdgeID id = c::NO_EID;
-	NodeID src = c::NO_NID;
-	NodeID tgt = c::NO_NID;
-	uint dist = c::NO_DIST;
+	EdgeID id = constant::NO_EID;
+	NodeID src = constant::NO_NID;
+	NodeID tgt = constant::NO_NID;
+	uint dist = constant::NO_DIST;
 
 	Edge() { }
 	Edge(EdgeID id, NodeID src, NodeID tgt, uint dist)
@@ -370,10 +370,10 @@ struct MetricEdge : EdgeT
 
 struct StefanEdge
 {
-	EdgeID id = c::NO_EID;
-	NodeID src = c::NO_NID;
-	NodeID tgt = c::NO_NID;
-	uint dist = c::NO_DIST;
+	EdgeID id = constant::NO_EID;
+	NodeID src = constant::NO_NID;
+	NodeID tgt = constant::NO_NID;
+	uint dist = constant::NO_DIST;
 
 	StefanEdge() { }
 	StefanEdge(EdgeID id, NodeID src, NodeID tgt, uint dist)
@@ -390,10 +390,10 @@ StefanEdge concat(StefanEdge const& edge1, StefanEdge const& edge2);
 
 struct OSMEdge
 {
-	EdgeID id = c::NO_EID;
-	NodeID src = c::NO_NID;
-	NodeID tgt = c::NO_NID;
-	uint dist = c::NO_DIST;
+	EdgeID id = constant::NO_EID;
+	NodeID src = constant::NO_NID;
+	NodeID tgt = constant::NO_NID;
+	uint dist = constant::NO_DIST;
 	StreetType type = 0;
 	int speed = -1;
 
@@ -419,7 +419,7 @@ struct OSMDistEdge : OSMEdge { };
 
 struct EuclOSMEdge : OSMEdge
 {
-	uint eucl_dist = c::NO_DIST;
+	uint eucl_dist = constant::NO_DIST;
 
 	EuclOSMEdge() { }
 	EuclOSMEdge(EdgeID id, NodeID src, NodeID tgt, uint dist, uint type, int speed, uint eucl_dist)

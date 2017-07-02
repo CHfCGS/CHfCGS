@@ -271,7 +271,7 @@ namespace chc {
                 std::vector<Shortcut> shortcuts;
                 for (auto const& target : targets) {
                     /* we know a path within radius - so _calcShortestDists must have found one */
-                    assert(c::NO_DIST != td.dists[target.end_node]);
+                    assert(constant::NO_DIST != td.dists[target.end_node]);
 
                     uint center_node_dist(start_edge.distance() + target.end_edge.distance());
                     if (td.dists[target.end_node] == center_node_dist) {
@@ -316,7 +316,7 @@ namespace chc {
         //initialize thread data
         ThreadData td;
         uint nr_of_nodes = _base_graph.getNrOfNodes();
-        td.dists.assign(nr_of_nodes, c::NO_DIST);
+        td.dists.assign(nr_of_nodes, constant::NO_DIST);
         td.reset_dists.reserve(nr_of_nodes);
         
         //initialize all last shortcuts with unpleasing flag        
@@ -339,7 +339,7 @@ namespace chc {
         /* clear thread data first */
         td.pq = PQ();        
         for (auto node_id : td.reset_dists) {
-            td.dists[node_id] = c::NO_DIST;
+            td.dists[node_id] = constant::NO_DIST;
         }
         td.reset_dists.clear();
          
@@ -349,7 +349,7 @@ namespace chc {
         td.dists[start_node] = 0;
         td.reset_dists.push_back(start_node);
 
-        while (!td.pq.empty() && td.pq.top().distance() <= radius && td.dists[end_node]== c::NO_DIST) {
+        while (!td.pq.empty() && td.pq.top().distance() <= radius && td.dists[end_node]== constant::NO_DIST) {
             auto top = td.pq.top();
             td.pq.pop();
             if (td.dists[top.node] != top.distance()) continue;
@@ -361,7 +361,7 @@ namespace chc {
                 uint new_dist(top.distance() + edge.distance());
 
                 if (new_dist < td.dists[tgt_node]) {
-                    if (td.dists[tgt_node] == c::NO_DIST) {
+                    if (td.dists[tgt_node] == constant::NO_DIST) {
                         td.reset_dists.push_back(tgt_node);
                     }
                     td.dists[tgt_node] = new_dist;
@@ -369,7 +369,7 @@ namespace chc {
                 }
             }
         }
-        return td.dists[end_node]!= c::NO_DIST;
+        return td.dists[end_node]!= constant::NO_DIST;
     }
     
     template <typename NodeT, typename EdgeT>
@@ -380,7 +380,7 @@ namespace chc {
         /* clear thread data first */
         td.pq = PQ();
         for (auto node_id : td.reset_dists) {
-            td.dists[node_id] = c::NO_DIST;
+            td.dists[node_id] = constant::NO_DIST;
         }
         td.reset_dists.clear();
 
@@ -399,7 +399,7 @@ namespace chc {
                 uint new_dist(top.distance() + edge.distance());
 
                 if (new_dist < td.dists[tgt_node]) {
-                    if (td.dists[tgt_node] == c::NO_DIST) {
+                    if (td.dists[tgt_node] == constant::NO_DIST) {
                         td.reset_dists.push_back(tgt_node);
                     }
                     td.dists[tgt_node] = new_dist;
@@ -498,7 +498,7 @@ namespace chc {
         _to_remove.resize(nr_of_nodes);
 
         for (auto& td : _thread_data) {
-            td.dists.assign(nr_of_nodes, c::NO_DIST);
+            td.dists.assign(nr_of_nodes, constant::NO_DIST);
             td.reset_dists.reserve(nr_of_nodes);
         }
         _new_shortcuts.reserve(_base_graph.getNrOfEdges());
@@ -917,7 +917,7 @@ namespace chc {
         thread_data.resize(_num_threads);
         auto nr_of_nodes(_base_graph.getNrOfNodes());
         for (auto& td : thread_data) {
-            td.dists.assign(nr_of_nodes, c::NO_DIST);
+            td.dists.assign(nr_of_nodes, constant::NO_DIST);
             td.reset_dists.reserve(nr_of_nodes);
         }
 
@@ -973,10 +973,10 @@ namespace chc {
 
         EdgeT in_edge;
         bool in_edge_found= false;
-        NodeID in_edge_other_node = c::NO_NID;
+        NodeID in_edge_other_node = constant::NO_NID;
         EdgeT out_edge;
         bool out_edge_found= false;
-        NodeID out_edge_other_node = c::NO_NID;
+        NodeID out_edge_other_node = constant::NO_NID;
         for (const EdgeT& edge: _base_graph.nodeEdges(node_id, EdgeType::IN)) {
             in_edge_other_node = otherNode(edge, EdgeType::IN);
             in_edge = edge;
