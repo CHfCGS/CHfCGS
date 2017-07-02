@@ -27,7 +27,10 @@ pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
 # Setup CMake to use GTK+, tell the compiler where to look for headers
 # and to the linker where to look for libraries
 include_directories(${GTK3_INCLUDE_DIRS})
-link_directories(${GTK3_LIBRARY_DIRS})
+
+find_package(X11 REQUIRED)
+include_directories(${X11_INCLUDE_DIRS})
+
 # Add other flags to the compiler
 add_definitions(${GTK3_CFLAGS_OTHER})
 
@@ -71,7 +74,7 @@ endif()
 add_executable(simple
 	  src/simplestGraphRendering.cpp
 )
-target_link_libraries(simple ${GLFW_LIBRARIES} ${OPENGL_LIBRARIES} ${GLEW_LIBRARIES} ${GTK3_LIBRARIES})
+target_link_libraries(simple ${GLFW_LIBRARIES} ${OPENGL_LIBRARIES}  ${GLEW_LIBRARIES} ${GTK3_LIBRARIES} ${X11_LIBRARIES} )
 
 #add_executable(run_tests
 #	src/run_tests.cpp
