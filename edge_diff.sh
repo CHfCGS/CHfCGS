@@ -1,4 +1,4 @@
-data=bremen #CutDownTest #unbreakedDPVEPunfiltered #ChainPair2 # #bremen #ProDPExample #Intersection #baden-wuerttemberg #stuttgart-regbez #ZipOrderingTest #ProP_ILPChainPair #PairsToIdentify #IntersectionDiff #heapTest
+data=bremen #unbreakedDPVEPunfiltered #ChainPair2 # #bremen #ProDPExample #Intersection #baden-wuerttemberg #stuttgart-regbez #ZipOrderingTest #ProP_ILPChainPair #PairsToIdentify #IntersectionDiff #heapTest
 echo "data: " "$data"
 
 in=$data"-latest.osm.pbf"
@@ -8,14 +8,8 @@ out=$data"FMAXSPEED.txt"
 #OsmGraphCreator/build/creator/creator -g fmimaxspeedtext -t time -c OsmGraphCreator/data/configs/car.cfg -o data/Graph/$out data/OSM/$in
 
 #chconstructor
+options1=" -p EDGE_DIFF"
 
-options1=" -p DP -d EDE "
-#options1="  "
-
-_options2=" -s DP -e VE -c"
-options2=${1-$_options2}
-
-#options2=" -p NONE " 
 echo "options2: " "$options2"
 
 out_options2=`echo "$options2" | sed "s/ /_/g"`
@@ -36,11 +30,11 @@ NOW=$(date +"%d_%H")
 LOGFILE="$in$NOW.log"
 
 
-./ch_measurer -i ../../data/CH/$in  -c - 2>&1 | tee ../logs/$LOGFILE    #-e -c -d -l -p -v
+#./ch_measurer -i ../../data/CH/$in -p  2>&1 | tee ../logs/$LOGFILE    #-e -c -d -l -p -v 
 
 
 #visualizer
 in=$out
 cd ../..
 cd simplestGraphRendering-master/build
-#./simple -gf ../../data/CH/$in
+./simple -gf ../../data/CH/$in

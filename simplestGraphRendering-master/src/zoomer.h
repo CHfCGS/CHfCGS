@@ -280,7 +280,7 @@ namespace Zoomer {
 		edges.clear();
 		for (auto it = ch_edges.begin(); it != ch_edges.end(); it++){
 			if (it->remaining) {					
-				Edge edge = Edge(it->src, it->tgt, 1 /*width(it->type)*/, color(it->type));
+				Edge edge = Edge(it->src, it->tgt, width(it->type), color(it->type));
 				edges.push_back(edge);
 			}       
 		}												

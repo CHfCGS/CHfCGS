@@ -982,9 +982,9 @@ int main(int argc, char*argv[])
 	/* Create a orbital camera */
 	OrbitalCamera camera;
 	
-	camera.longitude = 8.799697; //8.63; //0.0;
-	camera.latitude = 53.099966; //53.51; //0.0;
-	camera.orbit = 1.002;
+	camera.longitude = 9.5; //8.799697; //8.63; //0.0;
+	camera.latitude = 48.9; //53.099966; //53.51; //0.0;
+	camera.orbit = 2; //1.002;
 	camera.near = 0.001;
 	camera.far = 10.0;
 	camera.fovy = 30.0 * 3.14/180.0f;
@@ -1056,7 +1056,7 @@ int main(int argc, char*argv[])
 		
 	//GtkAdjustment *adjExpandSizeOther = gtk_adjustment_new(expandSizeOther, 0.0, 1.0, 0.001, 0, 0); //triangle proportion
 	//GtkAdjustment *adjExpandSizeOther = gtk_adjustment_new(expandSizeOther, 0.0, 0.005, 0.00001, 0.001, 0.0); //perpendicular, lat
-	GtkAdjustment *adjExpandSizeOther = gtk_adjustment_new(expandSizeOther, 0.0, 0.2, 0.001, 0.001, 0.0); //perpendicular, km
+	GtkAdjustment *adjExpandSizeOther = gtk_adjustment_new(expandSizeOther, 0.0, 1.0, 0.001, 0.001, 0.0); //perpendicular, km
 	//GtkAdjustment *adjExpandSizeOther = gtk_adjustment_new(expandSizeOther, 0.0, 20, 0.0001, 0.001, 0.0); //chainpair2
 	GtkWidget *hscaleExpandSizeOther = gtk_scale_new(GtkOrientation::GTK_ORIENTATION_HORIZONTAL, adjExpandSizeOther);
 	gtk_scale_set_digits (GTK_SCALE(hscaleExpandSizeOther), 5);
@@ -1089,7 +1089,8 @@ int main(int argc, char*argv[])
 
         /* Render here */
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+		//glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		int width, height;
 		glfwGetFramebufferSize(window, &width, &height);

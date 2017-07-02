@@ -511,9 +511,16 @@ namespace chm {
             //graph.zoom(0.02, false, true, 0, 0.005);//gut
             //graph.zoom(0.2, false, true, 0, 0.002);
             //graph.zoom(0.2, false, true, 0, 0.0);
-            graph.zoom(0.2, false, true, 0, 0.01, out_data); //gut für zip
+            
+            //graph.zoom(0.2, false, true, 0, 0.01, out_data); //erste Testreihe
+            
+            
+            
             //graph.zoom(0.2, false, true, 0, 0.1); //sehr gut, aber kleine Daten
-            //graph.zoom(0.02, false, true, 0, 0.06);
+            //graph.zoom(0.02, false, true, 0, 0.05, out_data); //testreihe für wenig überschneidungen
+            
+            graph.zoom(0.5, false, true, 0, 0.005, out_data); //dritte testreihe
+     
             
             std::vector<NodeID> visibleNodeIDs;
             for (uint i = 0; i < graph.getNrOfNodes(); i++) {                
