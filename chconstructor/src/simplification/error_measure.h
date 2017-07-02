@@ -94,7 +94,7 @@ std::string to_string(ErrorMeasureType type)
         case ErrorMeasureType::AE:
 		return "AE";
         case ErrorMeasureType::KE:
-		return "AE";
+		return "KE";
         case ErrorMeasureType::VE:
 		return "VE";	
         }
