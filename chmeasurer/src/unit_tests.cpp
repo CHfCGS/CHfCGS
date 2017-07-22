@@ -171,7 +171,8 @@ void unit_tests::testCHDijkstra()
 
         CHGraph<CHNode, CHEdge> g;
         g.init(std::move(graphInData));
-        g.zoom(100, false, false, 0);
+        OutData out_data;
+        g.zoom(100, false, false, 0, 0, out_data);
 	
 
 	// Random Dijkstras
@@ -214,7 +215,8 @@ void unit_tests::testDijkstra()
 
         CHGraph<CHNode, CHEdge> g;
         g.init(std::move(graphInData));
-        g.zoom(100, false, false, 0);
+        OutData out_data;
+        g.zoom(100, false, false, 0, 0, out_data);
         
 	
 
