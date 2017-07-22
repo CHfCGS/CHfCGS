@@ -326,7 +326,7 @@ namespace chc {
             }
         }
         
-        for (int node_id = 0; node_id < _base_graph.getNrOfNodes(); node_id++) {             
+        for (uint node_id = 0; node_id < _base_graph.getNrOfNodes(); node_id++) {
             _tagShortcutsOfNode(node_id, EdgeType::IN, lastRoundLvl, td);
             _tagShortcutsOfNode(node_id, EdgeType::OUT, lastRoundLvl, td );
         }                        
@@ -681,7 +681,7 @@ namespace chc {
         std::vector<bool> marked(_base_graph.getNrOfNodes(), false);
         independent_set.reserve(set_size_max);
 
-        for (int i = 0; i < set_size_max; i++) {
+        for (uint i = 0; i < set_size_max; i++) {
             NodeID node = nodes[i];
             if (!marked[node]) {
                 marked[node] = true;

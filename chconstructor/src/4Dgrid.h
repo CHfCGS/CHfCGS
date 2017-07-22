@@ -195,7 +195,7 @@ public:
         const uint l_1 = 11;
         const uint l_2 = CaR.oneWayChainsAccordingToType.size();
         uint highestTwoLaning = std::min(l_1, l_2);
-        for (int i = 1; i < highestTwoLaning; ++i) { //range of streettypes where two laning can occur
+        for (uint i = 1; i < highestTwoLaning; ++i) { //range of streettypes where two laning can occur
         //int i = 0;
         //for (ChainsOfType &chainsOfType : CaR.chainsAccordingToType) {
             
