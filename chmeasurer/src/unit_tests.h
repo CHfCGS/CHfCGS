@@ -3,7 +3,7 @@
 namespace chm
 {
 
-#define Test(x) \
+#define UnitTest(x) \
 	do { \
 		if (!(x)) { \
 			std::cout << "TEST_FAILED: " << #x << std::endl; \

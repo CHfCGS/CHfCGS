@@ -72,7 +72,7 @@ void unit_tests::testLineSimplfication()
         CH_Parser ch_Parser = CH_Parser();    
 
         string filepath = "../test_data/ProDPExample_ch_out.graph";
-        Test(ch_Parser.parseTxtGraphFile(filepath, graphInData.nodes, graphInData.edges));
+        UnitTest(ch_Parser.parseTxtGraphFile(filepath, graphInData.nodes, graphInData.edges));
 
         CHGraph<CHNode, CHEdge> graph;
         graph.init(std::move(graphInData));
@@ -90,10 +90,10 @@ void unit_tests::testLineSimplfication()
         }
         
         lineSimplificationILP ilp(graph);
-        Test(ilp.solve(chain, 0.3) == 9);
-        Test(ilp.solve(chain, 0.5) == 6);        
-        Test(ilp.solve(chain, 10000) == 1);
-        Test(ilp.solve(chain, 0 + std::numeric_limits<double>::epsilon()) == 15);
+        UnitTest(ilp.solve(chain, 0.3) == 9);
+        UnitTest(ilp.solve(chain, 0.5) == 6);
+        UnitTest(ilp.solve(chain, 10000) == 1);
+        UnitTest(ilp.solve(chain, 0 + std::numeric_limits<double>::epsilon()) == 15);
                 
 	Print("\n============================");
 	Print("TEST: LineSimplfication test successful.");
@@ -110,7 +110,7 @@ void unit_tests::testParallelLineSimplfication()
         CH_Parser ch_Parser = CH_Parser();    
 
         string filepath = "../test_data/ProP_ILPChainPair_ch_out.graph";
-        Test(ch_Parser.parseTxtGraphFile(filepath, graphInData.nodes, graphInData.edges));
+        UnitTest(ch_Parser.parseTxtGraphFile(filepath, graphInData.nodes, graphInData.edges));
 
         CHGraph<CHNode, CHEdge> graph;
         graph.init(std::move(graphInData));
@@ -137,16 +137,16 @@ void unit_tests::testParallelLineSimplfication()
         
         ParallelLineSimplificationILP p_ilp(graph);
         
-        Test(p_ilp.solve(chain1, chain2, 4.5 , 2000) == 2);        
-        Test(p_ilp.solve(chain1, chain2, 2.9 , 2000) == 4);
+        UnitTest(p_ilp.solve(chain1, chain2, 4.5 , 2000) == 2);
+        UnitTest(p_ilp.solve(chain1, chain2, 2.9 , 2000) == 4);
         
-        Test(p_ilp.solve(chain1, chain2, 2.9 , 2.0001)==4);
+        UnitTest(p_ilp.solve(chain1, chain2, 2.9 , 2.0001)==4);
         
-        Test(p_ilp.solve(chain1, chain2, 10000, 10000) == 2);
+        UnitTest(p_ilp.solve(chain1, chain2, 10000, 10000) == 2);
         
         DiscreteFrechet df(graph);                                       
         double discrete_frechet_dist = df.calc_dF(chain1, chain2);        
-        Test(p_ilp.solve(chain1, chain2, 0 + 2*std::numeric_limits<double>::epsilon(), 2*discrete_frechet_dist + std::numeric_limits<double>::epsilon()) == 6);
+        UnitTest(p_ilp.solve(chain1, chain2, 0 + 2*std::numeric_limits<double>::epsilon(), 2*discrete_frechet_dist + std::numeric_limits<double>::epsilon()) == 6);
                 
         
 	Print("\n============================");
@@ -167,7 +167,7 @@ void unit_tests::testCHDijkstra()
         CH_Parser ch_Parser = CH_Parser();    
 
         string filepath = "../test_data/15kSZHK_ch_out.graph";
-        Test(ch_Parser.parseTxtGraphFile(filepath, graphInData.nodes, graphInData.edges));
+        UnitTest(ch_Parser.parseTxtGraphFile(filepath, graphInData.nodes, graphInData.edges));
 
         CHGraph<CHNode, CHEdge> g;
         g.init(std::move(graphInData));
@@ -189,7 +189,7 @@ void unit_tests::testCHDijkstra()
 		NodeID src = rand_node();
 		NodeID tgt = rand_node();
 		Debug("From " << src << " to " << tgt << ".");
-		Test(dij.calcShopa(src,tgt,path) == chdij.calcShopa(src,tgt,path));
+		UnitTest(dij.calcShopa(src,tgt,path) == chdij.calcShopa(src,tgt,path));
 	}
 
 	// Export (destroys graph data)
@@ -211,7 +211,7 @@ void unit_tests::testDijkstra()
         CH_Parser ch_Parser = CH_Parser();    
 
         string filepath = "../test_data/DijkstraTest_ch_out.graph";
-        Test(ch_Parser.parseTxtGraphFile(filepath, graphInData.nodes, graphInData.edges));
+        UnitTest(ch_Parser.parseTxtGraphFile(filepath, graphInData.nodes, graphInData.edges));
 
         CHGraph<CHNode, CHEdge> g;
         g.init(std::move(graphInData));
@@ -226,7 +226,7 @@ void unit_tests::testDijkstra()
 	uint dist = dij.calcShopa(0, tgt, path);
 
 	Print("Dist of Dijkstra from 0 to " << tgt << ": " << dist);
-	Test(dist == 9);
+	UnitTest(dist == 9);
 
 	Print("Shortest path from 0 to " << tgt << ":");
 	for (auto edge_id: path) {
@@ -237,7 +237,7 @@ void unit_tests::testDijkstra()
 	Print("Test if shortest paths are the same from both sides for the 'test' graph.");
 	for (NodeID src(0); src< (int) g.getNrOfNodes(); src++) {
 		for (NodeID tgt(src); tgt< (int) g.getNrOfNodes(); tgt++) {
-			Test(dij.calcShopa(src, tgt, path) == dij.calcShopa(tgt, src, path));
+			UnitTest(dij.calcShopa(src, tgt, path) == dij.calcShopa(tgt, src, path));
 		}
 	}
 
@@ -320,7 +320,7 @@ void unit_tests::testdiscreteFrechet()
                 
                 
         DiscreteFrechet df(graph);                                       
-        Test(df.calc_dF(chainTo, chainFrom)==3);      
+        UnitTest(df.calc_dF(chainTo, chainFrom)==3);
                 
         
 
@@ -374,7 +374,7 @@ void unit_tests::testCDTHCross()
             Print("cdthpC.getNofCrossings(chain)" << cdthpC.getNofCrossings(chain));
         }*/
                 
-        Test(cdthpC.getNofCrossings(chain) == 4);
+        UnitTest(cdthpC.getNofCrossings(chain) == 4);
                    
 	Print("\n=================================");
 	Print("TEST: CDTHCross test successful.");
@@ -422,21 +422,21 @@ void unit_tests::testCrossLinks()
         CrossLink cross_link8(ilp_chain2.at(5), Line(ilp_chain1.at(3), ilp_chain1.at(4), 0), 1.0, 0, 0);
         
         Print("test unorderings are called");
-        Test(!FrechetTest_data::testUnordering(cross_link1, cross_link2));
-        Test(FrechetTest_data::testUnordering(cross_link1, cross_link3));
-        Test(!FrechetTest_data::testUnordering(cross_link1, cross_link4));
-        Test(FrechetTest_data::testUnordering(cross_link2, cross_link3));
-        Test(!FrechetTest_data::testUnordering(cross_link4, cross_link2));
-        Test(!FrechetTest_data::testUnordering(cross_link2, cross_link4));
-        Test(FrechetTest_data::testUnordering(cross_link3, cross_link4)); 
+        UnitTest(!FrechetTest_data::testUnordering(cross_link1, cross_link2));
+        UnitTest(FrechetTest_data::testUnordering(cross_link1, cross_link3));
+        UnitTest(!FrechetTest_data::testUnordering(cross_link1, cross_link4));
+        UnitTest(FrechetTest_data::testUnordering(cross_link2, cross_link3));
+        UnitTest(!FrechetTest_data::testUnordering(cross_link4, cross_link2));
+        UnitTest(!FrechetTest_data::testUnordering(cross_link2, cross_link4));
+        UnitTest(FrechetTest_data::testUnordering(cross_link3, cross_link4));
         
-        Test(!FrechetTest_data::testUnordering(cross_link3, cross_link5));   
-        Test(!FrechetTest_data::testUnordering(cross_link4, cross_link5));  
+        UnitTest(!FrechetTest_data::testUnordering(cross_link3, cross_link5));
+        UnitTest(!FrechetTest_data::testUnordering(cross_link4, cross_link5));
         
-        Test(FrechetTest_data::testUnordering(cross_link6, cross_link3)); 
-        Test(!FrechetTest_data::testUnordering(cross_link6, cross_link2)); 
+        UnitTest(FrechetTest_data::testUnordering(cross_link6, cross_link3));
+        UnitTest(!FrechetTest_data::testUnordering(cross_link6, cross_link2));
         
-        Test(!FrechetTest_data::testUnordering(cross_link7, cross_link8));
+        UnitTest(!FrechetTest_data::testUnordering(cross_link7, cross_link8));
                         
                    
 	Print("\n=================================");
@@ -472,7 +472,7 @@ void unit_tests::testFrechetDistance()
         CalcFrechetILP cf_ilp(graph);
         
         Print(cf_ilp.solve(chain1, chain2, 0 , 2));
-        Test(cf_ilp.solve(chain1, chain2, 0 , 2) == 1);        
+        UnitTest(cf_ilp.solve(chain1, chain2, 0 , 2) == 1);
         
                         
                    
