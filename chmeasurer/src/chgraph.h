@@ -431,7 +431,7 @@ void CHGraph<NodeT, EdgeT>::zoom(double percent_of_valid_nodes, bool dist_expand
         
     if (spareShortcuts) {
         //do not draw visually unpleasing shortcuts
-        for (uint edgeID = 0; edgeID < (int) edge_count; edgeID++){
+        for (int edgeID = 0; edgeID < edge_count; edgeID++){
             if (_out_edges[edgeID].vis_unpleasing) {
                 _validEdges[edgeID] = false;       
             }				
@@ -469,7 +469,7 @@ void CHGraph<NodeT, EdgeT>::zoom(double percent_of_valid_nodes, bool dist_expand
 
     #ifndef NDEBUG
     if (percent_of_valid_nodes==100) {
-        for (int i = 0; i < _validNodes.size(); i++) {
+        for (uint i = 0; i < _validNodes.size(); i++) {
             assert(_validNodes[i] == true);
         }
         for (int i = 0; i < edge_count; i++) {            
@@ -814,13 +814,13 @@ bool CHGraph<NodeT, EdgeT>::isUp(EdgeT const& edge, EdgeType direction) const
 template <typename NodeT, typename EdgeT>
 bool CHGraph<NodeT, EdgeT>::isShortcut(EdgeID edge_id) const
 {
-    debug_assert(0 <= edge_id && edge_id < _out_edges.size());    
+    debug_assert(0 <= edge_id && edge_id < (int)_out_edges.size());
     return (_out_edges[edge_id].child_edge1 != -1 && _out_edges[edge_id].child_edge2 != -1);
 }
 
 template <typename NodeT, typename EdgeT>
 bool CHGraph<NodeT, EdgeT>::isHigh(EdgeID edge_id) const {
-    debug_assert(0 <= edge_id && edge_id < _out_edges.size());    
+    debug_assert(0 <= edge_id && edge_id < (int) _out_edges.size());
     return isValidNode(_out_edges[edge_id].src) && isValidNode(_out_edges[edge_id].tgt);
 }
 

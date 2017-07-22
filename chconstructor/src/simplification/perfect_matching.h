@@ -69,7 +69,7 @@ class PerfectMatching {
     double c(int i, int j) { 
 
         assert(i >= 0 && j >= 0);
-        assert(i < p.size() && j < q.size());
+        assert((uint) i < p.size() && (uint) j < q.size());
 
         if (ca[i][j].c > -1) {
             return ca[i][j].c;
