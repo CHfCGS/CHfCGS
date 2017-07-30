@@ -11,11 +11,21 @@ namespace geo {
     //static const double PI = 3.14159265;
     static const double R = 6371; //Erdradius in kilometern
     
+
+    //flag to calculate with equirectangular approximation
+    //http://www.movable-type.co.uk/scripts/latlong.html
+    //simpler is euclidean which is also used by unit tests
+    static const bool equirectangular = true;
+
     /*
     double toRadians (double degree) {
         return degree * M_PI / 180.0;
     } */
     
+    double square (double x) {
+        return x * x;
+    }
+
     double calcSignedArea(CHNode aSource, CHNode bTarget, CHNode cOutlier) {
         double ax = aSource.lon;
         double ay = aSource.lat;
@@ -24,35 +34,51 @@ namespace geo {
         double cx = cOutlier.lon;
         double cy = cOutlier.lat;
 
-        double avgLat_ac = (ay + cy)/2;
-        double avgLat_bc = (by + cy)/2;
+        double acx = (ax - cx);
+        double bcx = (bx - cx);
+
+        if (equirectangular)
+        {
+            double avgLat_ac = (ay + cy)/2;
+            double avgLat_bc = (by + cy)/2;
+
+            acx *= std::cos(avgLat_ac * M_PI / 180.0);
+            bcx *= std::cos(avgLat_bc * M_PI / 180.0);
+        }
         
-        double acx = (ax - cx) * std::cos(avgLat_ac * M_PI / 180.0); // pa[0] - pc[0];
-        double bcx = (bx - cx) * std::cos(avgLat_bc * M_PI / 180.0); //pb[0] - pc[0];
-        double acy = ay - cy; //pa[1] - pc[1];
-        double bcy = by - cy; //pb[1] - pc[1];
+        double acy = ay - cy;
+        double bcy = by - cy;
         double determinant = acx * bcy - acy * bcx;
-        return 0.5 * determinant * pow(R, 2) * pow((M_PI / 180.0), 2);
+
+        double signedArea = 0.5 * determinant;
+        if (equirectangular)
+        {
+            signedArea *= square(R) * square((M_PI / 180.0));
+        }
+        return signedArea;
     }
     
-    
-    
+
     double pythagoras(double a, double b) {
-	return sqrt(pow(a, 2) + pow(b, 2));
+	return sqrt(square(a) + square(b));
     }
     
     double geoDist(double lon1, double lat1, double lon2, double lat2) {        
         double deltaLon = lon1 - lon2;
         double deltaLat = lat1 - lat2;
         
-        double avgLat = (lat1 + lat2)/2;        
+        if (equirectangular)
+        {
+            double avgLat = (lat1 + lat2)/2;
         
-        double x = (deltaLon) * std::cos(avgLat * M_PI / 180.0);
-        double y = (deltaLat);
-        return sqrt(x*x + y*y) * R  * (M_PI / 180.0); //R only scaling
-        
-        
-        //return pythagoras(deltaLon, deltaLat);        
+            double x = (deltaLon) * std::cos(avgLat * M_PI / 180.0);
+            double y = (deltaLat);
+            return pythagoras(x,y) * R  * (M_PI / 180.0); //R only scaling
+        }
+        else
+        {
+            return pythagoras(deltaLon, deltaLat);
+        }
     }
 
     double geoDist(CHNode node1, CHNode node2) {
