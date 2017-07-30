@@ -6,9 +6,10 @@
 #include <sstream>
 
 #include "../nodes_and_edges.h"
+#include "calculation.h"
 #include "ILP_data.h"
 
-class ParallelLineSimplificationILP {
+class ParallelLineSimplificationILP : Calculation {
     
     const CHGraph<CHNode, CHEdge> &graph;
     glp_prob *lp;

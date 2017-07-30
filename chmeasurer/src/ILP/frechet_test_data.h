@@ -1,13 +1,13 @@
 #pragma once
 
+#include "data.h"
 #include "../geoFunctions.h"
 #include "../nodes_and_edges.h"
 #include "../chgraph.h"
 
 #include <limits.h>
 
-
-struct FrechetTest_data {
+struct FrechetTest_data : Data {
     
     const CHGraph<CHNode, CHEdge> &graph;
     const Chain &chain1;

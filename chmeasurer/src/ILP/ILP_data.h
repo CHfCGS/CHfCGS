@@ -1,10 +1,11 @@
 #pragma once
 
+#include "data.h"
 #include "../geoFunctions.h"
 #include "../nodes_and_edges.h"
 #include "../chgraph.h"
 
-struct ILP_data {
+struct ILP_data : Data {
     
     const CHGraph<CHNode, CHEdge> &graph;
     const Chain &chain1;

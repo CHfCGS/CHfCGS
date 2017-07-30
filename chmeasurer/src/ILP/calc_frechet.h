@@ -6,9 +6,10 @@
 #include <sstream>
 
 #include "../nodes_and_edges.h"
+#include "calculation.h"
 #include "frechet_test_data.h"
 
-class CalcFrechetILP {
+class CalcFrechetILP : Calculation {
     
     CHGraph<CHNode, CHEdge> &graph;
     glp_prob *lp;

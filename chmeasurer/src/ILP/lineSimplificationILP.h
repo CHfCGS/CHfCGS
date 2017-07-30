@@ -6,9 +6,10 @@
 #include <sstream>
 
 #include "../nodes_and_edges.h"
+#include "calculation.h"
 #include "ILP_data.h"
 
-class lineSimplificationILP {
+class lineSimplificationILP : Calculation {
     
     
     
