@@ -154,15 +154,6 @@ class ParallelLineSimplificationILP : Calculation
         addInDegreeRows(ilp_data.ilp_chain2);
     }
 
-    void setIntersectionEntry(LineID line_id)
-    {
-        nofNonZeros++;
-        size_t index = nofNonZeros;
-        ia[index] = glp_get_num_rows(lp);
-        ja[index] = line_id + 1;
-        ar[index] = 1.0;
-    }
-
     void addIntersectionRows(const std::vector<Intersection> &intersections)
     {
         for (const Intersection &intersection : intersections)
@@ -247,8 +238,7 @@ public:
 
     ParallelLineSimplificationILP(const CHGraph<CHNode, CHEdge> &graph) : Calculation(graph) { }
 
-    ~ParallelLineSimplificationILP() {
- }
+    ~ParallelLineSimplificationILP() { }
 
     double solve(const Chain& chain1, const Chain& chain2, double epsilon, double eta)
     {

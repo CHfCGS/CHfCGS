@@ -10,9 +10,6 @@
 
 class Calculation
 {
-
-
-
 protected:
     const CHGraph<CHNode, CHEdge> &graph;
 
@@ -47,6 +44,16 @@ protected:
         std::string s = ss.str();
         char const *row_name = s.c_str();
         glp_set_row_name(lp, glp_get_num_rows(lp), row_name);
+    }
+
+    void setIntersectionEntry(LineID line_id)
+    {
+        nofNonZeros++;
+        size_t index = nofNonZeros;
+        assert(isInRange(index));
+        ia[index] = glp_get_num_rows(lp);
+        ja[index] = line_id + 1;
+        ar[index] = 1.0;
     }
 
     Calculation(const CHGraph<CHNode, CHEdge> &graph) : graph(graph)

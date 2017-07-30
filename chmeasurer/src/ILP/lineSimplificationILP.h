@@ -83,16 +83,6 @@ class lineSimplificationILP : Calculation
         setInOutDegreeCoefficients(lines, ilp_chain.back().ch_node_id);
     }
 
-    void setIntersectionEntry(LineID line_id)
-    {
-        nofNonZeros++;
-        size_t index = nofNonZeros;
-        assert(isInRange(index));
-        ia[index] = glp_get_num_rows(lp);
-        ja[index] = line_id + 1;
-        ar[index] = 1.0;
-    }
-
     void addIntersectionRows(const std::vector<Line> &lines, const std::vector<Intersection> &intersections)
     {
         for (const Intersection &intersection : intersections)
@@ -186,8 +176,7 @@ public:
 
     lineSimplificationILP(const CHGraph<CHNode, CHEdge> &graph) : Calculation(graph) { }
 
-    ~lineSimplificationILP() {
- }
+    ~lineSimplificationILP() { }
 
     double solve(const Chain &chain, double epsilon)
     {
