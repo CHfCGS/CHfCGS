@@ -7,7 +7,6 @@
 
 struct ILP_data : Data
 {
-    LineID nextLineID = 0;
     std::vector<Line> potEdges1;
     std::vector<Line> potEdges2;
     std::vector<Line> allPotEdges;

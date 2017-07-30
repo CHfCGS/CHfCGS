@@ -11,7 +11,6 @@ struct FrechetTest_data : Data
 {
     const double LENGTH_FACTOR = 10e5;
 
-    LineID nextLineID = 0;
     std::vector<Line> originalEdges1;
     std::vector<Line> originalEdges2;
     std::vector<Line> allOriginalEdges;

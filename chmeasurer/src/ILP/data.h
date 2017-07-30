@@ -16,6 +16,8 @@ struct Data
     ILP_Chain ilp_chain1;
     ILP_Chain ilp_chain2;
 
+    LineID nextLineID = 0;
+
     static bool testIntersection(const Line line1, const Line line2)
     {
 
