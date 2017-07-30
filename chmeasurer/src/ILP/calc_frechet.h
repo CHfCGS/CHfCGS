@@ -9,40 +9,9 @@
 #include "calculation.h"
 #include "frechet_test_data.h"
 
-class CalcFrechetILP : Calculation {
-    
-    CHGraph<CHNode, CHEdge> &graph;
-    glp_prob *lp;
-    
-    const static size_t size = 40000;
-    size_t nofNonZeros = 0;
-    
-    //numbers of needed sizes beforehand 
-    int preNofRows;
-    int preNofCols;
-    int preNofNonZeros = 0;
-    
-    //whole ILP is invalid if size is not big enough
-    bool enoughSpace;
-    
-    int ia[1+size], ja[1+size];
-    double ar[1+size];        
-    
-    
-    double objective_value = 0;    
-    
-    bool isInRange(size_t index) {
-        return (1 <= index && index <= size); //0 is not valid for ILP
-    }
-    
-    void setRowName(NodeID node_id, uint nr) {        
-        std::stringstream ss("");
-        ss << "node: " << nr << ". " << node_id;
-        std::string s = ss.str();
-        char const *row_name = s.c_str();     
-        glp_set_row_name(lp, glp_get_num_rows(lp), row_name);
-    }
-    
+class CalcFrechetILP : Calculation
+{
+
     void setDegreeCoefficient(uint i, uint j, double r) {        
         nofNonZeros++;
         size_t index = nofNonZeros;
@@ -263,9 +232,9 @@ class CalcFrechetILP : Calculation {
     
    
 public:
-    
-    CalcFrechetILP(CHGraph<CHNode, CHEdge> &graph): graph(graph) {
-        
+
+    CalcFrechetILP(const CHGraph<CHNode, CHEdge> &graph) : Calculation(graph)
+    {
     }
     
     ~CalcFrechetILP() {
@@ -296,8 +265,8 @@ public:
         assert(preNofRows == glp_get_num_rows(lp));
         assert(preNofNonZeros == (int) nofNonZeros);        
         
-        
-        glp_load_matrix(lp, nofNonZeros, ia, ja, ar);         
+
+        glp_load_matrix(lp, nofNonZeros, &ia[0], &ja[0], &ar[0]);
         glp_write_lp(lp, NULL, "lp.txt");
         
         
