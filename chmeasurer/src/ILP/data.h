@@ -8,9 +8,16 @@
 #ifndef DATA_H
 #define	DATA_H
 
-struct Data {
+struct Data
+{
+    const CHGraph<CHNode, CHEdge> &graph;
+    const Chain &chain1;
+    const Chain &chain2;
 
-    virtual ~Data(){}
+    Data(const CHGraph<CHNode, CHEdge> &graph, const Chain &chain1, const Chain &chain2)
+    : graph(graph), chain1(chain1), chain2(chain2) { }
+
+    virtual ~Data() { }
 
 };
 
