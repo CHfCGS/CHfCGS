@@ -247,10 +247,9 @@ public:
 
     CalcFrechetILP(const CHGraph<CHNode, CHEdge> &graph) : Calculation(graph) { }
 
-    ~CalcFrechetILP() {
- }
+    ~CalcFrechetILP() { }
 
-    double solve(const Chain& chain1, const Chain& chain2, double epsilon, double eta)
+    double simplify(const Chain& chain1, const Chain& chain2, double epsilon, double eta)
     {
 
         FrechetTest_data ilp_data = FrechetTest_data(graph, chain1, chain2, 0, eta, false);
@@ -275,68 +274,6 @@ public:
         assert(preNofRows == glp_get_num_rows(lp));
         assert(preNofNonZeros == (int) nofNonZeros);
 
-
-        glp_load_matrix(lp, nofNonZeros, &ia[0], &ja[0], &ar[0]);
-        glp_write_lp(lp, NULL, "lp.txt");
-
-
-        /* solve problem */
-        glp_simplex(lp, NULL);
-
-        glp_iocp parm;
-        glp_init_iocp(&parm);
-        //parm.tol_int = 1e-20; //makes no difference
-        parm.presolve = GLP_ON;
-        glp_intopt(lp, &parm); //solve
-
-        /*
-        glp_smcp parm2;
-        glp_init_smcp(&parm2);
-        glp_exact(lp,  &parm2);
-         */
-
-        //switch (glp_get_status(lp)) {
-        switch (glp_mip_status(lp))
-        {
-            case GLP_UNDEF:
-            {
-                objective_value = std::numeric_limits<double>::max();
-                break;
-            }
-            case GLP_OPT:
-            {
-                objective_value = glp_mip_obj_val(lp) / ilp_data.LENGTH_FACTOR;
-                break;
-            }
-            case GLP_FEAS:
-            {
-                objective_value = std::numeric_limits<double>::max();
-                break;
-            }
-            case GLP_NOFEAS:
-            {
-                objective_value = std::numeric_limits<double>::max();
-                break;
-            }
-            default:
-                break;
-        }
-
-        glp_print_mip(lp, "p_ilp_solution.txt");
-
-        /* recover and display results */
-
-        /*
-        printf("objective_value = %g\n", objective_value);
-        for (int i = 1; i < glp_get_num_cols(lp)+1; i++) {
-            printf("line %d: %g \n", i, glp_get_col_prim(lp, i));
-        }
-         * */
-
-        glp_delete_prob(lp);
-        glp_free_env();
-
-        return objective_value;
-
+        return solve() / ilp_data.LENGTH_FACTOR;
     }
 };

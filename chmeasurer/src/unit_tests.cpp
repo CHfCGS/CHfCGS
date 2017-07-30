@@ -90,10 +90,10 @@ void unit_tests::testLineSimplfication()
         }
         
         lineSimplificationILP ilp(graph);
-        UnitTest(ilp.solve(chain, 0.3) == 9);
-        UnitTest(ilp.solve(chain, 0.5) == 6);
-        UnitTest(ilp.solve(chain, 10000) == 1);
-        UnitTest(ilp.solve(chain, 0 + std::numeric_limits<double>::epsilon()) == 15);
+        UnitTest(ilp.simplify(chain, 0.3) == 9);
+        UnitTest(ilp.simplify(chain, 0.5) == 6);
+        UnitTest(ilp.simplify(chain, 10000) == 1);
+        UnitTest(ilp.simplify(chain, 0 + std::numeric_limits<double>::epsilon()) == 15);
                 
 	Print("\n============================");
 	Print("TEST: LineSimplfication test successful.");
@@ -137,16 +137,16 @@ void unit_tests::testParallelLineSimplfication()
         
         ParallelLineSimplificationILP p_ilp(graph);
         
-        UnitTest(p_ilp.solve(chain1, chain2, 4.5 , 2000) == 2);
-        UnitTest(p_ilp.solve(chain1, chain2, 2.9 , 2000) == 4);
+        UnitTest(p_ilp.simplify(chain1, chain2, 4.5 , 2000) == 2);
+        UnitTest(p_ilp.simplify(chain1, chain2, 2.9 , 2000) == 4);
         
-        UnitTest(p_ilp.solve(chain1, chain2, 2.9 , 2.0001)==4);
+        UnitTest(p_ilp.simplify(chain1, chain2, 2.9 , 2.0001)==4);
         
-        UnitTest(p_ilp.solve(chain1, chain2, 10000, 10000) == 2);
+        UnitTest(p_ilp.simplify(chain1, chain2, 10000, 10000) == 2);
         
         DiscreteFrechet df(graph);                                       
         double discrete_frechet_dist = df.calc_dF(chain1, chain2);        
-        UnitTest(p_ilp.solve(chain1, chain2, 0 + 2*std::numeric_limits<double>::epsilon(), 2*discrete_frechet_dist + std::numeric_limits<double>::epsilon()) == 6);
+        UnitTest(p_ilp.simplify(chain1, chain2, 0 + 2*std::numeric_limits<double>::epsilon(), 2*discrete_frechet_dist + std::numeric_limits<double>::epsilon()) == 6);
                 
         
 	Print("\n============================");
@@ -471,8 +471,8 @@ void unit_tests::testFrechetDistance()
         
         CalcFrechetILP cf_ilp(graph);
         
-        Print(cf_ilp.solve(chain1, chain2, 0 , 2));
-        UnitTest(cf_ilp.solve(chain1, chain2, 0 , 2) == 1);
+        Print(cf_ilp.simplify(chain1, chain2, 0 , 2));
+        UnitTest(cf_ilp.simplify(chain1, chain2, 0 , 2) == 1);
         
                         
                    

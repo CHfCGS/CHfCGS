@@ -56,6 +56,67 @@ protected:
         ar[index] = 1.0;
     }
 
+    double solve()
+    {
+        glp_load_matrix(lp, nofNonZeros, &ia[0], &ja[0], &ar[0]);
+        //glp_load_matrix(lp, nofNonZeros, ia, ja, ar);
+        glp_write_lp(lp, NULL, "lp.txt");
+
+        //Print("factorize" << glp_factorize(lp));
+        /* solve problem */
+        //Print("solving");
+        //glp_simplex(lp, NULL);
+
+        //WorkingSign();
+        glp_iocp parm;
+        glp_init_iocp(&parm);
+        parm.presolve = GLP_ON;
+        glp_intopt(lp, &parm);
+
+
+        switch (glp_mip_status(lp))
+        {
+            case GLP_UNDEF:
+            {
+                objective_value = std::numeric_limits<double>::max();
+                break;
+            }
+            case GLP_OPT:
+            {
+                objective_value = glp_mip_obj_val(lp);
+                break;
+            }
+            case GLP_FEAS:
+            {
+                objective_value = std::numeric_limits<double>::max();
+                break;
+            }
+            case GLP_NOFEAS:
+            {
+                objective_value = std::numeric_limits<double>::max();
+                break;
+            }
+            default:
+                break;
+        }
+
+        glp_print_mip(lp, "solution.txt");
+
+        /* recover and display results */
+
+        /*
+        printf("objective_value = %g\n", objective_value);
+        for (int i = 1; i < glp_get_num_cols(lp)+1; i++) {
+            printf("line %d: %g \n", i, glp_get_col_prim(lp, i));
+        }
+         * */
+
+        glp_delete_prob(lp);
+        glp_free_env();
+
+        return objective_value;
+    }
+
     Calculation(const CHGraph<CHNode, CHEdge> &graph) : graph(graph)
     {
         ia.resize(size + 1);

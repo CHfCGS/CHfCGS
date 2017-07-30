@@ -165,7 +165,7 @@ namespace chm {
 
                                 lineSimplificationILP ilp(graph);
                                 double ilpNeededNumberOfEdges
-                                    = ilp.solve(expanded_split_chain, epsilon_error + std::numeric_limits<double>::epsilon() * geo::R);                    
+                                    = ilp.simplify(expanded_split_chain, epsilon_error + std::numeric_limits<double>::epsilon() * geo::R);                    
 
                                 int nof_edges = split_chain.size()-1;
                                 assert(nof_edges >= ilpNeededNumberOfEdges);
@@ -303,7 +303,7 @@ namespace chm {
                                         ParallelLineSimplificationILP p_ilp(graph);
                                         const double epsilon_relaxation = 1.2;
                                         double p_ilpNeededNumberOfEdges
-                                                = p_ilp.solve(expandedChainTo, expandedChainFrom,
+                                                = p_ilp.simplify(expandedChainTo, expandedChainFrom,
                                                     epsilon_relaxation * epsilon_error + std::numeric_limits<double>::epsilon() * geo::R,
                                                     eta + std::numeric_limits<double>::epsilon() * geo::R);
 
