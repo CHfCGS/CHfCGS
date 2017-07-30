@@ -470,8 +470,7 @@ void unit_tests::testFrechetDistance()
         
         
         CalcFrechetILP cf_ilp(graph);
-        
-        Print(cf_ilp.simplify(chain1, chain2, 0 , 2));
+                
         UnitTest(cf_ilp.simplify(chain1, chain2, 0 , 2) == 1);
         
                         
