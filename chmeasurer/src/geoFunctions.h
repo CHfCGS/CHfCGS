@@ -230,4 +230,28 @@ namespace geo
         //cant happen: (line1area > 0 && line2area < 0)
         return (line1area < 0 && line2area > 0);
     }
+
+    bool isBetweenByDistances(const CHLine line, CHNode outlier)
+    {
+        double perpendicularLength = calcPerpendicularLength(line.src, line.tgt, outlier);
+
+        //The perpendicular on the line is dividing the triangle in two right-angled triangles
+        //We now consider the angles alpha and beta at the corners of our given line
+
+        //The opposite side is the same for both angles
+        double distOppositeSide = perpendicularLength;
+
+
+        double alpha = asin(distOppositeSide / geoDist(line.src, outlier));
+        double beta = asin(distOppositeSide / geoDist(line.tgt, outlier));
+
+        if (alpha < 90 && beta < 90)
+        {
+            return true;
+        } else
+        {
+            return false;
+        }
+
+    }
 }
