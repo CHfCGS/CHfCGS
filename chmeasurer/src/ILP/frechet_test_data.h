@@ -22,8 +22,6 @@ struct FrechetTest_data : Data
 
     double max_link_length = 0;
 
-    bool followerIsPartial = true; //if this is false, the structure is invalid
-
     void setMaxLinkLength()
     {
         for (const CrossLink& link : allCrossLinks)
@@ -351,7 +349,7 @@ struct FrechetTest_data : Data
 
                 double fraction;
                 double link_length;
-                if (geo::isBetween(CHLine(tgt_line), graph.getNode(src.ch_node_id)))
+                if (geo::isBetweenByVector(CHLine(tgt_line), graph.getNode(src.ch_node_id)))
                 {
                     link_length = perpendicular;
                     double start_intersection_length = sqrt(pow(geo_dist_start, 2) - pow(perpendicular, 2));
