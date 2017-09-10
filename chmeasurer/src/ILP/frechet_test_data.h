@@ -9,8 +9,6 @@
 
 struct FrechetTest_data : Data
 {
-    const double LENGTH_FACTOR = 10e5;
-
     std::vector<Line> originalEdges1;
     std::vector<Line> originalEdges2;
     std::vector<Line> allOriginalEdges;
@@ -371,7 +369,7 @@ struct FrechetTest_data : Data
 
                 if (link_length <= eta)
                 { //TODO remove
-                    CrossLink link(src, tgt_line, fraction, LENGTH_FACTOR * link_length, nextLineID);
+                    CrossLink link(src, tgt_line, fraction, link_length, nextLineID);
                     cross_links.push_back(link);
                     nextLineID++;
                     isFollowing = true;

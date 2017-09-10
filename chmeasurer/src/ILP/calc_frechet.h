@@ -274,6 +274,6 @@ public:
         assert(preNofRows == glp_get_num_rows(lp));
         assert(preNofNonZeros == (int) nofNonZeros);
 
-        return solve() / ilp_data.LENGTH_FACTOR;
+        return solve();
     }
 };
