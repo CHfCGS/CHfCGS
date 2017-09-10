@@ -249,7 +249,7 @@ public:
 
     ~CalcFrechetILP() { }
 
-    double simplify(const Chain& chain1, const Chain& chain2, double epsilon, double eta)
+    double simplify(const Chain& chain1, const Chain& chain2, double eta)
     {
 
         FrechetTest_data ilp_data = FrechetTest_data(graph, chain1, chain2, 0, eta, false);
