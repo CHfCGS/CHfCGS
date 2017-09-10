@@ -5,13 +5,11 @@
 #include <array>
 #include <sstream>
 
-#include "../nodes_and_edges.h"
-#include "linearProgram.h"
-#include "frechet_test_data.h"
-#include "ILP_data.h"
+#include "frechetLP.h"
 
-class CalcFrechetILP : LinearProgram
+class CalcFrechetILP : public FrechetLP
 {
+protected:
 
     void setAllDegreeCoefficients(const FrechetTest_data& ilp_data)
     {
@@ -68,7 +66,7 @@ class CalcFrechetILP : LinearProgram
         }
     }
 
-    void addAllDegreeRows(FrechetTest_data &ilp_data)
+    void addAllDegreeRows(FrechetTest_data &ilp_data) override
     {
         //addInOutDegreeRows(ilp_data.ilp_chain1);
         //addInOutDegreeRows(ilp_data.ilp_chain2);
@@ -95,33 +93,7 @@ class CalcFrechetILP : LinearProgram
         ar[index] = -1.0;
     }
 
-    void addLinkUnorderingRows(const std::vector<CrossLinkUnordering> &unorderings)
-    {
-        for (const CrossLinkUnordering &unordering : unorderings)
-        {
-            glp_add_rows(lp, 1);
-            glp_set_row_bnds(lp, glp_get_num_rows(lp), GLP_DB, 0.0, 1.0);
-
-            //then the two entries corresponding to the intersecting lines are set
-
-            const CrossLink &link1 = unordering.link1;
-            setIntersectionEntry(link1.id);
-
-            const CrossLink &link2 = unordering.link2;
-            setIntersectionEntry(link2.id);
-
-            std::stringstream ss("");
-            ss << "CI: (" << link1.src.ch_node_id << "->" << link1.line.start.ch_node_id << "," << link1.line.end.ch_node_id << "),"
-                    "(" << link2.src.ch_node_id << "->" << link2.line.start.ch_node_id << "," << link2.line.end.ch_node_id << ")";
-            std::string s = ss.str();
-            char const *row_name = s.c_str();
-            glp_set_row_name(lp, glp_get_num_rows(lp), row_name);
-
-            //assert(line1.start.ch_node_id != line2.end.ch_node_id);
-        }
-    }
-
-    void addAllIntersectionRows(const FrechetTest_data &ilp_data)
+    void addAllIntersectionRows(const FrechetTest_data &ilp_data) override
     {
         //addIntersectionRows(ilp_data.edgeIntersections);
         addLinkUnorderingRows(ilp_data.crossLinksUnorderings);
@@ -186,26 +158,7 @@ class CalcFrechetILP : LinearProgram
         }
     }
 
-    void addColumns(const std::vector<Line> &lines, double obj_coef)
-    {
-        debug_assert(lines.size() > 0);
-        glp_add_cols(lp, lines.size());
-        for (uint i = 0; i < lines.size(); i++)
-        {
-            const Line &line = lines.at(i);
-            uint col_id = line.id + 1;
-            std::string colType = "line"; // obj_coef == 1 ? "Edge" : "followerLine";
-            std::stringstream ss("");
-            ss << colType << ": (" << line.start.ch_node_id << "," << line.end.ch_node_id << ")";
-            std::string s = ss.str();
-            char const *col_name = s.c_str();
-            glp_set_col_name(lp, col_id, col_name);
-            glp_set_col_kind(lp, col_id, GLP_BV);
-            glp_set_obj_coef(lp, col_id, obj_coef); //objective is number of used edges
-        }
-    }
-
-    void setColumns(const FrechetTest_data &ilp_data)
+    void setColumns(const FrechetTest_data &ilp_data) override
     {
         addColumns(ilp_data.originalEdges1, 0);
         addColumns(ilp_data.originalEdges2, 0);
@@ -237,7 +190,7 @@ class CalcFrechetILP : LinearProgram
 
 public:
 
-    CalcFrechetILP(const CHGraph<CHNode, CHEdge> &graph) : LinearProgram(graph) { }
+    CalcFrechetILP(const CHGraph<CHNode, CHEdge> &graph) : FrechetLP(graph) { }
 
     ~CalcFrechetILP() { }
 
