@@ -6,10 +6,10 @@
 #include <sstream>
 
 #include "../nodes_and_edges.h"
-#include "calculation.h"
+#include "linearProgram.h"
 #include "ILP_data.h"
 
-class lineSimplificationILP : Calculation
+class lineSimplificationILP : LinearProgram
 {
 
     void setInOutDegreeCoefficients(const std::vector<Line> &lines, NodeID node_id)
@@ -126,7 +126,7 @@ class lineSimplificationILP : Calculation
 
 public:
 
-    lineSimplificationILP(const CHGraph<CHNode, CHEdge> &graph) : Calculation(graph) { }
+    lineSimplificationILP(const CHGraph<CHNode, CHEdge> &graph) : LinearProgram(graph) { }
 
     ~lineSimplificationILP() { }
 

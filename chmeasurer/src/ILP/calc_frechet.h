@@ -6,11 +6,11 @@
 #include <sstream>
 
 #include "../nodes_and_edges.h"
-#include "calculation.h"
+#include "linearProgram.h"
 #include "frechet_test_data.h"
 #include "ILP_data.h"
 
-class CalcFrechetILP : Calculation
+class CalcFrechetILP : LinearProgram
 {
 
     void setAllDegreeCoefficients(const FrechetTest_data& ilp_data)
@@ -237,7 +237,7 @@ class CalcFrechetILP : Calculation
 
 public:
 
-    CalcFrechetILP(const CHGraph<CHNode, CHEdge> &graph) : Calculation(graph) { }
+    CalcFrechetILP(const CHGraph<CHNode, CHEdge> &graph) : LinearProgram(graph) { }
 
     ~CalcFrechetILP() { }
 

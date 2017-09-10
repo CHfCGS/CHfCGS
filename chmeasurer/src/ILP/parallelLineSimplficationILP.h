@@ -6,10 +6,10 @@
 #include <sstream>
 
 #include "../nodes_and_edges.h"
-#include "calculation.h"
+#include "linearProgram.h"
 #include "ILP_data.h"
 
-class ParallelLineSimplificationILP : Calculation
+class ParallelLineSimplificationILP : LinearProgram
 {
 
     void setAllDegreeCoefficients(const ILP_data &ilp_data)
@@ -201,7 +201,7 @@ class ParallelLineSimplificationILP : Calculation
 
 public:
 
-    ParallelLineSimplificationILP(const CHGraph<CHNode, CHEdge> &graph) : Calculation(graph) { }
+    ParallelLineSimplificationILP(const CHGraph<CHNode, CHEdge> &graph) : LinearProgram(graph) { }
 
     ~ParallelLineSimplificationILP() { }
 

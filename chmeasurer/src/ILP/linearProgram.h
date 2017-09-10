@@ -5,10 +5,9 @@
  * Created on July 30, 2017, 1:23 PM
  */
 
-#ifndef CALCULATION_H
-#define	CALCULATION_H
+#pragma once
 
-class Calculation
+class LinearProgram
 {
 protected:
     const CHGraph<CHNode, CHEdge> &graph;
@@ -152,18 +151,14 @@ protected:
         return objective_value;
     }
 
-    Calculation(const CHGraph<CHNode, CHEdge> &graph) : graph(graph)
+    LinearProgram(const CHGraph<CHNode, CHEdge> &graph) : graph(graph)
     {
         ia.resize(size + 1);
         ja.resize(size + 1);
         ar.resize(size + 1);
     }
 
-    virtual ~Calculation() { }
+    virtual ~LinearProgram() { }
 public:
 
 };
-
-
-#endif	/* CALCULATION_H */
-
