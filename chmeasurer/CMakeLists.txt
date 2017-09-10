@@ -15,8 +15,6 @@ cmake_minimum_required(VERSION 2.8.8 FATAL_ERROR)
 project(ch_measurer CXX)
 #project(run_tests CXX)
 
-enable_testing()
-
 #GLPK
 FIND_LIBRARY( GLPK_LIBRARIES
  glpk
@@ -97,7 +95,7 @@ add_executable(ch_measurer
 )
 target_link_libraries(ch_measurer ${GLPK_LIBRARIES} ${CGAL_LIBRARY} ${GMP_LIBRARIES} ${Boost_LIBRARIES} )
 
-set(TESTING OFF)
+set(TESTING ON)
 
 if(TESTING)
 	enable_testing()
