@@ -8,6 +8,7 @@
 #include "../nodes_and_edges.h"
 #include "calculation.h"
 #include "frechet_test_data.h"
+#include "ILP_data.h"
 
 class CalcFrechetILP : Calculation
 {
@@ -204,7 +205,7 @@ class CalcFrechetILP : Calculation
         }
     }
 
-    void setAllColumns(const FrechetTest_data &ilp_data)
+    void setColumns(const FrechetTest_data &ilp_data)
     {
         addColumns(ilp_data.originalEdges1, 0);
         addColumns(ilp_data.originalEdges2, 0);
@@ -251,7 +252,7 @@ public:
 
         glp_set_obj_dir(lp, GLP_MIN); //minimize length of longest cross link
 
-        setAllColumns(ilp_data);
+        setColumns(ilp_data);
         addLimitColumn(ilp_data.nextLineID, ilp_data.max_link_length);
 
         addAllDegreeRows(ilp_data);

@@ -170,7 +170,7 @@ class ParallelLineSimplificationILP : Calculation
         }
     }
 
-    void setAllColumns(const ILP_data &ilp_data)
+    void setColumns(const ILP_data &ilp_data)
     {
         addColumns(ilp_data.potEdges1, 1.0);
         addColumns(ilp_data.potEdges2, 1.0);
@@ -217,7 +217,7 @@ public:
 
         glp_set_obj_dir(lp, GLP_MIN); //minimize number of used edges
 
-        setAllColumns(ilp_data);
+        setColumns(ilp_data);
 
         addAllDegreeRows(ilp_data);
         setAllDegreeCoefficients(ilp_data);

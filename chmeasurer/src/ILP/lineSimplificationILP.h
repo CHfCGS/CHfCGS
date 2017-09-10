@@ -62,8 +62,9 @@ class lineSimplificationILP : Calculation
 
     //number of Columns is equal to the number of edges
 
-    void setColumns(const std::vector<Line> &lines)
+    void setColumns(const ILP_data &ilp_data)
     {
+        const std::vector<Line> &lines = ilp_data.potEdges1;
         debug_assert(lines.size() > 0);
 
         glp_add_cols(lp, lines.size());
@@ -143,7 +144,7 @@ public:
         glp_set_prob_name(lp, "lineGeneralization");
         glp_set_obj_dir(lp, GLP_MIN);
 
-        setColumns(ilp_data.potEdges1);
+        setColumns(ilp_data);
 
         addDegreeRows(ilp_data.ilp_chain1, ilp_data.potEdges1);
         //addNofLinesRow(nodes, lines, 9); //useful when optimizing for epsilon
