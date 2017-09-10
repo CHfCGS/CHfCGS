@@ -12,25 +12,15 @@
 class lineSimplificationILP : Calculation
 {
 
-    void setInOutCoefficient(uint i, uint j, double r)
-    {
-        nofNonZeros++;
-        size_t index = nofNonZeros;
-        assert(isInRange(index));
-        ia[index] = i;
-        ja[index] = j;
-        ar[index] = r;
-    }
-
     void setInOutDegreeCoefficients(const std::vector<Line> &lines, NodeID node_id)
     {
         for (const Line &line : lines)
         {
             assert(line.start.ch_node_id != line.end.ch_node_id);
             //src
-            setInOutCoefficient(line.start.posInChain + 1, line.id + 1, -1.0);
+            setDegreeCoefficient(line.start.posInChain + 1, line.id + 1, -1.0);
             //tgt
-            setInOutCoefficient(line.end.posInChain + 1, line.id + 1, 1.0);
+            setDegreeCoefficient(line.end.posInChain + 1, line.id + 1, 1.0);
         }
     }
 

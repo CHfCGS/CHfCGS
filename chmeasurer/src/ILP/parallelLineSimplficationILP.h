@@ -12,16 +12,6 @@
 class ParallelLineSimplificationILP : Calculation
 {
 
-    void setDegreeCoefficient(uint i, uint j, double r)
-    {
-        nofNonZeros++;
-        size_t index = nofNonZeros;
-        assert(isInRange(index));
-        ia[index] = i;
-        ja[index] = j;
-        ar[index] = r;
-    }
-
     void setAllDegreeCoefficients(const ILP_data &ilp_data)
     {
         size_t nofNodes = ilp_data.ilp_chain1.size() + ilp_data.ilp_chain2.size();

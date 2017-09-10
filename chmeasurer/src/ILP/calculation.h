@@ -37,6 +37,16 @@ protected:
         return (1 <= index && index <= size); //0 is not valid for ILP
     }
 
+    void setDegreeCoefficient(uint i, uint j, double r)
+    {
+        nofNonZeros++;
+        size_t index = nofNonZeros;
+        assert(isInRange(index));
+        ia[index] = i;
+        ja[index] = j;
+        ar[index] = r;
+    }
+
     void setRowName(NodeID node_id, uint nr)
     {
         std::stringstream ss("");

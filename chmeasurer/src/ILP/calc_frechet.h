@@ -12,16 +12,6 @@
 class CalcFrechetILP : Calculation
 {
 
-    void setDegreeCoefficient(uint i, uint j, double r)
-    {
-        nofNonZeros++;
-        size_t index = nofNonZeros;
-        assert(isInRange(index));
-        ia[index] = i;
-        ja[index] = j;
-        ar[index] = r;
-    }
-
     void setAllDegreeCoefficients(const FrechetTest_data& ilp_data)
     {
 
