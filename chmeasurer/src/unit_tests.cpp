@@ -455,15 +455,19 @@ void unit_tests::testFrechetDistance()
         GraphInData<CHNode, CHEdge> graphInData;
         
         Chain chain1;
-        for (int i = 0; i < 4; i++) {
-            graphInData.nodes.push_back(CHNode(i, 0));
+        graphInData.nodes.push_back(CHNode(0, 0));
+        graphInData.nodes.push_back(CHNode(1, 0));
+        graphInData.nodes.push_back(CHNode(3, 0));
+        for (int i = 0; i < 3; i++) {
             chain1.push_back(i);
-        }                                
+        }
         
         Chain chain2;
-        for (int i = 4; i < 8; i++) {
-            graphInData.nodes.push_back(CHNode(i-4, 1));
-            chain2.push_front(i);
+        graphInData.nodes.push_back(CHNode(0, 1));
+        graphInData.nodes.push_back(CHNode(2, 1));
+        graphInData.nodes.push_back(CHNode(3, 1));
+        for (int i = 3; i < 6; i++) {
+            chain2.push_back(i);
         }
 
         graph.init(std::move(graphInData));
