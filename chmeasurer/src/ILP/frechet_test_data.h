@@ -351,7 +351,7 @@ struct FrechetTest_data : Data
                 {
                     link_length = perpendicular;
                     double start_intersection_length = sqrt(pow(geo_dist_start, 2) - pow(perpendicular, 2));
-                    double line_length = geo::geoDist(tgt_line.start.ch_node, tgt_line.end.ch_node);
+                    double line_length = geo::geoDist(tgt_line);
                     assert(line_length != 0);
                     fraction = start_intersection_length / line_length;
                 } else

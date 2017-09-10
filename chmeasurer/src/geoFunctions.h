@@ -93,6 +93,11 @@ namespace geo
         return geoDist(lon1, lat1, lon2, lat2);
     }
 
+    double geoDist(const Line line)
+    {
+        return geoDist(line.start.ch_node, line.end.ch_node);
+    }
+
     double calcPerpendicularLength(const CHNode source, const CHNode target, const CHNode outlier)
     {
         //calculate perpendicular length as height of a triangle
