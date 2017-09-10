@@ -18,12 +18,12 @@ protected:
     size_t nofNonZeros = 0;
 
     //numbers of needed sizes beforehand
-    int preNofRows;
-    int preNofCols;
+    int preNofRows = 0;
+    int preNofCols = 0;
     int preNofNonZeros = 0;
 
     //whole ILP is invalid if size is not big enough
-    bool enoughSpace;
+    bool enoughSpace = false;
 
     std::vector<int> ia;
     std::vector<int> ja;
