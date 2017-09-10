@@ -159,9 +159,8 @@ protected:
         preNofRows = ilp_data.ilp_chain1.size() + ilp_data.ilp_chain2.size() //out degree
                 + ilp_data.crossLinksUnorderings.size()
                 + ilp_data.allCrossLinks.size(); //limits
-        preNofNonZeros = 3 * ilp_data.allCrossLinks.size()
-                + 2 * ilp_data.crossLinksUnorderings.size()
-                ;
+        preNofNonZeros = 3 * ilp_data.allCrossLinks.size() //one for outgoing, two for limitation row
+                + 2 * ilp_data.crossLinksUnorderings.size();
         nofNonZeros = 0;
         enoughSpace = preNofNonZeros < (int) size;
         assert(enoughSpace);
