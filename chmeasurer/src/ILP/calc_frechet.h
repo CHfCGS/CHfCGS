@@ -211,6 +211,7 @@ class CalcFrechetILP : Calculation
         addColumns(ilp_data.originalEdges2, 0);
         addLinkColumns(ilp_data.crossLinks1);
         addLinkColumns(ilp_data.crossLinks2);
+        addLimitColumn(ilp_data.nextLineID, ilp_data.max_link_length);
     }
 
     void prepareArray(const FrechetTest_data &ilp_data)
@@ -253,7 +254,6 @@ public:
         glp_set_obj_dir(lp, GLP_MIN); //minimize length of longest cross link
 
         setColumns(ilp_data);
-        addLimitColumn(ilp_data.nextLineID, ilp_data.max_link_length);
 
         addAllDegreeRows(ilp_data);
         setAllDegreeCoefficients(ilp_data);
