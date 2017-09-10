@@ -467,18 +467,18 @@ void unit_tests::testFrechetDistance()
         graphInData.nodes.push_back(CHNode(2, 1));
         graphInData.nodes.push_back(CHNode(3, 1));
         for (int i = 3; i < 6; i++) {
-            chain2.push_back(i);
+            chain2.push_front(i);
         }
 
         graph.init(std::move(graphInData));
         
         
         CalcFrechetILP cf_ilp(graph);
-                
+
         UnitTest(cf_ilp.simplify(chain1, chain2 , 2) == 1);
         
-                        
-                   
+
+
 	Print("\n=================================");
 	Print("TEST: FrechetDistance test successful.");
 	Print("=================================\n");
