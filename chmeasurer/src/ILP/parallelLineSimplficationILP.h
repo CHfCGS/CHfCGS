@@ -144,31 +144,6 @@ class ParallelLineSimplificationILP : Calculation
         addInDegreeRows(ilp_data.ilp_chain2);
     }
 
-    void addIntersectionRows(const std::vector<Intersection> &intersections)
-    {
-        for (const Intersection &intersection : intersections)
-        {
-            glp_add_rows(lp, 1);
-            glp_set_row_bnds(lp, glp_get_num_rows(lp), GLP_DB, 0.0, 1.0);
-
-            //then the two entries corresponding to the intersecting lines are set
-
-            const Line &line1 = intersection.line1;
-            setIntersectionEntry(line1.id);
-
-            const Line &line2 = intersection.line2;
-            setIntersectionEntry(line2.id);
-
-            std::stringstream ss("");
-            ss << "I: (" << line1.start.ch_node_id << "," << line1.end.ch_node_id << "),(" << line2.start.ch_node_id << "," << line2.end.ch_node_id << ")";
-            std::string s = ss.str();
-            char const *row_name = s.c_str();
-            glp_set_row_name(lp, glp_get_num_rows(lp), row_name);
-
-            assert(line1.start.ch_node_id != line2.end.ch_node_id);
-        }
-    }
-
     void addAllIntersectionRows(const ILP_data &ilp_data)
     {
 
