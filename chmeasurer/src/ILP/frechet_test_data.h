@@ -343,7 +343,7 @@ struct FrechetTest_data : Data
             {
                 double geo_dist_start = geo::geoDist(src.ch_node, tgt_line.start.ch_node);
                 double geo_dist_end = geo::geoDist(src.ch_node, tgt_line.end.ch_node);
-                double perpendicular = geo::calcPerpendicularLength(tgt_line.start.ch_node, tgt_line.end.ch_node, src.ch_node);
+                double perpendicular = geo::calcPerpendicularLength(tgt_line, src.ch_node);
 
                 double fraction;
                 double link_length;

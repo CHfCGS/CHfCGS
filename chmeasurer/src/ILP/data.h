@@ -43,7 +43,7 @@ struct Data
         //calculate error for all nodes between src and tgt
         for (auto it = ++srcIt; it != tgtIt; it++)
         {
-            double error = geo::calcPerpendicularLength(line.start.ch_node, line.end.ch_node, it->ch_node);
+            double error = geo::calcPerpendicularLength(line, it->ch_node);
             if (error > maxError)
             {
                 maxError = error;

@@ -93,7 +93,7 @@ namespace geo
         return geoDist(lon1, lat1, lon2, lat2);
     }
 
-    double calcPerpendicularLength(CHNode source, CHNode target, CHNode outlier)
+    double calcPerpendicularLength(const CHNode source, const CHNode target, const CHNode outlier)
     {
         //calculate perpendicular length as height of a triangle
         double signed_area = calcSignedArea(source, target, outlier);
@@ -106,6 +106,11 @@ namespace geo
         {
             return positiveRectArea / baselength;
         }
+    }
+
+    double calcPerpendicularLength(const Line line, const CHNode outlier)
+    {
+        return calcPerpendicularLength(line.start.ch_node, line.end.ch_node, outlier);
     }
 
     //used with calcArea for orientation tests
