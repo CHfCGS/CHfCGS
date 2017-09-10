@@ -95,28 +95,6 @@ struct ILP_data : Data
         return followerLinesUnorderings;
     }
 
-    std::vector<Line> createPotentialEdges(const ILP_Chain &ilp_chain, double epsilon)
-    {
-        std::vector<Line> lines;
-
-        assert(ilp_chain.size() >= 2);
-        for (auto srcIt = ilp_chain.begin(); srcIt != --ilp_chain.end(); srcIt++)
-        {
-            auto incrSrcIt = srcIt;
-            for (auto tgtIt = ++incrSrcIt; tgtIt != ilp_chain.end(); tgtIt++)
-            {
-                Line line(*srcIt, *tgtIt, nextLineID);
-                if (computeLineError(line, ilp_chain, srcIt, tgtIt) < epsilon)
-                {
-                    lines.push_back(line);
-                    nextLineID++;
-                }
-            }
-
-        }
-        return lines;
-    }
-
     std::vector<Line> createFollowerLines(const ILP_Chain &ilp_chainSrc, const ILP_Chain& ilp_chainTgt, double eta)
     {
         std::vector<Line> followerLines;
