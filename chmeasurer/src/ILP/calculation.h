@@ -60,7 +60,7 @@ protected:
     {
         glp_load_matrix(lp, nofNonZeros, &ia[0], &ja[0], &ar[0]);
         //glp_load_matrix(lp, nofNonZeros, ia, ja, ar);
-        glp_write_lp(lp, NULL, "lp.txt");
+        glp_write_lp(lp, NULL, "../logs/ILP/lp.txt");
 
         //Print("factorize" << glp_factorize(lp));
         /* solve problem */
@@ -100,7 +100,7 @@ protected:
                 break;
         }
 
-        glp_print_mip(lp, "solution.txt");
+        glp_print_mip(lp, "../logs/ILP/solution.txt");
 
         /* recover and display results */
 
