@@ -63,14 +63,14 @@ protected:
         {
             const CrossLink &link = links.at(i);
             uint col_id = link.id + 1;
-            std::string colType = "cross link"; // obj_coef == 1 ? "Edge" : "followerLine";
+            std::string colType = "cross link";
             std::stringstream ss("");
             ss << colType << ": (" << link.src.ch_node_id << "->" << link.line.start.ch_node_id << "," << link.line.end.ch_node_id << ")";
             std::string s = ss.str();
             char const *col_name = s.c_str();
             glp_set_col_name(lp, col_id, col_name);
             glp_set_col_kind(lp, col_id, GLP_BV);
-            glp_set_obj_coef(lp, col_id, 0); //objective is number of used edges
+            glp_set_obj_coef(lp, col_id, 0);
         }
     }
 
