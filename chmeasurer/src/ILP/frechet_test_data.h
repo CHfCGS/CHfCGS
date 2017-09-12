@@ -325,10 +325,10 @@ struct FrechetTest_data : Data
 
                 double fraction;
                 double link_length;
-                if (geo::isBetweenByVector(CHLine(tgt_line), graph.getNode(src.ch_node_id)))
+                if (geo::isBetweenByThales(CHLine(tgt_line), graph.getNode(src.ch_node_id)))
                 {
                     link_length = perpendicular;
-                    double start_intersection_length = sqrt(pow(geo_dist_start, 2) - pow(perpendicular, 2));
+                    double start_intersection_length = sqrt(geo::square(geo_dist_start) - geo::square(perpendicular));
                     double line_length = geo::geoDist(tgt_line);
                     assert(line_length != 0);
                     fraction = start_intersection_length / line_length;

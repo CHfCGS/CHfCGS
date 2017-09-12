@@ -214,8 +214,12 @@ namespace geo
         return tdv;
     }
 
+    //Deprecated: Will not work in non euclidean space probably
+
     bool isBetweenByVector(const CHLine line, CHNode outlier)
     {
+        assert(!equirectangular);
+
         //calculate direction vector
         twoDvec directionVector = calculateDirectionVec(line);
 
@@ -241,7 +245,9 @@ namespace geo
         return (line1area < 0 && line2area > 0);
     }
 
-    bool isBetweenByDistances(const CHLine line, CHNode outlier)
+    //Deprecated: Wont work for FrechetDistance test: TODO find out why
+
+    bool isBetweenByAngles(const CHLine line, CHNode outlier)
     {
         double perpendicularLength = calcPerpendicularLength(line.src, line.tgt, outlier);
 
@@ -251,17 +257,24 @@ namespace geo
         //The opposite side is the same for both angles
         double distOppositeSide = perpendicularLength;
 
-
         double alpha = asin(distOppositeSide / geoDist(line.src, outlier));
         double beta = asin(distOppositeSide / geoDist(line.tgt, outlier));
 
-        if (alpha < 90 && beta < 90)
-        {
-            return true;
-        } else
-        {
-            return false;
-        }
+        return alpha < 90 && beta < 90;
+    }
 
+    bool isBetweenByThales(const CHLine line, CHNode outlier)
+    {
+        double a = geoDist(line.tgt, outlier);
+        double b = geoDist(line.src, outlier);
+        double c = geoDist(line.src, line.tgt);
+
+        //alpha belongs to src
+        bool alphaIsAcute = square(a) < square(b) + square(c);
+
+        //beta belongs to tgt
+        bool betaIsAcute = square(b) < square(a) + square(c);
+
+        return alphaIsAcute && betaIsAcute;
     }
 }
