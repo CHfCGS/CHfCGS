@@ -20,6 +20,7 @@
 #include "ILP/parallelLineSimplficationILP.h"
 #include "ILP/frechet_test_data.h"
 #include "ILP/calc_frechet.h"
+#include "ILP/prllelLineSimplficationFrechet.h"
 
 #include "dijkstra.h"
 #include "discreteFrechet.h"
@@ -42,6 +43,7 @@ namespace chm
         void testCDTHCross();
         void testCrossLinks();
         void testFrechetDistance();
+        void testPrllelLineSimplificFrechet();
     }
     
 void unit_tests::testAll()
@@ -483,5 +485,46 @@ void unit_tests::testFrechetDistance()
 	Print("TEST: FrechetDistance test successful.");
 	Print("=================================\n");
 }
+
+void unit_tests::testPrllelLineSimplificFrechet()
+{
+	Print("\n============================");
+	Print("TEST: Start PrllelLineSimplificFrechet test.");
+	Print("============================\n");
+
+
+        CHGraph<CHNode, CHEdge> graph;
+        GraphInData<CHNode, CHEdge> graphInData;
+
+        Chain chain1;
+        graphInData.nodes.push_back(CHNode(0, 0));
+        graphInData.nodes.push_back(CHNode(1, 0));
+        graphInData.nodes.push_back(CHNode(3, 0));
+        for (int i = 0; i < 3; i++) {
+            chain1.push_back(i);
+        }
+
+        Chain chain2;
+        graphInData.nodes.push_back(CHNode(0, 1));
+        graphInData.nodes.push_back(CHNode(2, 1));
+        graphInData.nodes.push_back(CHNode(3, 1));
+        for (int i = 3; i < 6; i++) {
+            chain2.push_front(i);
+        }
+
+        graph.init(std::move(graphInData));
+
+
+        PrllelLineSimplificFrechet plsf_ilp(graph);
+
+        UnitTest(plsf_ilp.simplify(chain1, chain2 , 2, 3 ) == 1);
+
+
+
+	Print("\n=================================");
+	Print("TEST: PrllelLineSimplificFrechet test successful.");
+	Print("=================================\n");
+}
+
 
 }

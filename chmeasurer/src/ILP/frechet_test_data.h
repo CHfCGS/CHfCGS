@@ -399,8 +399,15 @@ struct FrechetTest_data : Data
         ilp_chain1 = ChainToILP_Chain(chain1, true);
         ilp_chain2 = ChainToILP_Chain(chain2, false);
 
-        potEdges1 = createOriginalEdges(ilp_chain1);
-        potEdges2 = createOriginalEdges(ilp_chain2);
+        if (parallel)
+        {
+            potEdges1 = createPotentialEdges(ilp_chain1, epsilon);
+            potEdges2 = createPotentialEdges(ilp_chain2, epsilon);
+        } else
+        {
+            potEdges1 = createOriginalEdges(ilp_chain1);
+            potEdges2 = createOriginalEdges(ilp_chain2);
+        }
 
         crossLinks1 = createCrossLinks(ilp_chain1, potEdges2, eta);
         crossLinks2 = createCrossLinks(ilp_chain2, potEdges1, eta);

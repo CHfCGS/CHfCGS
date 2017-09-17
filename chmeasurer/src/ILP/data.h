@@ -20,6 +20,8 @@ struct Data
     std::vector<Line> potEdges2;
     std::vector<Line> allPotEdges;
 
+    std::vector<Intersection> edgeIntersections;
+
     LineID nextLineID = 0;
 
     static bool testIntersection(const Line line1, const Line line2)

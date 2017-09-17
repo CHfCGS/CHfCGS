@@ -10,7 +10,7 @@ struct ILP_data : Data
     std::vector<Line> followerLines1;
     std::vector<Line> followerLines2;
     std::vector<Line> allFollowerLines;
-    std::vector<Intersection> edgeIntersections;
+
     std::vector<Intersection> followerLinesUnorderings;
 
     //bool followerIsPartial = true; //if this is false, the structure is invalid
