@@ -141,8 +141,8 @@ protected:
 
     void setColumns(const FrechetTest_data &ilp_data) override
     {
-        addColumns(ilp_data.originalEdges1, 0);
-        addColumns(ilp_data.originalEdges2, 0);
+        addColumns(ilp_data.potEdges1, 0);
+        addColumns(ilp_data.potEdges2, 0);
         addLinkColumns(ilp_data.crossLinks1);
         addLinkColumns(ilp_data.crossLinks2);
         addLimitColumn(ilp_data.nextLineID, ilp_data.max_link_length);
@@ -153,7 +153,7 @@ protected:
         assert(ilp_data.ilp_chain1.size() > 1);
         assert(ilp_data.ilp_chain2.size() > 1);
 
-        preNofCols = ilp_data.allOriginalEdges.size()
+        preNofCols = ilp_data.allPotEdges.size()
                 + ilp_data.crossLinks1.size() + ilp_data.crossLinks2.size()
                 + 1; //limit
         preNofRows = ilp_data.ilp_chain1.size() + ilp_data.ilp_chain2.size() //out degree

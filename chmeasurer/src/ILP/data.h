@@ -16,6 +16,10 @@ struct Data
     ILP_Chain ilp_chain1;
     ILP_Chain ilp_chain2;
 
+    std::vector<Line> potEdges1;
+    std::vector<Line> potEdges2;
+    std::vector<Line> allPotEdges;
+
     LineID nextLineID = 0;
 
     static bool testIntersection(const Line line1, const Line line2)

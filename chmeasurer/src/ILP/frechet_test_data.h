@@ -9,9 +9,6 @@
 
 struct FrechetTest_data : Data
 {
-    std::vector<Line> originalEdges1;
-    std::vector<Line> originalEdges2;
-    std::vector<Line> allOriginalEdges;
     std::vector<CrossLink> crossLinks1;
     std::vector<CrossLink> crossLinks2;
     std::vector<CrossLink> allCrossLinks;
@@ -402,11 +399,11 @@ struct FrechetTest_data : Data
         ilp_chain1 = ChainToILP_Chain(chain1, true);
         ilp_chain2 = ChainToILP_Chain(chain2, false);
 
-        originalEdges1 = createOriginalEdges(ilp_chain1);
-        originalEdges2 = createOriginalEdges(ilp_chain2);
+        potEdges1 = createOriginalEdges(ilp_chain1);
+        potEdges2 = createOriginalEdges(ilp_chain2);
 
-        crossLinks1 = createCrossLinks(ilp_chain1, originalEdges2, eta);
-        crossLinks2 = createCrossLinks(ilp_chain2, originalEdges1, eta);
+        crossLinks1 = createCrossLinks(ilp_chain1, potEdges2, eta);
+        crossLinks2 = createCrossLinks(ilp_chain2, potEdges1, eta);
 
         allCrossLinks = concatLinks(crossLinks1, crossLinks2);
         /*
@@ -420,7 +417,7 @@ struct FrechetTest_data : Data
         }*/
         crossLinksUnorderings = calculate_crossLinkUnorderings(allCrossLinks);
 
-        allOriginalEdges = concatLines(originalEdges1, originalEdges2);
+        allPotEdges = concatLines(potEdges1, potEdges2);
         setMaxLinkLength();
         //edgeIntersections = calculateIntersections(allPotEdges);
     }
