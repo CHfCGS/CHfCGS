@@ -36,6 +36,7 @@
 #include <omp.h>
 #include <algorithm>
 #include <limits>
+#include <random>
 
 namespace chm {
     
