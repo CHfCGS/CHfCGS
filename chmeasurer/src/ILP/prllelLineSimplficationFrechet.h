@@ -6,6 +6,7 @@
 #include <sstream>
 
 #include "frechet_test_data.h"
+#include "linearProgram.h"
 
 class PrllelLineSimplificFrechet : FrechetLP
 {
@@ -105,10 +106,10 @@ class PrllelLineSimplificFrechet : FrechetLP
 
     void addCrossLinksExistenceRows(const FrechetTest_data &ilp_data)
     {
-        for (auto it = ++ilp_data.allPotEdges.begin(); it != ilp_data.allPotEdges.end(); it++)
+        for (const CrossLink &crossLink : ilp_data.allCrossLinks)
         {
             glp_add_rows(lp, 1);
-            setRowName(it->id, 3);
+            setRowName(crossLink.id, 3);
             glp_set_row_bnds(lp, glp_get_num_rows(lp), GLP_LO, 0.0, 0.0);
         }
     }
@@ -157,7 +158,7 @@ class PrllelLineSimplificFrechet : FrechetLP
             std::string colType = "CrossLink";
             std::stringstream ss("");
             ss << colType << ": (" << crossLink.src.ch_node_id << "->("
-                    << crossLink.line.end.ch_node_id << "," << crossLink.line.end.ch_node_id << "))";
+                    << crossLink.line.start.ch_node_id << "," << crossLink.line.end.ch_node_id << "))";
             std::string s = ss.str();
             char const *col_name = s.c_str();
             glp_set_col_name(lp, col_id, col_name);
