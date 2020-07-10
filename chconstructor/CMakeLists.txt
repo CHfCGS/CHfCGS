@@ -77,7 +77,7 @@ add_executable(ch_constructor
 )
 target_link_libraries(ch_constructor ${CGAL_LIBRARY} ${GMP_LIBRARIES} ${Boost_LIBRARIES} ) 
 
-set(TESTING OFF)
+set(TESTING ON)
 
 if(TESTING)
 	enable_testing()
